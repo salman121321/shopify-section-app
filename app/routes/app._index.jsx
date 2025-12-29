@@ -1,58 +1,131 @@
-import { Page, Layout, Text, Card, BlockStack, List, Link } from "@shopify/polaris";
+import { useLoaderData } from "@remix-run/react";
+import {
+  Page,
+  Layout,
+  Text,
+  Card,
+  Button,
+  BlockStack,
+  Box,
+  InlineStack,
+  Banner,
+  Divider,
+  Badge,
+} from "@shopify/polaris";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 
 export const loader = async ({ request }) => {
-  await authenticate.admin(request);
-  return null;
+  const { session } = await authenticate.admin(request);
+  const shop = session.shop.replace(".myshopify.com", "");
+  return { shop };
 };
 
 export default function Index() {
+  const { shop } = useLoaderData();
+
   return (
     <Page>
-      <TitleBar title="Shopi Section App" />
+      <TitleBar title="Dashboard" />
       <BlockStack gap="500">
+        
         <Layout>
+          <Layout.Section>
+             <Banner
+                title="Shopi Section is active"
+                tone="success"
+              >
+                <p>Your app is successfully installed and ready to use.</p>
+              </Banner>
+          </Layout.Section>
+
           <Layout.Section>
             <Card>
               <BlockStack gap="500">
                 <BlockStack gap="200">
-                  <Text as="h2" variant="headingMd">
-                    Welcome to Shopi Section App! 🎉
+                  <Text as="h2" variant="headingLg">
+                    Welcome to Shopi Section
                   </Text>
                   <Text as="p" variant="bodyMd">
-                    Congratulations! Your app is successfully installed and running.
-                  </Text>
-                  <Text as="p" variant="bodyMd">
-                    This app provides customizable sections that you can use in your Shopify Theme.
-                    You don't need to do anything here in this dashboard.
+                    Empower your Shopify store with advanced customizable sections. 
+                    No coding required—just plug and play.
                   </Text>
                 </BlockStack>
                 
-                <BlockStack gap="200">
-                  <Text as="h3" variant="headingSm">
-                    How to use your new Section:
+                <Divider />
+
+                <BlockStack gap="400">
+                   <Text as="h3" variant="headingMd">
+                    Quick Start Guide
                   </Text>
-                  <List type="number">
-                    <List.Item>
-                      Go to <Text as="strong">Online Store</Text> from the left sidebar.
-                    </List.Item>
-                    <List.Item>
-                      Click on <Text as="strong">Customize</Text> for your current theme.
-                    </List.Item>
-                    <List.Item>
-                      In the Theme Editor, click <Text as="strong">Add section</Text>.
-                    </List.Item>
-                    <List.Item>
-                      Look for <Text as="strong">"My Custom Section"</Text> under the <b>Apps</b> category.
-                    </List.Item>
-                    <List.Item>
-                      Add it to your page and customize the settings (Heading, Colors, etc.)!
-                    </List.Item>
-                  </List>
+                  
+                  <Box background="bg-surface-secondary" padding="400" borderRadius="200">
+                    <InlineStack align="space-between" blockAlign="center" gap="400" wrap={false}>
+                        <Box width="100%">
+                           <BlockStack gap="200">
+                              <Text variant="headingSm">1. Enable App Embed</Text>
+                              <Text variant="bodySm" tone="subdued">
+                                Go to <b>Theme Settings &gt; App Embeds</b> and enable "Shopi App Embed" to activate global features.
+                              </Text>
+                           </BlockStack>
+                        </Box>
+                        <Button variant="primary" url={`https://admin.shopify.com/store/${shop}/themes/current/editor?context=apps&activateAppId=ec818bbb-e7fe-9b80-8c63-162866afa4028167e78f/app-embed`} target="_blank">
+                          Enable App Embed
+                        </Button>
+                    </InlineStack>
+                  </Box>
+
+                   <Divider />
+
+                   <InlineStack align="space-between" blockAlign="center" gap="400" wrap={false}>
+                      <Box width="100%">
+                         <BlockStack gap="200">
+                            <Text variant="headingSm">2. Add Custom Sections</Text>
+                            <Text variant="bodySm" tone="subdued">
+                              In the Theme Editor, click <b>Add Section</b> and look for "My Custom Section" under Apps.
+                            </Text>
+                         </BlockStack>
+                      </Box>
+                      <Button url={`https://admin.shopify.com/store/${shop}/themes/current/editor`} target="_blank">
+                        Open Theme Editor
+                      </Button>
+                  </InlineStack>
                 </BlockStack>
               </BlockStack>
             </Card>
+          </Layout.Section>
+
+          <Layout.Section variant="oneThird">
+            <BlockStack gap="500">
+              <Card>
+                <BlockStack gap="200">
+                  <Text as="h2" variant="headingMd">
+                    App Status
+                  </Text>
+                  <InlineStack gap="200" align="start" blockAlign="center">
+                     <Badge tone="success">Active</Badge>
+                     <Text tone="subdued">Version 1.0.0</Text>
+                  </InlineStack>
+                  <Box paddingBlockStart="200">
+                    <Text variant="bodySm" tone="subdued">
+                      Connected to: <b>{shop}</b>
+                    </Text>
+                  </Box>
+                </BlockStack>
+              </Card>
+
+              <Card>
+                <BlockStack gap="200">
+                  <Text as="h2" variant="headingMd">
+                    Need Help?
+                  </Text>
+                  <Text as="p" variant="bodyMd">
+                    Have questions or need a custom section built?
+                  </Text>
+                  <Button variant="plain" url="mailto:support@example.com">Contact Support</Button>
+                </BlockStack>
+              </Card>
+            </BlockStack>
           </Layout.Section>
         </Layout>
       </BlockStack>
