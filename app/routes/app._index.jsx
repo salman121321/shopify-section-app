@@ -17,7 +17,8 @@ import {
   LegacyCard,
   ActionList,
   Modal,
-  Scrollable
+  Scrollable,
+  Divider
 } from "@shopify/polaris";
 import { SearchIcon, HomeIcon, ProductIcon, SettingsIcon, PaintBrushFlatIcon, ViewIcon } from "@shopify/polaris-icons";
 import { TitleBar } from "@shopify/app-bridge-react";
@@ -32,6 +33,7 @@ export const loader = async ({ request }) => {
 export default function Index() {
   const { shop } = useLoaderData();
   const [searchQuery, setSearchQuery] = useState("");
+  const [categorySearchQuery, setCategorySearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [isBannerVisible, setIsBannerVisible] = useState(true);
   const [previewModal, setPreviewModal] = useState({ open: false, section: null });
@@ -49,6 +51,10 @@ export default function Index() {
        id: `cat-${i}`, label: `Category ${i+1}`, icon: PaintBrushFlatIcon 
     }))
   ];
+
+  const filteredCategories = categories.filter(cat => 
+    cat.label.toLowerCase().includes(categorySearchQuery.toLowerCase())
+  );
 
   const sections = [
     {
@@ -104,24 +110,43 @@ export default function Index() {
         <Grid.Cell columnSpan={{ xs: 6, sm: 2, md: 2, lg: 2, xl: 2 }}>
           <Box position="sticky" insetBlockStart="0">
              <LegacyCard>
-                <Scrollable shadow style={{height: 'calc(100vh - 100px)'}}>
+                <Box padding="200">
+                   <TextField
+                      label="Search Categories"
+                      labelHidden
+                      placeholder="Search categories..."
+                      value={categorySearchQuery}
+                      onChange={setCategorySearchQuery}
+                      prefix={<Icon source={SearchIcon} />}
+                      autoComplete="off"
+                      clearButton
+                      onClearButtonClick={() => setCategorySearchQuery("")}
+                   />
+                </Box>
+                <Divider />
+                <Scrollable shadow style={{height: 'calc(100vh - 180px)'}}>
                    <ActionList
                       actionRole="menuitem"
-                      items={categories.map(cat => ({
+                      items={filteredCategories.map(cat => ({
                         content: cat.label,
                         icon: cat.icon,
                         active: selectedCategory === cat.id,
                         onAction: () => setSelectedCategory(cat.id),
                       }))}
                     />
+                    {filteredCategories.length === 0 && (
+                        <Box padding="400">
+                            <Text tone="subdued" alignment="center" as="p">No categories found</Text>
+                        </Box>
+                    )}
                 </Scrollable>
              </LegacyCard>
              <Box paddingBlockStart="400">
                <Card>
                   <BlockStack gap="200">
-                     <Text variant="headingSm">App Status</Text>
+                     <Text variant="headingSm" as="h2">App Status</Text>
                      <Badge tone="success">Active</Badge>
-                     <Text variant="bodyXs" tone="subdued">Connected to {shop}</Text>
+                     <Text variant="bodyXs" tone="subdued" as="p">Connected to {shop}</Text>
                   </BlockStack>
                </Card>
              </Box>
@@ -213,7 +238,7 @@ export default function Index() {
                                    <Badge tone="attention">Coming Soon</Badge>
                                 )}
                              </InlineStack>
-                             <Text variant="bodySm" tone="subdued" truncate>{section.description}</Text>
+                             <Text variant="bodySm" tone="subdued" truncate as="p">{section.description}</Text>
                              
                              <Button 
                                 fullWidth
