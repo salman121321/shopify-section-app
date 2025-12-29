@@ -22,7 +22,7 @@ import {
   ColorPicker,
   RangeSlider
 } from "@shopify/polaris";
-import { SearchIcon, HomeIcon, ProductIcon, SettingsIcon, PaintBrushFlatIcon, ViewIcon } from "@shopify/polaris-icons";
+import { SearchIcon, HomeIcon, ProductIcon, SettingsIcon, PaintBrushFlatIcon, ViewIcon, MaximizeIcon, MinimizeIcon } from "@shopify/polaris-icons";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 
@@ -67,6 +67,7 @@ export default function Index() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [isBannerVisible, setIsBannerVisible] = useState(true);
   const [previewModal, setPreviewModal] = useState({ open: false, section: null });
+  const [isFullScreen, setIsFullScreen] = useState(false);
 
   // Handle Banner Dismiss
   const handleBannerDismiss = useCallback(() => setIsBannerVisible(false), []);
@@ -321,13 +322,61 @@ export default function Index() {
               </div>
 
               <Text variant="bodyLg" as="p">{previewModal.section?.description}</Text>
-              <InlineStack align="end">
+              <InlineStack align="end" gap="200">
+                 <Button icon={MaximizeIcon} onClick={() => setIsFullScreen(true)}>Full Screen</Button>
                  <Button onClick={() => setPreviewModal({ open: false, section: null })}>Close</Button>
                  <Button variant="primary" url={`https://admin.shopify.com/store/${shop}/themes/current/editor`} target="_blank">Customize on Store</Button>
               </InlineStack>
            </BlockStack>
         </Modal.Section>
       </Modal>
+
+      {/* Full Screen Overlay */}
+      {isFullScreen && previewModal.section && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          zIndex: 100000,
+          backgroundColor: 'white',
+          display: 'flex',
+          flexDirection: 'column'
+        }}>
+           <div style={{ 
+              padding: '1rem', 
+              borderBottom: '1px solid #e1e3e5', 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              backgroundColor: '#fff'
+           }}>
+              <Text variant="headingLg" as="h2">{previewModal.section.title} - Full Screen Preview</Text>
+              <Button icon={MinimizeIcon} onClick={() => setIsFullScreen(false)}>Exit Full Screen</Button>
+           </div>
+           <div style={{ 
+              flex: 1, 
+              overflow: 'hidden', 
+              position: 'relative',
+              backgroundColor: '#f4f4f4'
+           }}>
+              {previewModal.section.renderPreview ? (
+                 previewModal.section.renderPreview(previewModal.section.defaultSettings, false)
+              ) : previewModal.section.image ? (
+                 <img 
+                    src={previewModal.section.image} 
+                    alt="Full Preview" 
+                    style={{width: '100%', height: '100%', objectFit: 'contain'}} 
+                 />
+              ) : (
+                 <Box display="flex" alignItems="center" justifyContent="center" height="100%">
+                    <Text as="p">No preview available</Text>
+                 </Box>
+              )}
+           </div>
+        </div>
+      )}
 
       {/* CSS for Hover Effect */}
       <style>{`
