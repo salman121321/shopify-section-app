@@ -6,6 +6,11 @@ export const action = async ({ request }) => {
   const { admin, session } = await authenticate.admin(request);
   const formData = await request.formData();
   
+  console.log("Current Session Scopes:", session.scope);
+  if (!session.scope?.includes("write_themes")) {
+      return json({ error: "Missing 'write_themes' permission. Please reinstall the app or update permissions." }, { status: 403 });
+  }
+
   const action = formData.get("action");
   const themeId = formData.get("themeId");
   const sectionId = formData.get("sectionId");
@@ -47,7 +52,7 @@ export const action = async ({ request }) => {
       // 1. Upload the Liquid file to the theme
       // Reverting to Asset resource but ensuring session is passed correctly
       const asset = new admin.rest.resources.Asset({session: session});
-      asset.theme_id = themeId;
+      asset.theme_id = Number(themeId);
       asset.key = sectionData.filename;
       asset.value = sectionData.content;
       await asset.save({
@@ -59,7 +64,7 @@ export const action = async ({ request }) => {
     } else if (action === "deactivate") {
       // Remove the Liquid file from the theme
       const asset = new admin.rest.resources.Asset({session: session});
-      asset.theme_id = themeId;
+      asset.theme_id = Number(themeId);
       asset.key = sectionData.filename;
       await asset.delete();
 
@@ -70,10 +75,29 @@ export const action = async ({ request }) => {
 
   } catch (error) {
     console.error("Asset API Error:", error);
-    // Robust error message extraction
+    
     let msg = "Unknown error";
-    if (error instanceof Error) {
+    let details = "";
+
+    // Check if error is a Response object (common in fetch/shopify-api)
+    if (error && typeof error.text === 'function') {
+        try {
+            const text = await error.text();
+            msg = `API Error ${error.status || ''}: ${text}`;
+            try {
+                const jsonErr = JSON.parse(text);
+                if (jsonErr.errors) {
+                    msg = `Shopify API Error: ${JSON.stringify(jsonErr.errors)}`;
+                }
+            } catch (e) {
+                // Not JSON
+            }
+        } catch (e) {
+            msg = "Failed to read error response body";
+        }
+    } else if (error instanceof Error) {
         msg = error.message;
+        details = error.stack;
     } else if (typeof error === 'string') {
         msg = error;
     } else {
@@ -86,7 +110,7 @@ export const action = async ({ request }) => {
     
     return json({ 
         error: `Failed to update theme asset: ${msg}`,
-        details: msg
+        details: details || msg
     }, { status: 500 });
   }
 };
