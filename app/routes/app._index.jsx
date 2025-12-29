@@ -1,8 +1,7 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useLoaderData } from "@remix-run/react";
 import {
   Page,
-  Layout,
   Text,
   Card,
   Button,
@@ -10,17 +9,17 @@ import {
   Box,
   InlineStack,
   Banner,
-  Divider,
   Badge,
   Grid,
   TextField,
   Icon,
-  Listbox,
   EmptyState,
   LegacyCard,
-  ActionList
+  ActionList,
+  Modal,
+  Scrollable
 } from "@shopify/polaris";
-import { SearchIcon, HomeIcon, ProductIcon, SettingsIcon, PaintBrushFlatIcon } from "@shopify/polaris-icons";
+import { SearchIcon, HomeIcon, ProductIcon, SettingsIcon, PaintBrushFlatIcon, ViewIcon } from "@shopify/polaris-icons";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 
@@ -34,12 +33,21 @@ export default function Index() {
   const { shop } = useLoaderData();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [isBannerVisible, setIsBannerVisible] = useState(true);
+  const [previewModal, setPreviewModal] = useState({ open: false, section: null });
+
+  // Handle Banner Dismiss
+  const handleBannerDismiss = useCallback(() => setIsBannerVisible(false), []);
 
   const categories = [
     { id: "all", label: "All Sections", icon: HomeIcon },
     { id: "headers", label: "Headers", icon: PaintBrushFlatIcon },
     { id: "products", label: "Product Page", icon: ProductIcon },
     { id: "settings", label: "Settings", icon: SettingsIcon },
+    // Simulate many categories for testing scroll
+    ...Array.from({ length: 15 }).map((_, i) => ({
+       id: `cat-${i}`, label: `Category ${i+1}`, icon: PaintBrushFlatIcon 
+    }))
   ];
 
   const sections = [
@@ -83,33 +91,41 @@ export default function Index() {
     return matchesSearch && matchesCategory;
   });
 
+  const handlePreview = (section) => {
+    setPreviewModal({ open: true, section });
+  };
+
   return (
     <Page fullWidth>
       <TitleBar title="Dashboard" />
       
       <Grid>
-        {/* Sidebar Navigation */}
+        {/* Sidebar Navigation - Fixed & Scrollable */}
         <Grid.Cell columnSpan={{ xs: 6, sm: 2, md: 2, lg: 2, xl: 2 }}>
-          <LegacyCard>
-             <ActionList
-                actionRole="menuitem"
-                items={categories.map(cat => ({
-                  content: cat.label,
-                  icon: cat.icon,
-                  active: selectedCategory === cat.id,
-                  onAction: () => setSelectedCategory(cat.id),
-                }))}
-              />
-          </LegacyCard>
-           <Box paddingBlockStart="400">
-             <Card>
-                <BlockStack gap="200">
-                   <Text variant="headingSm">App Status</Text>
-                   <Badge tone="success">Active</Badge>
-                   <Text variant="bodyXs" tone="subdued">Connected to {shop}</Text>
-                </BlockStack>
-             </Card>
-           </Box>
+          <Box position="sticky" insetBlockStart="0">
+             <LegacyCard>
+                <Scrollable shadow style={{height: 'calc(100vh - 100px)'}}>
+                   <ActionList
+                      actionRole="menuitem"
+                      items={categories.map(cat => ({
+                        content: cat.label,
+                        icon: cat.icon,
+                        active: selectedCategory === cat.id,
+                        onAction: () => setSelectedCategory(cat.id),
+                      }))}
+                    />
+                </Scrollable>
+             </LegacyCard>
+             <Box paddingBlockStart="400">
+               <Card>
+                  <BlockStack gap="200">
+                     <Text variant="headingSm">App Status</Text>
+                     <Badge tone="success">Active</Badge>
+                     <Text variant="bodyXs" tone="subdued">Connected to {shop}</Text>
+                  </BlockStack>
+               </Card>
+             </Box>
+          </Box>
         </Grid.Cell>
 
         {/* Main Content Area */}
@@ -133,15 +149,20 @@ export default function Index() {
                </InlineStack>
             </Card>
 
-             {/* Welcome Banner if All */}
-             {selectedCategory === "all" && !searchQuery && (
+             {/* Welcome Banner - Dismissible */}
+             {selectedCategory === "all" && !searchQuery && isBannerVisible && (
                 <Banner
                   title="Welcome to Shopi Section Studio"
                   tone="info"
-                  onDismiss={() => {}}
+                  onDismiss={handleBannerDismiss}
                 >
-                  <p>Explore our collection of premium sections to enhance your store.</p>
-                  <Button url={`https://admin.shopify.com/store/${shop}/themes/current/editor?context=apps&activateAppId=ec818bbb-e7fe-9b80-8c63-162866afa4028167e78f/app-embed`} target="_blank">Enable App Embed</Button>
+                  <p>Explore our collection of premium sections to enhance your store. Make sure to enable the App Embed first.</p>
+                  <BlockStack gap="200">
+                     <InlineStack gap="300">
+                        <Button url={`https://admin.shopify.com/store/${shop}/themes/current/editor?context=apps&activateAppId=ec818bbb-e7fe-9b80-8c63-162866afa4028167e78f/app-embed`} target="_blank">Enable App Embed</Button>
+                        <Button variant="plain" onClick={handleBannerDismiss}>I have enabled it</Button>
+                     </InlineStack>
+                  </BlockStack>
                 </Banner>
              )}
 
@@ -151,15 +172,37 @@ export default function Index() {
                   {filteredSections.map((section) => (
                     <Grid.Cell key={section.id} columnSpan={{ xs: 6, sm: 6, md: 3, lg: 3, xl: 3 }}>
                       <Card padding="0">
-                         <Box background="bg-surface-secondary" minHeight="150px" padding="400" borderEndStartRadius="0" borderEndEndRadius="0">
+                         {/* Image Container with Hover Effect */}
+                         <div 
+                           style={{position: 'relative', height: '180px', overflow: 'hidden', cursor: 'pointer', borderTopLeftRadius: '8px', borderTopRightRadius: '8px'}}
+                           className="section-image-container"
+                           onClick={() => handlePreview(section)}
+                         >
                             {section.image ? (
-                               <img src={section.image} alt={section.title} style={{width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px'}} />
+                               <img 
+                                 src={section.image} 
+                                 alt={section.title} 
+                                 style={{width: '100%', height: '100%', objectFit: 'cover'}} 
+                               />
                             ) : (
-                               <Box display="flex" alignItems="center" justifyContent="center" height="100%">
+                               <Box background="bg-surface-secondary" height="100%" display="flex" alignItems="center" justifyContent="center">
                                   <Icon source={PaintBrushFlatIcon} color="base" />
                                </Box>
                             )}
-                         </Box>
+                            
+                            {/* Hover Overlay */}
+                            <div className="hover-overlay" style={{
+                               position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, 
+                               background: 'rgba(0,0,0,0.3)', 
+                               display: 'flex', alignItems: 'center', justifyContent: 'center',
+                               opacity: 0, transition: 'opacity 0.2s ease-in-out'
+                            }}>
+                               <div style={{background: 'white', padding: '8px', borderRadius: '50%'}}>
+                                  <Icon source={ViewIcon} />
+                               </div>
+                            </div>
+                         </div>
+
                          <Box padding="400">
                            <BlockStack gap="200">
                              <InlineStack align="space-between">
@@ -170,9 +213,10 @@ export default function Index() {
                                    <Badge tone="attention">Coming Soon</Badge>
                                 )}
                              </InlineStack>
-                             <Text variant="bodySm" tone="subdued">{section.description}</Text>
+                             <Text variant="bodySm" tone="subdued" truncate>{section.description}</Text>
                              
                              <Button 
+                                fullWidth
                                 variant={section.status === "active" ? "primary" : "secondary"}
                                 disabled={section.status !== "active"}
                                 url={`https://admin.shopify.com/store/${shop}/themes/current/editor`}
@@ -200,6 +244,49 @@ export default function Index() {
           </BlockStack>
         </Grid.Cell>
       </Grid>
+
+      {/* Preview Modal */}
+      <Modal
+        open={previewModal.open}
+        onClose={() => setPreviewModal({ open: false, section: null })}
+        title={previewModal.section?.title}
+        large
+      >
+        <Modal.Section>
+           <BlockStack gap="400">
+              {previewModal.section?.image ? (
+                 <div 
+                    onContextMenu={(e) => e.preventDefault()} 
+                    style={{
+                       display: 'flex', justifyContent: 'center', background: '#f4f4f4', padding: '20px', borderRadius: '8px',
+                       userSelect: 'none', WebkitUserSelect: 'none'
+                    }}
+                 >
+                    <img 
+                       src={previewModal.section.image} 
+                       alt="Preview" 
+                       style={{maxWidth: '100%', maxHeight: '60vh', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'}} 
+                       draggable="false"
+                    />
+                 </div>
+              ) : (
+                 <Banner tone="warning">No preview available for this section.</Banner>
+              )}
+              <Text variant="bodyLg" as="p">{previewModal.section?.description}</Text>
+              <InlineStack align="end">
+                 <Button onClick={() => setPreviewModal({ open: false, section: null })}>Close</Button>
+                 <Button variant="primary" url={`https://admin.shopify.com/store/${shop}/themes/current/editor`} target="_blank">Customize on Store</Button>
+              </InlineStack>
+           </BlockStack>
+        </Modal.Section>
+      </Modal>
+
+      {/* CSS for Hover Effect */}
+      <style>{`
+         .section-image-container:hover .hover-overlay {
+            opacity: 1 !important;
+         }
+      `}</style>
     </Page>
   );
 }
