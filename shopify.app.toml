@@ -2,7 +2,7 @@
 
 client_id = "a21834654b350e333c82807b0369850c"
 name = "Shopi Section"
-application_url = "https://example.com"
+application_url = "https://shopify-section-app-production.up.railway.app"
 embedded = true
 
 [build]
@@ -18,4 +18,8 @@ api_version = "2024-04"
 scopes = "write_products"
 
 [auth]
-redirect_urls = [ "https://example.com/api/auth" ]
+redirect_urls = [
+  "https://shopify-section-app-production.up.railway.app/auth/callback",
+  "https://shopify-section-app-production.up.railway.app/auth/shopify/callback",
+  "https://shopify-section-app-production.up.railway.app/api/auth/callback"
+]
