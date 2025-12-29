@@ -529,7 +529,14 @@ export default function Index() {
                 ) : themes.length === 0 ? (
                     <BlockStack gap="200">
                         <Banner tone="warning">
-                            No themes found or failed to load.
+                            {themesFetcher.data?.error ? (
+                              <>
+                                <p>Error: {themesFetcher.data.error}</p>
+                                {themesFetcher.data.details && <p><small>{themesFetcher.data.details}</small></p>}
+                              </>
+                            ) : (
+                              "No themes found or failed to load."
+                            )}
                         </Banner>
                         <Button onClick={() => themesFetcher.load("/api/themes")}>Retry Loading Themes</Button>
                     </BlockStack>
