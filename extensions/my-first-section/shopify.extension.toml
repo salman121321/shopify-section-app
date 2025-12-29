@@ -3,4 +3,5 @@ api_version = "2024-04"
 [[extensions]]
 name = "My First Section"
 handle = "my-first-section"
+uid = "ec818bbb-e7fe-9b80-8c63-162866afa4028167e78f"
 type = "theme"
