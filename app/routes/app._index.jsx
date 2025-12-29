@@ -20,16 +20,18 @@ import {
   Scrollable,
   Divider,
   ColorPicker,
-  RangeSlider
+  RangeSlider,
+  Tooltip,
+  Link
 } from "@shopify/polaris";
-import { SearchIcon, HomeIcon, ProductIcon, SettingsIcon, PaintBrushFlatIcon, ViewIcon, MaximizeIcon, MinimizeIcon, DesktopIcon, MobileIcon } from "@shopify/polaris-icons";
+import { SearchIcon, HomeIcon, ProductIcon, SettingsIcon, PaintBrushFlatIcon, ViewIcon, MaximizeIcon, MinimizeIcon, DesktopIcon, MobileIcon, ExternalIcon, CheckIcon } from "@shopify/polaris-icons";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 
 export const loader = async ({ request }) => {
   const { session } = await authenticate.admin(request);
   const shop = session.shop.replace(".myshopify.com", "");
-  return { shop };
+  return { shop, shopDomain: session.shop };
 };
 
 // Live Preview Component for "My Custom Section"
@@ -140,416 +142,176 @@ const ThreeDCarouselPreview = ({ settings, compact = false }) => {
 };
 
 export default function Index() {
-  const { shop } = useLoaderData();
+  const { shop, shopDomain } = useLoaderData();
   const [searchQuery, setSearchQuery] = useState("");
-  const [categorySearchQuery, setCategorySearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [isBannerVisible, setIsBannerVisible] = useState(true);
-  const [previewModal, setPreviewModal] = useState({ open: false, section: null });
-  const [isFullScreen, setIsFullScreen] = useState(false);
-  const [viewMode, setViewMode] = useState("desktop"); // desktop | mobile
-
-  // Handle Banner Dismiss
-  const handleBannerDismiss = useCallback(() => setIsBannerVisible(false), []);
-
-  const categories = [
-    { id: "all", label: "All Sections", icon: HomeIcon },
-    { id: "headers", label: "Headers", icon: PaintBrushFlatIcon },
-    { id: "products", label: "Product Page", icon: ProductIcon },
-  ];
-
-  const filteredCategories = categories.filter(cat => 
-    cat.label.toLowerCase().includes(categorySearchQuery.toLowerCase())
-  );
-
+  
+  // Sections Data
   const sections = [
-    {
-      id: "my-custom-section",
-      title: "My Custom Section",
-      description: "A customizable section with heading and colors.",
-      category: "headers",
-      status: "active",
-      // No image, we use preview component
-      defaultSettings: {
-        heading: "Hello from Shopify Section App",
-        textColor: "#000000",
-        backgroundColor: "#f4f4f4"
-      },
-      renderPreview: (settings, compact) => <MyCustomSectionPreview settings={settings} compact={compact} />
-    },
     {
       id: "3d-carousel-pro",
       title: "3D Carousel Pro",
-      description: "A stunning 3D product carousel with interactive physics and glassmorphism effects.",
+      description: "Interactive 3D product carousel with simulated blocks and smooth animations.",
       category: "products",
       status: "active",
       defaultSettings: {
         heading: "Featured Products",
         subheading: "Check out our latest collection",
         backgroundColor: "#a3d5f7",
-        bg_overlay_color: "#000000",
-        bg_overlay_opacity: 0,
         heading_color: "#1a1a1a",
-        subheading_color: "#4a4a4a",
-        heading_size: 36,
-        subheading_size: 16
       },
       renderPreview: (settings, compact) => <ThreeDCarouselPreview settings={settings} compact={compact} />
+    },
+    {
+      id: "my-custom-section",
+      title: "Simple Header",
+      description: "A basic header section for simple announcements.",
+      category: "headers",
+      status: "active",
+      defaultSettings: {
+        heading: "Welcome to our store",
+        textColor: "#000000",
+        backgroundColor: "#f4f4f4"
+      },
+      renderPreview: (settings, compact) => <MyCustomSectionPreview settings={settings} compact={compact} />
     }
   ];
 
-  const filteredSections = sections.filter((section) => {
-    const matchesSearch = section.title.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === "all" || section.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  const filteredSections = sections.filter(section => 
+    section.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
+    (selectedCategory === "all" || section.category === selectedCategory)
+  );
 
-  const handlePreview = (section) => {
-    setPreviewModal({ open: true, section });
-  };
+  const themeEditorUrl = `https://admin.shopify.com/store/${shop}/themes/current/editor?context=apps&app_id=${process.env.SHOPIFY_API_KEY || ''}`;
 
   return (
     <Page fullWidth>
-      <TitleBar title="Dashboard" />
+      <TitleBar title="Section Studio Dashboard" />
       
-      <Grid>
-        {/* Sidebar Navigation - Fixed & Scrollable */}
-        <Grid.Cell columnSpan={{ xs: 6, sm: 2, md: 2, lg: 2, xl: 2 }}>
-          <Box position="sticky" insetBlockStart="0">
-             <LegacyCard>
-                <Box padding="200">
-                   <TextField
-                      label="Search Categories"
-                      labelHidden
-                      placeholder="Search categories..."
-                      value={categorySearchQuery}
-                      onChange={setCategorySearchQuery}
-                      prefix={<Icon source={SearchIcon} />}
-                      autoComplete="off"
-                      clearButton
-                      onClearButtonClick={() => setCategorySearchQuery("")}
-                   />
-                </Box>
-                <Divider />
-                <Scrollable shadow style={{height: 'calc(100vh - 230px)'}}>
-                   <ActionList
-                      actionRole="menuitem"
-                      items={filteredCategories.map(cat => ({
-                        content: cat.label,
-                        icon: cat.icon,
-                        active: selectedCategory === cat.id,
-                        onAction: () => setSelectedCategory(cat.id),
-                      }))}
-                    />
-                    {filteredCategories.length === 0 && (
-                        <Box padding="400">
-                            <Text tone="subdued" alignment="center" as="p">No categories found</Text>
-                        </Box>
-                    )}
-                </Scrollable>
-                <Divider />
-                <ActionList
-                  actionRole="menuitem"
-                  items={[{
-                    content: "Settings",
-                    icon: SettingsIcon,
-                    active: selectedCategory === "settings",
-                    onAction: () => setSelectedCategory("settings"),
-                  }]}
-                />
-             </LegacyCard>
-             <Box paddingBlockStart="400">
-               <Card>
-                  <BlockStack gap="200">
-                     <Text variant="headingSm" as="h2">App Status</Text>
-                     <Badge tone="success">Active</Badge>
-                     <Text variant="bodyXs" tone="subdued" as="p">Connected to {shop}</Text>
-                  </BlockStack>
-               </Card>
-             </Box>
-          </Box>
-        </Grid.Cell>
+      <BlockStack gap="500">
+        {/* Header Banner */}
+        <Banner tone="success" onDismiss={() => {}}>
+          <p><strong>Shopi Section is Active!</strong> Your sections are deployed and ready to use in the Theme Editor.</p>
+        </Banner>
 
-        {/* Main Content Area */}
-        <Grid.Cell columnSpan={{ xs: 6, sm: 4, md: 4, lg: 10, xl: 10 }}>
-          <BlockStack gap="500">
-            
-            {/* Search Bar */}
-            <Card>
-               <InlineStack align="space-between" blockAlign="center">
-                  <Box width="100%">
-                    <TextField
-                      label="Search Sections"
-                      labelHidden
-                      placeholder="Search for sections..."
-                      value={searchQuery}
-                      onChange={setSearchQuery}
-                      prefix={<Icon source={SearchIcon} />}
-                      autoComplete="off"
-                    />
-                  </Box>
-               </InlineStack>
+        <Grid>
+          {/* Sidebar Navigation (Simulating Section Studio) */}
+          <Grid.Cell columnSpan={{xs: 6, sm: 6, md: 3, lg: 3, xl: 3}}>
+            <Card padding="0">
+              <ActionList
+                actionRole="menuitem"
+                items={[
+                  {
+                    content: 'All Sections',
+                    icon: HomeIcon,
+                    active: selectedCategory === 'all',
+                    onAction: () => setSelectedCategory('all'),
+                  },
+                  {
+                    content: 'Product Sections',
+                    icon: ProductIcon,
+                    active: selectedCategory === 'products',
+                    onAction: () => setSelectedCategory('products'),
+                  },
+                  {
+                    content: 'Headers',
+                    icon: PaintBrushFlatIcon,
+                    active: selectedCategory === 'headers',
+                    onAction: () => setSelectedCategory('headers'),
+                  },
+                ]}
+              />
             </Card>
-
-             {/* Welcome Banner - Dismissible */}
-             {selectedCategory === "all" && !searchQuery && isBannerVisible && (
-                <Banner
-                  title="Welcome to Shopi Section Studio"
-                  tone="info"
-                  onDismiss={handleBannerDismiss}
-                >
-                  <p>Explore our collection of premium sections to enhance your store. Make sure to enable the App Embed first.</p>
-                  <BlockStack gap="200">
-                     <InlineStack gap="300">
-                        <Button url={`https://admin.shopify.com/store/${shop}/themes/current/editor?context=apps&activateAppId=ec818bbb-e7fe-9b80-8c63-162866afa4028167e78f/app-embed`} target="_blank">Enable App Embed</Button>
-                        <Button variant="plain" onClick={handleBannerDismiss}>I have enabled it</Button>
-                     </InlineStack>
-                  </BlockStack>
-                </Banner>
-             )}
-
-            {/* Sections Grid */}
-            <Box>
-               <Grid>
-                  {filteredSections.map((section) => (
-                    <Grid.Cell key={section.id} columnSpan={{ xs: 6, sm: 6, md: 3, lg: 3, xl: 3 }}>
-                      <Card padding="0">
-                         {/* Live Preview Container with Hover Effect */}
-                         <div 
-                           style={{position: 'relative', height: '180px', overflow: 'hidden', cursor: 'pointer', borderTopLeftRadius: '8px', borderTopRightRadius: '8px'}}
-                           className="section-image-container"
-                           onClick={() => handlePreview(section)}
-                         >
-                            {section.renderPreview ? (
-                               section.renderPreview(section.defaultSettings, true)
-                            ) : section.image ? (
-                               <img 
-                                 src={section.image} 
-                                 alt={section.title} 
-                                 style={{width: '100%', height: '100%', objectFit: 'cover'}} 
-                               />
-                            ) : (
-                               <Box background="bg-surface-secondary" height="100%" display="flex" alignItems="center" justifyContent="center">
-                                  <Icon source={PaintBrushFlatIcon} color="base" />
-                               </Box>
-                            )}
-                            
-                            {/* Hover Overlay */}
-                            <div className="hover-overlay" style={{
-                               position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, 
-                               background: 'rgba(0,0,0,0.3)', 
-                               display: 'flex', alignItems: 'center', justifyContent: 'center',
-                               opacity: 0, transition: 'opacity 0.2s ease-in-out'
-                            }}>
-                               <div style={{background: 'white', padding: '8px', borderRadius: '50%'}}>
-                                  <Icon source={ViewIcon} />
-                               </div>
-                            </div>
-                         </div>
-
-                         <Box padding="400">
-                           <BlockStack gap="200">
-                             <InlineStack align="space-between">
-                                <Text variant="headingMd" as="h3">{section.title}</Text>
-                                <Badge tone={section.status === "active" ? "success" : "critical"}>
-                                    {section.status === "active" ? "Active" : "Inactive"}
-                                </Badge>
-                             </InlineStack>
-                             <Text variant="bodySm" tone="subdued" truncate as="p">{section.description}</Text>
-                             
-                             <BlockStack gap="200">
-                                <Button 
-                                    fullWidth
-                                    variant={section.status === "active" ? "primary" : "secondary"}
-                                    onClick={() => handleToggleSection(section.id, section.status === "active")}
-                                >
-                                    {section.status === "active" ? "Deactivate" : "Activate"}
-                                </Button>
-                                <Button 
-                                    fullWidth
-                                    variant="plain"
-                                    url={`https://admin.shopify.com/store/${shop}/themes/current/editor`}
-                                    target="_blank"
-                                    disabled={section.status !== "active"}
-                                >
-                                    Customize in Theme
-                                </Button>
-                             </BlockStack>
-                           </BlockStack>
-                         </Box>
-                      </Card>
-                    </Grid.Cell>
-                  ))}
-               </Grid>
-               
-               {filteredSections.length === 0 && (
-                  <EmptyState
-                    heading="No sections found"
-                    image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
-                  >
-                    <p>Try changing your search or category filter.</p>
-                  </EmptyState>
-               )}
+            <Box paddingBlockStart="400">
+               <Text as="p" variant="bodySm" tone="subdued">
+                  Need help? Check our <Link url="#" target="_blank">documentation</Link>.
+               </Text>
             </Box>
+          </Grid.Cell>
 
-          </BlockStack>
-        </Grid.Cell>
-      </Grid>
-
-      {/* Preview Modal */}
-      <Modal
-        open={previewModal.open}
-        onClose={() => setPreviewModal({ open: false, section: null })}
-        title={previewModal.section?.title}
-        large
-      >
-        <Modal.Section>
-           <BlockStack gap="400">
-              {/* Modal Live Preview */}
-              <div 
-                 onContextMenu={(e) => e.preventDefault()} 
-                 style={{
-                    display: 'flex', justifyContent: 'center', background: '#e0e0e0', padding: '20px', borderRadius: '8px',
-                    userSelect: 'none', WebkitUserSelect: 'none', minHeight: '300px'
-                 }}
-              >
-                 {previewModal.section?.renderPreview ? (
-                    previewModal.section.renderPreview(previewModal.section.defaultSettings, false)
-                 ) : previewModal.section?.image ? (
-                    <img 
-                       src={previewModal.section.image} 
-                       alt="Preview" 
-                       style={{maxWidth: '100%', maxHeight: '60vh', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'}} 
-                       draggable="false"
-                    />
-                 ) : (
-                    <Banner tone="warning">No preview available for this section.</Banner>
-                 )}
-              </div>
-
-              <Text variant="bodyLg" as="p">{previewModal.section?.description}</Text>
-              <InlineStack align="end" gap="200">
-                 <Button icon={MaximizeIcon} onClick={() => { setIsFullScreen(true); setViewMode("desktop"); }}>Live Preview</Button>
-                 <Button onClick={() => setPreviewModal({ open: false, section: null })}>Close</Button>
-                 <Button variant="primary" url={`https://admin.shopify.com/store/${shop}/themes/current/editor`} target="_blank">Customize on Store</Button>
+          {/* Main Content */}
+          <Grid.Cell columnSpan={{xs: 6, sm: 6, md: 9, lg: 9, xl: 9}}>
+            <BlockStack gap="400">
+              <InlineStack align="space-between">
+                 <Text variant="headingLg" as="h2">My Sections</Text>
+                 <Button 
+                    variant="primary" 
+                    icon={ExternalIcon} 
+                    url={themeEditorUrl} 
+                    target="_blank"
+                 >
+                    Open Theme Editor
+                 </Button>
               </InlineStack>
-           </BlockStack>
-        </Modal.Section>
-      </Modal>
 
-      {/* Full Screen Overlay */}
-      {isFullScreen && previewModal.section && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100vw',
-          height: '100vh',
-          zIndex: 100000,
-          backgroundColor: '#f6f6f7',
-          display: 'flex',
-          flexDirection: 'column'
-        }}>
-           <div style={{ 
-              padding: '1rem 2rem', 
-              borderBottom: '1px solid #e1e3e5', 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center',
-              backgroundColor: '#fff',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
-           }}>
-              <InlineStack gap="400" blockAlign="center">
-                 <Text variant="headingLg" as="h2">{previewModal.section.title}</Text>
-                 <div style={{height: '24px', width: '1px', background: '#e1e3e5'}}></div>
-                 <InlineStack gap="200">
-                    <Button 
-                       icon={DesktopIcon} 
-                       pressed={viewMode === 'desktop'} 
-                       onClick={() => setViewMode('desktop')}
-                    >
-                       Desktop
-                    </Button>
-                    <Button 
-                       icon={MobileIcon} 
-                       pressed={viewMode === 'mobile'} 
-                       onClick={() => setViewMode('mobile')}
-                    >
-                       Mobile
-                    </Button>
-                 </InlineStack>
-              </InlineStack>
-              <Button icon={MinimizeIcon} onClick={() => setIsFullScreen(false)}>Exit Preview</Button>
-           </div>
-           <div style={{ 
-              flex: 1, 
-              overflow: 'auto', 
-              position: 'relative',
-              backgroundColor: '#f1f2f4',
-              display: 'flex',
-              justifyContent: 'center',
-              paddingTop: '2rem',
-              paddingBottom: '2rem'
-           }}>
-              <div style={{
-                 width: viewMode === 'desktop' ? '100%' : '375px',
-                 height: viewMode === 'desktop' ? '100%' : '812px',
-                 backgroundColor: '#fff',
-                 boxShadow: viewMode === 'mobile' ? '0 20px 40px rgba(0,0,0,0.2)' : '0 0 20px rgba(0,0,0,0.1)',
-                 transition: 'all 0.3s ease',
-                 overflow: 'hidden', // Hide overflow on frame to clip content
-                 borderRadius: viewMode === 'mobile' ? '40px' : '0',
-                 border: viewMode === 'mobile' ? '14px solid #1a1a1a' : 'none',
-                 position: 'relative'
-              }}>
-                 {/* Mobile Notch (Only visible in mobile view) */}
-                 {viewMode === 'mobile' && (
-                    <div style={{
-                       position: 'absolute',
-                       top: 0,
-                       left: '50%',
-                       transform: 'translateX(-50%)',
-                       width: '150px',
-                       height: '24px',
-                       backgroundColor: '#1a1a1a',
-                       borderBottomLeftRadius: '16px',
-                       borderBottomRightRadius: '16px',
-                       zIndex: 10
-                    }}></div>
-                 )}
+              <TextField
+                label="Search Sections"
+                labelHidden
+                placeholder="Search by name..."
+                value={searchQuery}
+                onChange={setSearchQuery}
+                prefix={<Icon source={SearchIcon} />}
+                autoComplete="off"
+              />
 
-                 {/* Content Scroll Area */}
-                 <div style={{
-                    width: '100%',
-                    height: '100%',
-                    overflow: 'auto',
-                    paddingTop: viewMode === 'mobile' ? '24px' : '0' // Space for notch
-                 }}>
-                    {previewModal.section.renderPreview ? (
-                       previewModal.section.renderPreview(previewModal.section.defaultSettings, false)
-                    ) : previewModal.section.image ? (
-                       <img 
-                          src={previewModal.section.image} 
-                          alt="Full Preview" 
-                          style={{width: '100%', height: 'auto', display: 'block'}} 
-                       />
-                    ) : (
-                       <Box display="flex" alignItems="center" justifyContent="center" height="100%">
-                          <Text as="p">No preview available</Text>
-                       </Box>
-                    )}
-                 </div>
-              </div>
-           </div>
-        </div>
-      )}
+              <Grid>
+                {filteredSections.map((section) => (
+                  <Grid.Cell key={section.id} columnSpan={{xs: 6, sm: 6, md: 6, lg: 6, xl: 6}}>
+                    <Card padding="0">
+                      <div style={{ position: 'relative' }}>
+                        {/* Status Badge */}
+                        <div style={{ position: 'absolute', top: '10px', left: '10px', zIndex: 10 }}>
+                           <Badge tone="success" progress="complete">Active</Badge>
+                        </div>
+                        
+                        {/* Preview Area */}
+                        <div style={{ height: '200px', overflow: 'hidden', borderBottom: '1px solid #e1e3e5' }}>
+                          {section.renderPreview(section.defaultSettings, true)}
+                        </div>
 
-      {/* CSS for Hover Effect */}
-      <style>{`
-         .section-image-container:hover .hover-overlay {
-            opacity: 1 !important;
-         }
-      `}</style>
+                        {/* Content Area */}
+                        <Box padding="400">
+                          <BlockStack gap="200">
+                            <InlineStack align="space-between">
+                               <Text variant="headingMd" as="h3">{section.title}</Text>
+                            </InlineStack>
+                            <Text variant="bodySm" tone="subdued" as="p" truncate>
+                              {section.description}
+                            </Text>
+                            
+                            <Divider />
+                            
+                            <InlineStack align="end" gap="200">
+                               <Button size="slim">Settings</Button>
+                               <Button 
+                                  variant="primary" 
+                                  size="slim" 
+                                  url={themeEditorUrl}
+                                  target="_blank"
+                               >
+                                  Customize
+                               </Button>
+                            </InlineStack>
+                          </BlockStack>
+                        </Box>
+                      </div>
+                    </Card>
+                  </Grid.Cell>
+                ))}
+              </Grid>
+
+              {filteredSections.length === 0 && (
+                <EmptyState
+                  heading="No sections found"
+                  image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
+                >
+                  <p>Try changing your search or category.</p>
+                </EmptyState>
+              )}
+            </BlockStack>
+          </Grid.Cell>
+        </Grid>
+      </BlockStack>
     </Page>
   );
 }
