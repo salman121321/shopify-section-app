@@ -44,23 +44,36 @@ export const action = async ({ request }) => {
 
   try {
     if (action === "activate") {
-      // 1. Upload the Liquid file to the theme
-      const asset = new admin.rest.resources.Asset({session: session});
-      asset.theme_id = themeId;
-      asset.key = sectionData.filename;
-      asset.value = sectionData.content;
-      await asset.save({
-        update: true,
+      // 1. Upload the Liquid file to the theme using direct REST client
+      // Using admin.rest.put is more reliable than the Asset resource class for some versions
+      const response = await admin.rest.put({
+        path: `themes/${themeId}/assets.json`,
+        data: {
+          asset: {
+            key: sectionData.filename,
+            value: sectionData.content
+          }
+        }
       });
+      
+      if (response.status >= 400) {
+         throw new Error(`Shopify API returned status ${response.status}`);
+      }
       
       return json({ success: true, message: "Section installed successfully" });
 
     } else if (action === "deactivate") {
-      // Remove the Liquid file from the theme
-      const asset = new admin.rest.resources.Asset({session: session});
-      asset.theme_id = themeId;
-      asset.key = sectionData.filename;
-      await asset.delete();
+      // Remove the Liquid file from the theme using direct REST client
+      const response = await admin.rest.delete({
+        path: `themes/${themeId}/assets.json`,
+        query: {
+            "asset[key]": sectionData.filename
+        }
+      });
+
+      if (response.status >= 400) {
+         throw new Error(`Shopify API returned status ${response.status}`);
+      }
 
       return json({ success: true, message: "Section removed successfully" });
     }
@@ -69,6 +82,16 @@ export const action = async ({ request }) => {
 
   } catch (error) {
     console.error("Asset API Error:", error);
-    return json({ error: `Failed to update theme asset: ${error.message || JSON.stringify(error)}` }, { status: 500 });
+    // Extract detailed error if available
+    let errorMessage = error.message;
+    if (error.response) {
+        // If it's a response object (e.g. from node-fetch/undici), try to read body or status
+        errorMessage = `API Error ${error.response.status}: ${error.response.statusText}`;
+    }
+    
+    return json({ 
+        error: `Failed to update theme asset: ${errorMessage}`,
+        details: JSON.stringify(error, Object.getOwnPropertyNames(error))
+    }, { status: 500 });
   }
 };
