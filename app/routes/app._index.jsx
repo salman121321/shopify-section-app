@@ -60,6 +60,85 @@ const MyCustomSectionPreview = ({ settings, compact = false }) => {
   );
 };
 
+// Live Preview Component for "3D Carousel Pro"
+const ThreeDCarouselPreview = ({ settings, compact = false }) => {
+   const cardWidth = compact ? '100px' : '200px';
+   const cardHeight = compact ? '150px' : '300px';
+
+   return (
+     <div style={{
+       backgroundColor: settings.backgroundColor || "#a3d5f7",
+       width: '100%',
+       height: '100%',
+       display: 'flex',
+       flexDirection: 'column',
+       alignItems: 'center',
+       justifyContent: 'center',
+       overflow: 'hidden',
+       position: 'relative',
+       minHeight: compact ? '180px' : '500px',
+     }}>
+        {/* Overlay */}
+        <div style={{
+           position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+           backgroundColor: settings.bg_overlay_color || '#000',
+           opacity: (settings.bg_overlay_opacity || 0) / 100,
+           zIndex: 1
+        }}></div>
+
+        <div style={{zIndex: 2, textAlign: 'center', marginBottom: compact ? '10px' : '20px'}}>
+           <h2 style={{
+              color: settings.heading_color || '#1a1a1a', 
+              fontSize: compact ? '16px' : (settings.heading_size + 'px' || '24px'),
+              margin: '0 0 5px 0'
+           }}>
+              {settings.heading || "Featured Products"}
+           </h2>
+           <p style={{
+              color: settings.subheading_color || '#4a4a4a',
+              fontSize: compact ? '10px' : (settings.subheading_size + 'px' || '16px'),
+              margin: 0
+           }}>
+              {settings.subheading?.replace(/<[^>]*>?/gm, '') || "Check out our latest collection"}
+           </p>
+        </div>
+
+        {/* Mock Carousel */}
+        <div style={{
+           display: 'flex', 
+           gap: compact ? '10px' : '20px', 
+           zIndex: 2, 
+           transform: 'perspective(1000px) rotateY(-5deg)',
+           transformStyle: 'preserve-3d'
+        }}>
+           {[1, 2, 3].map((item, index) => (
+              <div key={index} style={{
+                 width: cardWidth,
+                 height: cardHeight,
+                 backgroundColor: '#fff',
+                 borderRadius: '12px',
+                 boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
+                 display: 'flex',
+                 flexDirection: 'column',
+                 overflow: 'hidden',
+                 transform: index === 1 ? 'translateZ(20px) scale(1.1)' : 'translateZ(0) scale(0.9)',
+                 opacity: index === 1 ? 1 : 0.7,
+                 transition: 'all 0.3s ease'
+              }}>
+                 <div style={{flex: 2, backgroundColor: '#eee', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                    <Icon source={ProductIcon} color="subdued" />
+                 </div>
+                 <div style={{flex: 1, padding: '10px', display: 'flex', flexDirection: 'column', justifyContent: 'center'}}>
+                    <div style={{height: '8px', width: '80%', backgroundColor: '#ddd', marginBottom: '5px', borderRadius: '4px'}}></div>
+                    <div style={{height: '8px', width: '40%', backgroundColor: '#eee', borderRadius: '4px'}}></div>
+                 </div>
+              </div>
+           ))}
+        </div>
+     </div>
+   );
+};
+
 export default function Index() {
   const { shop } = useLoaderData();
   const [searchQuery, setSearchQuery] = useState("");
@@ -97,6 +176,25 @@ export default function Index() {
         backgroundColor: "#f4f4f4"
       },
       renderPreview: (settings, compact) => <MyCustomSectionPreview settings={settings} compact={compact} />
+    },
+    {
+      id: "3d-carousel-pro",
+      title: "3D Carousel Pro",
+      description: "A stunning 3D product carousel with interactive physics and glassmorphism effects.",
+      category: "products",
+      status: "active",
+      defaultSettings: {
+        heading: "Featured Products",
+        subheading: "Check out our latest collection",
+        backgroundColor: "#a3d5f7",
+        bg_overlay_color: "#000000",
+        bg_overlay_opacity: 0,
+        heading_color: "#1a1a1a",
+        subheading_color: "#4a4a4a",
+        heading_size: 36,
+        subheading_size: 16
+      },
+      renderPreview: (settings, compact) => <ThreeDCarouselPreview settings={settings} compact={compact} />
     }
   ];
 
