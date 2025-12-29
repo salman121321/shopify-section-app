@@ -183,6 +183,7 @@ export default function Index() {
       description: "A stunning 3D product carousel with interactive physics and glassmorphism effects.",
       category: "products",
       status: "active",
+      manageUrl: "/app/carousel",
       defaultSettings: {
         heading: "Featured Products",
         subheading: "Check out our latest collection",
