@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { useLoaderData, useFetcher } from "@remix-run/react";
+import { redirect } from "@remix-run/node";
 import {
   Page,
   Text,
@@ -32,6 +33,17 @@ import { authenticate } from "../shopify.server";
 
 export const loader = async ({ request }) => {
   const { session } = await authenticate.admin(request);
+  
+  // Auto-redirect if required scopes are missing
+  const currentScopes = new Set(session.scope ? session.scope.split(",") : []);
+  const requiredScopes = ["read_themes", "write_themes", "write_products"];
+  const hasAllScopes = requiredScopes.every(scope => currentScopes.has(scope));
+
+  if (!hasAllScopes) {
+      console.log("Missing scopes. Current:", session.scope, "Required:", requiredScopes.join(","));
+      throw redirect(`/auth/login?shop=${session.shop}`);
+  }
+
   const shop = session.shop.replace(".myshopify.com", "");
   return { shop };
 };
