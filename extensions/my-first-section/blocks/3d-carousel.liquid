@@ -1,14 +1,12 @@
 {% schema %}
 {
   "name": "3D Carousel Pro",
+  "target": "section",
+  "class": "section",
   "settings": [
     {
       "type": "header",
       "content": "Data Source"
-    },
-    {
-      "type": "paragraph",
-      "content": "Select a Product List OR a Collection. If neither is selected, manual blocks will be used."
     },
     {
       "type": "product_list",
@@ -27,33 +25,12 @@
       "min": 5,
       "max": 30,
       "step": 1,
-      "label": "Max Products to Show",
+      "label": "Max Products",
       "default": 10
     },
     {
       "type": "header",
-      "content": "Section Header"
-    },
-    {
-      "type": "text",
-      "id": "label_text",
-      "label": "Label Text"
-    },
-    {
-      "type": "color",
-      "id": "label_color",
-      "label": "Label Color",
-      "default": "#000000"
-    },
-    {
-      "type": "range",
-      "id": "label_size",
-      "min": 10,
-      "max": 30,
-      "step": 1,
-      "unit": "px",
-      "label": "Label Size",
-      "default": 14
+      "content": "Content"
     },
     {
       "type": "text",
@@ -64,102 +41,11 @@
     {
       "type": "richtext",
       "id": "subheading",
-      "label": "Subheading",
-      "default": "<p>Check out our latest collection</p>"
-    },
-    {
-      "type": "select",
-      "id": "header_alignment",
-      "label": "Header Alignment",
-      "options": [
-        { "value": "left", "label": "Left" },
-        { "value": "center", "label": "Center" },
-        { "value": "right", "label": "Right" }
-      ],
-      "default": "center"
-    },
-    {
-      "type": "color",
-      "id": "heading_color",
-      "label": "Heading Color",
-      "default": "#1a1a1a"
-    },
-    {
-      "type": "color",
-      "id": "subheading_color",
-      "label": "Subheading Color",
-      "default": "#4a4a4a"
-    },
-    {
-      "type": "range",
-      "id": "heading_size",
-      "min": 16,
-      "max": 60,
-      "step": 1,
-      "unit": "px",
-      "label": "Heading Size",
-      "default": 36
-    },
-    {
-      "type": "range",
-      "id": "subheading_size",
-      "min": 12,
-      "max": 30,
-      "step": 1,
-      "unit": "px",
-      "label": "Subheading Size",
-      "default": 16
-    },
-    {
-      "type": "range",
-      "id": "header_margin_bottom",
-      "min": 0,
-      "max": 100,
-      "step": 5,
-      "unit": "px",
-      "label": "Header Margin Bottom",
-      "default": 30
+      "label": "Subheading"
     },
     {
       "type": "header",
-      "content": "Layout & Dimensions"
-    },
-    {
-        "type": "range",
-        "id": "margin_top",
-        "min": 0,
-        "max": 100,
-        "step": 5,
-        "unit": "px",
-        "label": "Margin Top",
-        "default": 0
-    },
-    {
-        "type": "range",
-        "id": "margin_bottom",
-        "min": 0,
-        "max": 100,
-        "step": 5,
-        "unit": "px",
-        "label": "Margin Bottom",
-        "default": 0
-    },
-    {
-      "type": "checkbox",
-      "id": "full_width",
-      "label": "Full Width Section",
-      "default": true
-    },
-    {
-      "type": "range",
-      "id": "container_max_width",
-      "min": 800,
-      "max": 1800,
-      "step": 50,
-      "unit": "px",
-      "label": "Container Max Width",
-      "info": "Only applies if Full Width is unchecked",
-      "default": 1200
+      "content": "Appearance"
     },
     {
       "type": "range",
@@ -183,94 +69,12 @@
     },
     {
       "type": "range",
-      "id": "padding_top",
-      "min": 0,
-      "max": 100,
-      "step": 5,
-      "unit": "px",
-      "label": "Top Padding",
-      "default": 0
-    },
-    {
-      "type": "range",
-      "id": "padding_bottom",
-      "min": 0,
-      "max": 100,
-      "step": 5,
-      "unit": "px",
-      "label": "Bottom Padding",
-      "default": 0
-    },
-    {
-      "type": "header",
-      "content": "Background Styling"
-    },
-    {
-      "type": "image_picker",
-      "id": "background_image",
-      "label": "Background Image"
-    },
-    {
-      "type": "select",
-      "id": "bg_size",
-      "label": "Background Size",
-      "options": [
-        { "value": "cover", "label": "Cover" },
-        { "value": "contain", "label": "Contain" },
-        { "value": "auto", "label": "Auto" }
-      ],
-      "default": "cover"
-    },
-    {
-      "type": "select",
-      "id": "bg_position",
-      "label": "Background Position",
-      "options": [
-        { "value": "center", "label": "Center" },
-        { "value": "top", "label": "Top" },
-        { "value": "bottom", "label": "Bottom" },
-        { "value": "left", "label": "Left" },
-        { "value": "right", "label": "Right" }
-      ],
-      "default": "center"
-    },
-    {
-      "type": "checkbox",
-      "id": "bg_fixed",
-      "label": "Fixed Background (Parallax)",
-      "default": false
-    },
-    {
-      "type": "color",
-      "id": "background_color",
-      "label": "Background Color (Fallback)",
-      "default": "#a3d5f7"
-    },
-    {
-      "type": "color",
-      "id": "bg_overlay_color",
-      "label": "Background Overlay Color",
-      "default": "#000000"
-    },
-    {
-      "type": "range",
-      "id": "bg_overlay_opacity",
-      "min": 0,
-      "max": 100,
-      "step": 5,
-      "unit": "%",
-      "label": "Overlay Opacity",
-      "default": 0
-    },
-    {
-      "type": "range",
       "id": "carousel_radius",
       "min": 200,
       "max": 1200,
-      "step": 10,
+      "step": 50,
       "unit": "px",
-      "label": "Carousel Radius (Desktop)",
-      "info": "Increase to spread cards further apart",
+      "label": "Radius (Desktop)",
       "default": 450
     },
     {
@@ -280,373 +84,34 @@
       "max": 600,
       "step": 10,
       "unit": "px",
-      "label": "Carousel Radius (Mobile)",
+      "label": "Radius (Mobile)",
       "default": 200
-    },
-    {
-      "type": "header",
-      "content": "Card Styling (Modern Classic)"
     },
     {
       "type": "select",
       "id": "card_style",
       "label": "Card Style",
       "options": [
-        { "value": "solid", "label": "Solid (Classic)" },
-        { "value": "glass", "label": "Glassmorphism (Modern)" },
-        { "value": "outlined", "label": "Outlined (Minimal)" },
-        { "value": "neon", "label": "Neon Glow" },
-        { "value": "polaroid", "label": "Polaroid Frame" }
+        { "value": "solid", "label": "Solid" },
+        { "value": "glass", "label": "Glassmorphism" },
+        { "value": "neon", "label": "Neon" }
       ],
       "default": "solid"
     },
     {
       "type": "color",
-      "id": "neon_color",
-      "label": "Neon Glow Color",
-      "default": "#00ffcc",
-      "info": "Only for Neon style"
+      "id": "background_color",
+      "label": "Background Color",
+      "default": "#f0f0f0"
     },
     {
-      "type": "range",
-      "id": "glass_blur",
-      "min": 0,
-      "max": 40,
-      "step": 1,
-      "unit": "px",
-      "label": "Glass Blur Amount",
-      "info": "Only for Glassmorphism style",
-      "default": 10
-    },
-    {
-      "type": "range",
-      "id": "glass_opacity",
-      "min": 0,
-      "max": 100,
-      "step": 5,
-      "unit": "%",
-      "label": "Glass Opacity",
-      "info": "Card background transparency",
-      "default": 80
-    },
-    {
-      "type": "range",
-      "id": "card_width",
-      "min": 150,
-      "max": 500,
-      "step": 10,
-      "unit": "px",
-      "label": "Card Width (Desktop)",
-      "default": 280
-    },
-    {
-      "type": "range",
-      "id": "mobile_card_width",
-      "min": 100,
-      "max": 400,
-      "step": 10,
-      "unit": "px",
-      "label": "Card Width (Mobile)",
-      "default": 180
-    },
-    {
-      "type": "range",
-      "id": "card_height",
-      "min": 200,
-      "max": 700,
-      "step": 10,
-      "unit": "px",
-      "label": "Card Height (Desktop)",
-      "default": 450
-    },
-    {
-      "type": "range",
-      "id": "mobile_card_height",
-      "min": 150,
-      "max": 600,
-      "step": 10,
-      "unit": "px",
-      "label": "Card Height (Mobile)",
-      "default": 280
-    },
-    {
-        "type": "range",
-        "id": "card_border_radius",
-        "min": 0,
-        "max": 50,
-        "step": 1,
-        "unit": "px",
-        "label": "Card Corner Radius",
-        "default": 16
-    },
-    {
-      "type": "checkbox",
-      "id": "card_tilt",
-      "label": "3D Hover Tilt",
-      "default": false
-    },
-    {
-      "type": "checkbox",
-      "id": "show_reflection",
-      "label": "Show Card Reflection",
-      "default": false
-    },
-    {
-      "type": "range",
-      "id": "shadow_intensity",
-        "min": 0,
-        "max": 100,
-        "step": 5,
-        "unit": "%",
-        "label": "Shadow Intensity",
-        "default": 20
-    },
-    {
-      "type": "color",
-      "id": "card_bg_color",
-      "label": "Card Background Color",
-      "default": "#ffffff"
-    },
-    {
-      "type": "range",
-      "id": "card_opacity",
-      "min": 0,
-      "max": 100,
-      "step": 5,
-      "unit": "%",
-      "label": "Card Opacity (Solid Style)",
-      "default": 100
-    },
-    {
-      "type": "color",
-      "id": "card_border_color",
-      "label": "Card Border Color",
-      "default": "#e0e0e0"
+      "type": "image_picker",
+      "id": "background_image",
+      "label": "Background Image"
     },
     {
       "type": "header",
-      "content": "Typography & Content"
-    },
-    {
-      "type": "color",
-      "id": "text_color",
-      "label": "Title Color",
-      "default": "#1a1a1a"
-    },
-    {
-      "type": "range",
-      "id": "title_size",
-      "min": 12,
-      "max": 30,
-      "step": 1,
-      "unit": "px",
-      "label": "Title Size",
-      "default": 18
-    },
-    {
-      "type": "color",
-      "id": "price_color",
-      "label": "Price Color",
-      "default": "#2c3e50"
-    },
-    {
-      "type": "range",
-      "id": "price_size",
-      "min": 12,
-      "max": 30,
-      "step": 1,
-      "unit": "px",
-      "label": "Price Size",
-      "default": 20
-    },
-    {
-        "type": "select",
-        "id": "text_alignment",
-        "label": "Text Alignment",
-        "options": [
-            { "value": "left", "label": "Left" },
-            { "value": "center", "label": "Center" }
-        ],
-        "default": "left"
-    },
-    {
-      "type": "header",
-      "content": "Buttons & Badges"
-    },
-    {
-      "type": "checkbox",
-      "id": "show_button",
-      "label": "Show 'View Product' Button",
-      "default": true
-    },
-    {
-      "type": "text",
-      "id": "button_text",
-      "label": "Button Label",
-      "default": "View Details"
-    },
-    {
-      "type": "color",
-      "id": "button_bg_color",
-      "label": "Button Background",
-      "default": "#1a1a1a"
-    },
-    {
-      "type": "color",
-      "id": "button_text_color",
-      "label": "Button Text",
-      "default": "#ffffff"
-    },
-    {
-      "type": "checkbox",
-      "id": "show_badge",
-      "label": "Show Top Badge",
-      "default": true
-    },
-    {
-      "type": "color",
-      "id": "badge_bg_color",
-      "label": "Badge Background",
-      "default": "#1a1a1a"
-    },
-    {
-      "type": "color",
-      "id": "badge_text_color",
-      "label": "Badge Text",
-      "default": "#ffffff"
-    },
-    {
-      "type": "header",
-      "content": "Navigation & Controls"
-    },
-    {
-      "type": "checkbox",
-      "id": "show_arrows",
-      "label": "Show Navigation Arrows",
-      "default": true
-    },
-    {
-      "type": "checkbox",
-      "id": "enable_arrow_hover_effect",
-      "label": "Enable Arrow Hover Effect",
-      "default": false
-    },
-    {
-      "type": "checkbox",
-      "id": "enable_smart_scroll",
-      "label": "Enable Smart Scroll (2-Finger Rotate)",
-      "default": true
-    },
-    {
-      "type": "checkbox",
-      "id": "enable_horizontal_scroll",
-      "label": "Enable Horizontal Scroll (2-Finger Left/Right)",
-      "default": true
-    },
-    {
-      "type": "checkbox",
-      "id": "pause_on_cards_only",
-      "label": "Pause on Cards Only (Keep rotating on background hover)",
-      "default": true
-    },
-    {
-      "type": "select",
-      "id": "arrow_position",
-      "label": "Arrow Position",
-      "options": [
-        { "value": "middle", "label": "Middle (Sides)" },
-        { "value": "top_left", "label": "Top Left" },
-        { "value": "top_right", "label": "Top Right" },
-        { "value": "bottom_left", "label": "Bottom Left" },
-        { "value": "bottom_right", "label": "Bottom Right" },
-        { "value": "bottom_center", "label": "Bottom Center" }
-      ],
-      "default": "middle"
-    },
-    {
-      "type": "color",
-      "id": "arrow_color",
-      "label": "Arrow Icon Color",
-      "default": "#ffffff"
-    },
-    {
-      "type": "color",
-      "id": "arrow_bg_color",
-      "label": "Arrow Background Color",
-      "default": "#1a1a1a"
-    },
-    {
-      "type": "checkbox",
-      "id": "enable_keyboard",
-      "label": "Enable Keyboard Navigation (Arrows)",
-      "default": true
-    },
-    {
-      "type": "checkbox",
-      "id": "enable_snap",
-      "label": "Snap to Nearest Card",
-      "default": true
-    },
-    {
-      "type": "checkbox",
-      "id": "show_dots",
-      "label": "Show Pagination Dots",
-      "default": false
-    },
-    {
-      "type": "header",
-      "content": "Animation & Physics"
-    },
-    {
-        "type": "select",
-        "id": "entrance_animation",
-        "label": "Entrance Animation",
-        "options": [
-            { "value": "none", "label": "None" },
-            { "value": "fade-up", "label": "Fade Up" },
-            { "value": "zoom-in", "label": "Zoom In" }
-        ],
-        "default": "fade-up"
-    },
-    {
-      "type": "checkbox",
-      "id": "enable_depth_fade",
-      "label": "Fade Side Cards (Depth Effect)",
-      "default": true
-    },
-    {
-      "type": "range",
-      "id": "min_depth_opacity",
-      "min": 0,
-      "max": 100,
-      "step": 5,
-      "unit": "%",
-      "label": "Minimum Side Card Opacity",
-      "default": 40
-    },
-    {
-      "type": "checkbox",
-      "id": "enable_float",
-      "label": "Idle Floating Animation",
-      "default": true
-    },
-    {
-      "type": "checkbox",
-      "id": "enable_wave",
-      "label": "Vertical Wave Animation",
-      "default": false
-    },
-    {
-      "type": "checkbox",
-      "id": "active_zoom",
-      "label": "Zoom Active Card",
-      "default": true
-    },
-    {
-      "type": "checkbox",
-      "id": "hover_spread",
-      "label": "Spread Cards on Hover",
-      "default": false
+      "content": "Behavior"
     },
     {
       "type": "checkbox",
@@ -655,86 +120,24 @@
       "default": true
     },
     {
-      "type": "select",
-      "id": "rotation_direction",
-      "label": "Rotation Direction",
-      "options": [
-        { "value": "left", "label": "Left (Clockwise)" },
-        { "value": "right", "label": "Right (Counter-Clockwise)" }
-      ],
-      "default": "left"
-    },
-    {
       "type": "range",
       "id": "auto_rotate_speed",
-      "min": 0,
-      "max": 10,
+      "min": 1,
+      "max": 20,
       "step": 1,
-      "label": "Auto Rotate Speed",
-      "default": 2
-    },
-    {
-      "type": "checkbox",
-      "id": "pause_on_hover",
-      "label": "Pause on Hover",
-      "default": true
-    },
-    {
-      "type": "range",
-      "id": "rotation_sensitivity",
-      "min": 0.1,
-      "max": 2.0,
-      "step": 0.1,
-      "label": "Drag Sensitivity",
-      "default": 0.2
-    },
-    {
-        "type": "range",
-        "id": "friction",
-        "min": 80,
-        "max": 99,
-        "step": 1,
-        "label": "Smoothness (Friction)",
-        "info": "Higher value means more glide (80-99)",
-        "default": 95
-    },
-    {
-      "type": "checkbox",
-      "id": "scroll_sync",
-      "label": "Rotate on Page Scroll",
-      "default": false
-    },
-    {
-      "type": "checkbox",
-      "id": "gyro_control",
-      "label": "Mobile Gyroscope Control",
-      "default": false
-    },
-    {
-      "type": "range",
-      "id": "perspective",
-        "min": 500,
-        "max": 2000,
-        "step": 50,
-        "unit": "px",
-        "label": "3D Perspective Depth",
-        "default": 1000
+      "label": "Rotation Speed",
+      "default": 5
     }
   ],
   "blocks": [
     {
-      "type": "card",
-      "name": "Manual Card",
+      "type": "carousel_item",
+      "name": "Carousel Item",
       "settings": [
-        {
-          "type": "product",
-          "id": "product",
-          "label": "Product (Auto-fill)"
-        },
         {
           "type": "image_picker",
           "id": "image",
-          "label": "Product Image"
+          "label": "Image"
         },
         {
           "type": "text",
@@ -746,18 +149,12 @@
           "type": "text",
           "id": "price",
           "label": "Price",
-          "default": "$100.00"
-        },
-        {
-          "type": "text",
-          "id": "badge_text",
-          "label": "Top Badge Text",
-          "default": "New"
+          "default": "$19.99"
         },
         {
           "type": "url",
           "id": "link",
-          "label": "Card Link"
+          "label": "Link"
         }
       ]
     }
@@ -766,379 +163,107 @@
     {
       "name": "3D Carousel Pro",
       "blocks": [
-        { "type": "card" },
-        { "type": "card" },
-        { "type": "card" },
-        { "type": "card" },
-        { "type": "card" },
-        { "type": "card" }
+        { "type": "carousel_item" },
+        { "type": "carousel_item" },
+        { "type": "carousel_item" },
+        { "type": "carousel_item" },
+        { "type": "carousel_item" }
       ]
     }
   ]
 }
 {% endschema %}
 
-{%- style -%}
-    .carousel-section-outer-{{ section.id }} {
-        margin-top: {{ section.settings.margin_top }}px;
-        margin-bottom: {{ section.settings.margin_bottom }}px;
-    }
+{% comment %}
+  Assign defaults for removed settings to prevent JS errors
+{% endcomment %}
+{% assign rotation_direction = section.settings.rotation_direction | default: 'left' %}
+{% assign pause_on_hover = section.settings.pause_on_hover | default: true %}
+{% assign enable_smart_scroll = section.settings.enable_smart_scroll | default: true %}
+{% assign enable_horizontal_scroll = section.settings.enable_horizontal_scroll | default: true %}
+{% assign pause_on_cards_only = section.settings.pause_on_cards_only | default: true %}
+{% assign enable_keyboard = section.settings.enable_keyboard | default: true %}
+{% assign enable_snap = section.settings.enable_snap | default: true %}
+{% assign entrance_animation = section.settings.entrance_animation | default: 'fade-up' %}
+{% assign enable_float = section.settings.enable_float | default: true %}
+{% assign active_zoom = section.settings.active_zoom | default: true %}
+{% assign enable_wave = section.settings.enable_wave | default: false %}
+{% assign hover_spread = section.settings.hover_spread | default: true %}
+{% assign enable_depth_fade = section.settings.enable_depth_fade | default: true %}
+{% assign min_depth_opacity = section.settings.min_depth_opacity | default: 40 %}
+{% assign scroll_sync = section.settings.scroll_sync | default: false %}
+{% assign gyro_control = section.settings.gyro_control | default: false %}
+{% assign friction = section.settings.friction | default: 90 %}
+{% assign rotation_sensitivity = section.settings.rotation_sensitivity | default: 1.0 %}
+{% assign text_color = section.settings.text_color | default: '#000000' %}
+{% assign show_dots = section.settings.show_dots | default: false %}
+{% assign show_arrows = section.settings.show_arrows | default: true %}
+{% assign enable_arrow_hover_effect = section.settings.enable_arrow_hover_effect | default: true %}
+{% assign show_button = section.settings.show_button | default: true %}
+{% assign button_text = section.settings.button_text | default: 'View' %}
+{% assign show_badge = section.settings.show_badge | default: true %}
+{% assign card_tilt = section.settings.card_tilt | default: true %}
 
-    .carousel-section-header-{{ section.id }} {
-        text-align: {{ section.settings.header_alignment }};
-        margin-bottom: {{ section.settings.header_margin_bottom }}px;
-        padding: 0 20px;
-        max-width: {{ section.settings.container_max_width }}px;
-        margin-left: auto;
-        margin-right: auto;
-    }
-
-    .carousel-heading-{{ section.id }} {
-        color: {{ section.settings.heading_color }};
-        font-size: {{ section.settings.heading_size }}px;
-        margin: 0 0 10px 0;
-        line-height: 1.2;
-    }
-
-    .carousel-subheading-{{ section.id }} {
-        color: {{ section.settings.subheading_color }};
-        font-size: {{ section.settings.subheading_size }}px;
-        margin: 0;
-        line-height: 1.5;
-    }
+<div class="carousel-section-wrapper carousel-section-wrapper-{{ section.id }}" style="
+    background-color: {{ section.settings.background_color }};
+    {% if section.settings.background_image != blank %}
+        background-image: url({{ section.settings.background_image | image_url: width: 2000 }});
+        background-size: cover;
+        background-position: center;
+    {% endif %}
+    height: {{ section.settings.section_height }}px;
+    position: relative;
+    overflow: hidden;
+">
     
-    .carousel-subheading-{{ section.id }} p {
-        margin: 0;
-    }
-
-    .carousel-section-wrapper-{{ section.id }} {
-        --card-width: {{ section.settings.card_width }}px;
-        --card-height: {{ section.settings.card_height }}px;
-        
-        background-color: {{ section.settings.background_color }};
-        {% if section.settings.background_image != blank %}
-            background-image: url('{{ section.settings.background_image | image_url: width: 2000 }}');
-            background-size: {{ section.settings.bg_size }};
-            background-position: {{ section.settings.bg_position }};
-            background-repeat: no-repeat;
-            {% if section.settings.bg_fixed %}
-                background-attachment: fixed;
-            {% endif %}
-        {% endif %}
-        height: {{ section.settings.section_height }}px;
-        position: relative;
-        overflow: hidden;
-        padding-top: {{ section.settings.padding_top }}px;
-        padding-bottom: {{ section.settings.padding_bottom }}px;
-    }
-
-    @media (max-width: 768px) {
-        .carousel-section-wrapper-{{ section.id }} {
-            --card-width: {{ section.settings.mobile_card_width }}px;
-            --card-height: {{ section.settings.mobile_card_height }}px;
-        }
-    }
-
-    /* Container Logic */
-    .carousel-container-inner-{{ section.id }} {
-        width: 100%;
-        height: 100%;
-        position: relative;
-        {% unless section.settings.full_width %}
-            max-width: {{ section.settings.container_max_width }}px;
-            margin: 0 auto;
-        {% endunless %}
-    }
-
-    .carousel-overlay-{{ section.id }} {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: {{ section.settings.bg_overlay_color }};
-        opacity: {{ section.settings.bg_overlay_opacity | divided_by: 100.0 }};
-        z-index: 1;
-        pointer-events: none;
-    }
-
-    .scene-{{ section.id }} {
-        perspective: {{ section.settings.perspective }}px;
-        z-index: 2;
-        width: var(--card-width); 
-        height: var(--card-height);
-        position: relative;
-    }
-
-    .card-{{ section.id }} {
-        width: var(--card-width);
-        height: var(--card-height);
-        /* Removed border/bg styles from here to .card-inner */
-        perspective: 1000px;
-    }
-
-    .card-inner-{{ section.id }} {
-        width: 100%;
-        height: 100%;
-        border-radius: {{ section.settings.card_border_radius }}px;
-        position: relative;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-        text-align: {{ section.settings.text_alignment }};
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-        
-        {% case section.settings.card_style %}
-            {% when 'solid' %}
-                {% assign card_alpha = section.settings.card_opacity | divided_by: 100.0 %}
-                background: {{ section.settings.card_bg_color | color_modify: 'alpha', card_alpha }};
-                border: 1px solid transparent;
-                box-shadow: 0 10px 30px rgba(0,0,0, {{ section.settings.shadow_intensity | divided_by: 100.0 }});
-            {% when 'glass' %}
-                {% assign glass_alpha = section.settings.glass_opacity | divided_by: 100.0 %}
-                background: {{ section.settings.card_bg_color | color_modify: 'alpha', glass_alpha }};
-                backdrop-filter: blur({{ section.settings.glass_blur }}px);
-                -webkit-backdrop-filter: blur({{ section.settings.glass_blur }}px);
-                border: 1px solid rgba(255, 255, 255, 0.2);
-                box-shadow: 0 10px 30px rgba(0,0,0, {{ section.settings.shadow_intensity | divided_by: 100.0 }});
-            {% when 'outlined' %}
-                background: transparent;
-                border: 2px solid {{ section.settings.card_border_color }};
-                box-shadow: none;
-            {% when 'neon' %}
-                background: #000;
-                border: 2px solid {{ section.settings.neon_color }};
-                box-shadow: 0 0 15px {{ section.settings.neon_color }}, inset 0 0 10px {{ section.settings.neon_color | color_modify: 'alpha', 0.2 }};
-            {% when 'polaroid' %}
-                background: #fff;
-                border: 1px solid #ddd;
-                padding-bottom: 60px; /* Space for polaroid look */
-                box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-                border-radius: 4px; /* Polaroids have sharpish corners */
-        {% endcase %}
-
-        padding: 20px;
-        
-        {% if section.settings.show_reflection %}
-            -webkit-box-reflect: below 10px linear-gradient(to bottom, rgba(0,0,0,0.0), rgba(0,0,0,0.4));
-        {% endif %}
-        
-        {% if section.settings.enable_float %}
-            animation: float-{{ section.id }} 4s ease-in-out infinite;
-        {% endif %}
-    }
-    
-    /* Float Animation Keyframes */
-    @keyframes float-{{ section.id }} {
-        0% { transform: translateY(0px); }
-        50% { transform: translateY(-15px); }
-        100% { transform: translateY(0px); }
-    }
-    
-    /* Entrance Animations */
-    .carousel-section-wrapper-{{ section.id }}.animate-in .card-inner-{{ section.id }} {
-        animation-fill-mode: forwards; /* Keep final state */
-    }
-    
-    @keyframes fadeUp {
-        from { opacity: 0; transform: translateY(50px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    
-    @keyframes zoomIn {
-        from { opacity: 0; transform: scale(0.8); }
-        to { opacity: 1; transform: scale(1); }
-    }
-
-    .card-{{ section.id }} h3 {
-        font-size: {{ section.settings.title_size }}px;
-        color: {{ section.settings.text_color }};
-    }
-
-    .card-{{ section.id }} .price {
-        font-size: {{ section.settings.price_size }}px;
-        color: {{ section.settings.price_color }};
-    }
-
-    .card-btn-{{ section.id }} {
-        background-color: {{ section.settings.button_bg_color }};
-        color: {{ section.settings.button_text_color }};
-        border-radius: {{ section.settings.card_border_radius | divided_by: 2 }}px;
-    }
-    
-    .card-badge-{{ section.id }} {
-        background-color: {{ section.settings.badge_bg_color }};
-        color: {{ section.settings.badge_text_color }};
-    }
-
-    .nav-btn-{{ section.id }} {
-        background-color: {{ section.settings.arrow_bg_color }};
-        color: {{ section.settings.arrow_color }};
-    }
-
-    /* Dynamic Arrow Positioning */
-    .carousel-section-wrapper-{{ section.id }} .nav-btn {
-        {% case section.settings.arrow_position %}
-            {% when 'middle' %}
-                top: 50%;
-                bottom: auto;
-                transform: translateY(-50%);
-            {% when 'top_left' %}
-                top: 20px;
-                bottom: auto;
-                transform: none;
-            {% when 'top_right' %}
-                top: 20px;
-                bottom: auto;
-                transform: none;
-            {% when 'bottom_left' %}
-                top: auto;
-                bottom: 20px;
-                transform: none;
-            {% when 'bottom_right' %}
-                top: auto;
-                bottom: 20px;
-                transform: none;
-            {% when 'bottom_center' %}
-                top: auto;
-                bottom: 20px;
-                transform: none;
-        {% endcase %}
-    }
-
-    .carousel-section-wrapper-{{ section.id }} .nav-left {
-        {% case section.settings.arrow_position %}
-            {% when 'middle' %}
-                left: 20px;
-                right: auto;
-            {% when 'top_left' %}
-                left: 20px;
-                right: auto;
-            {% when 'top_right' %}
-                left: auto;
-                right: 80px;
-            {% when 'bottom_left' %}
-                left: 20px;
-                right: auto;
-            {% when 'bottom_right' %}
-                left: auto;
-                right: 80px;
-            {% when 'bottom_center' %}
-                left: 50%;
-                right: auto;
-                margin-left: -60px;
-        {% endcase %}
-    }
-
-    .carousel-section-wrapper-{{ section.id }} .nav-right {
-        {% case section.settings.arrow_position %}
-            {% when 'middle' %}
-                left: auto;
-                right: 20px;
-            {% when 'top_left' %}
-                left: 80px;
-                right: auto;
-            {% when 'top_right' %}
-                left: auto;
-                right: 20px;
-            {% when 'bottom_left' %}
-                left: 80px;
-                right: auto;
-            {% when 'bottom_right' %}
-                left: auto;
-                right: 20px;
-            {% when 'bottom_center' %}
-                left: 50%;
-                right: auto;
-                margin-left: 10px;
-        {% endcase %}
-    }
-{%- endstyle -%}
-
-<div class="carousel-section-outer-{{ section.id }}">
-    
-    {% if section.settings.heading != blank or section.settings.subheading != blank %}
-        <div class="carousel-section-header-{{ section.id }}">
-            <div class="carousel-heading-inline" style="display: inline-flex; align-items: baseline; gap: 10px; flex-wrap: wrap; justify-content: inherit;">
-                {% if section.settings.label_text != blank %}
-                    <small class="carousel-label-{{ section.id }}" style="color: {{ section.settings.label_color }}; font-size: {{ section.settings.label_size }}px; font-weight: bold;">{{ section.settings.label_text }}</small>
-                {% endif %}
-                {% if section.settings.heading != blank %}
-                    <h2 class="carousel-heading-{{ section.id }}" style="margin: 0;">{{ section.settings.heading }}</h2>
+    <div class="carousel-container">
+        {% if section.settings.heading != blank %}
+            <div style="position: absolute; top: 20px; left: 0; width: 100%; text-align: center; z-index: 5;">
+                <h2 style="margin: 0; font-size: 2rem; color: {{ text_color }};">{{ section.settings.heading }}</h2>
+                {% if section.settings.subheading != blank %}
+                    <div style="margin-top: 5px; color: {{ text_color }}; opacity: 0.8;">{{ section.settings.subheading }}</div>
                 {% endif %}
             </div>
-            {% if section.settings.subheading != blank %}
-                <div class="carousel-subheading-{{ section.id }}" style="margin-top: 10px;">{{ section.settings.subheading }}</div>
-            {% endif %}
-        </div>
-    {% endif %}
+        {% endif %}
 
-    <div class="carousel-section-wrapper carousel-section-wrapper-{{ section.id }}" tabindex="0" aria-label="3D Carousel">
-    <div class="carousel-overlay-{{ section.id }}"></div>
-    
-    <div class="carousel-container carousel-container-inner-{{ section.id }}">
-        <div class="scene scene-{{ section.id }}">
-            <div class="carousel" id="carousel-{{ section.id }}">
-                
-                {% assign products_source = section.blocks %}
+        <div class="carousel" id="carousel-{{ section.id }}">
+            <div class="carousel-track">
+                {% comment %} Determine Items {% endcomment %}
+                {% assign items = '' %}
                 {% assign source_type = 'blocks' %}
                 
                 {% if section.settings.product_list != blank %}
-                    {% assign products_source = section.settings.product_list %}
-                    {% assign source_type = 'product_list' %}
+                    {% assign source_type = 'products' %}
+                    {% assign items = section.settings.product_list %}
                 {% elsif section.settings.collection != blank %}
-                    {% assign products_source = section.settings.collection.products | limit: section.settings.product_limit %}
                     {% assign source_type = 'collection' %}
+                    {% assign items = collections[section.settings.collection].products | limit: section.settings.product_limit %}
+                {% else %}
+                    {% assign items = section.blocks %}
                 {% endif %}
 
-                {% for item in products_source %}
+                {% for item in items %}
                     {% assign title = '' %}
                     {% assign price = '' %}
                     {% assign image = '' %}
                     {% assign url = '' %}
                     {% assign badge = '' %}
-                    {% assign compare_at_price = 0 %}
 
                     {% if source_type == 'blocks' %}
                         {% assign title = item.settings.title %}
                         {% assign price = item.settings.price %}
                         {% assign image = item.settings.image %}
                         {% assign url = item.settings.link %}
-                        {% assign badge = item.settings.badge_text %}
-                        
-                        {% if item.settings.product != blank %}
-                            {% assign p = item.settings.product %}
-                            {% if title == blank or title == 'Product Title' %}{% assign title = p.title %}{% endif %}
-                            {% if price == blank or price == '$100.00' %}{% assign price = p.price | money %}{% endif %}
-                            {% if image == blank %}{% assign image = p.featured_image %}{% endif %}
-                            {% if url == blank %}{% assign url = p.url %}{% endif %}
-                            
-                            {% if section.settings.show_badge and badge == 'New' %}
-                                {% if p.compare_at_price > p.price %}
-                                    {% assign badge = 'Sale' %}
-                                {% elsif p.available == false %}
-                                    {% assign badge = 'Sold Out' %}
-                                {% endif %}
-                            {% endif %}
-                        {% endif %}
                     {% else %}
                         {% assign title = item.title %}
                         {% assign price = item.price | money %}
                         {% assign image = item.featured_image %}
                         {% assign url = item.url %}
-                        {% assign compare_at_price = item.compare_at_price %}
-                        
-                        {% if section.settings.show_badge %}
-                            {% if compare_at_price > item.price %}
-                                {% assign badge = 'Sale' %}
-                            {% elsif item.available == false %}
-                                {% assign badge = 'Sold Out' %}
-                            {% endif %}
-                        {% endif %}
+                        {% if item.compare_at_price > item.price %}{% assign badge = 'Sale' %}{% endif %}
                     {% endif %}
 
                     <div class="card card-{{ section.id }}">
-                        <div class="card-inner-{{ section.id }}" style="animation-delay: {{ forloop.index | times: 0.1 }}s;">
+                        <div class="card-inner-{{ section.id }}">
                             <div class="card-image-wrapper">
                                 {% if image != blank %}
                                     <img src="{{ image | image_url: width: 600 }}" alt="{{ title }}" loading="lazy">
@@ -1148,16 +273,16 @@
                             </div>
                             
                             <div class="card-content">
-                                {% if section.settings.show_badge and badge != blank %}
-                                    <span class="tag card-badge-{{ section.id }}">{{ badge }}</span>
+                                {% if show_badge and badge != blank %}
+                                    <span class="tag">{{ badge }}</span>
                                 {% endif %}
                                 
-                                <h3>{{ title }}</h3>
-                                <div class="price">{{ price }}</div>
+                                <h3 style="color: {{ text_color }}">{{ title }}</h3>
+                                <div class="price" style="color: {{ text_color }}">{{ price }}</div>
                                 
-                                {% if section.settings.show_button %}
+                                {% if show_button %}
                                     <div class="card-actions">
-                                        <span class="btn-view card-btn-{{ section.id }}">{{ section.settings.button_text }}</span>
+                                        <span class="btn-view">{{ button_text }}</span>
                                     </div>
                                 {% endif %}
                             </div>
@@ -1168,31 +293,30 @@
                         </div>
                     </div>
                 {% endfor %}
-
             </div>
         </div>
     </div>
     
-    {% if section.settings.show_arrows %}
-        <button class="nav-btn nav-btn-{{ section.id }} nav-left {% if section.settings.enable_arrow_hover_effect %}hover-effect{% endif %}" aria-label="Rotate Left">
+    {% if show_arrows %}
+        <button class="nav-btn nav-btn-{{ section.id }} nav-left" aria-label="Rotate Left">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
         </button>
-        <button class="nav-btn nav-btn-{{ section.id }} nav-right {% if section.settings.enable_arrow_hover_effect %}hover-effect{% endif %}" aria-label="Rotate Right">
+        <button class="nav-btn nav-btn-{{ section.id }} nav-right" aria-label="Rotate Right">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
         </button>
     {% endif %}
 
-    {% if section.settings.show_dots %}
+    {% if show_dots %}
         <div class="carousel-dots carousel-dots-{{ section.id }}"></div>
     {% endif %}
 
-    <div class="controls" style="color: {{ section.settings.text_color }}">
+    <div class="controls" style="color: {{ text_color }}">
         <p>Drag, Scroll or Use Arrows</p>
     </div>
 </div>
 
 <style>
-    /* Shared Structural CSS */
+    /* Essential CSS */
     .carousel-section-wrapper * { box-sizing: border-box; }
     .carousel-section-wrapper {
         display: flex;
@@ -1200,9 +324,8 @@
         align-items: center;
         width: 100%;
         touch-action: none;
-        outline: none; /* Remove default focus outline */
+        outline: none;
     }
-    
     .carousel-container {
         position: relative;
         z-index: 2;
@@ -1211,215 +334,115 @@
         align-items: center;
         width: 100%;
         height: 100%;
+        perspective: 1000px; /* Essential for 3D */
     }
-
     .carousel {
         width: 100%;
         height: 100%;
         position: absolute;
         transform-style: preserve-3d;
     }
-
     .card {
         position: absolute;
-        left: 0;
-        top: 0;
+        left: 0; 
+        right: 0;
+        margin: auto;
+        top: 15%; /* Center vertically approx */
+        width: 280px; /* Default width */
+        height: 400px; /* Default height */
         backface-visibility: visible;
-        -webkit-backface-visibility: visible;
-        transition: transform 0.1s, box-shadow 0.3s;
+        transition: transform 0.1s;
     }
-    
-    /* Modern Hover Effect */
-    .card:hover {
-        z-index: 100; 
+    .card-inner-{{ section.id }} {
+        width: 100%;
+        height: 100%;
+        background: {{ section.settings.card_style == 'glass' ? 'rgba(255,255,255,0.7)' : '#ffffff' }};
+        {% if section.settings.card_style == 'glass' %}backdrop-filter: blur(10px);{% endif %}
+        border-radius: 16px;
+        padding: 15px;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
     }
-    .card:hover .card-image-wrapper img {
-        transform: scale(1.05);
-    }
-
     .card-image-wrapper {
         width: 100%;
-        height: 55%; 
-        margin-bottom: 15px;
-        border-radius: inherit; /* Inherit from card */
+        height: 60%;
+        border-radius: 12px;
         overflow: hidden;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        position: relative;
+        margin-bottom: 10px;
     }
-
     .card-image-wrapper img {
         width: 100%;
         height: 100%;
-        object-fit: contain;
-        transition: transform 0.5s ease;
-        -webkit-user-drag: none; /* Prevent native drag */
-        user-select: none; /* Prevent selection */
-        -moz-user-select: none;
-        -webkit-user-select: none;
-        -ms-user-select: none;
+        object-fit: cover;
     }
-
-    .placeholder-svg {
-        width: 100%;
-        height: 100%;
-        background-color: #eee;
-    }
-
     .card-content {
         flex: 1;
         display: flex;
         flex-direction: column;
-        justify-content: space-between;
-        pointer-events: none; /* Let clicks pass to overlay */
-        position: relative;
+        align-items: center;
+        text-align: center;
     }
-
-    .tag {
-        position: absolute;
-        top: -190px; /* Position over image */
-        left: 0px;
-        padding: 4px 12px;
+    .btn-view {
+        background: #000;
+        color: #fff;
+        padding: 8px 20px;
         border-radius: 20px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        z-index: 2;
-    }
-    
-    /* Adjust tag position if not over image */
-    .card-content .tag {
-        position: static;
-        align-self: flex-start;
-        margin-bottom: 8px;
-        margin-top: -10px;
-    }
-
-    .card h3 {
-        margin: 0 0 5px 0;
-        line-height: 1.3;
-        font-weight: 600;
-        font-family: var(--font-heading-family, sans-serif);
-        overflow: hidden;
-        text-overflow: ellipsis;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-    }
-
-    .price {
-        font-weight: 700;
-        margin-bottom: 10px;
-        font-family: var(--font-body-family, sans-serif);
-    }
-
-    .card-actions {
+        font-size: 0.8rem;
+        display: inline-block;
         margin-top: auto;
     }
-
-    .btn-view {
-        display: inline-block;
-        padding: 8px 16px;
-        font-size: 0.9rem;
-        font-weight: 500;
-        text-align: center;
-        width: 100%;
-        transition: opacity 0.2s;
-    }
-
     .card-link-overlay {
         position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
+        top: 0; left: 0; width: 100%; height: 100%;
         z-index: 10;
         cursor: pointer;
     }
-    
-    .card-link-overlay:hover ~ .card-content .btn-view {
-        opacity: 0.9;
-    }
-
-    .controls {
-        position: absolute;
-        bottom: 20px;
-        opacity: 0.6;
-        font-weight: 600;
-        pointer-events: none;
-        font-family: sans-serif;
-        z-index: 5;
-        text-transform: uppercase;
-        font-size: 0.8rem;
-        letter-spacing: 2px;
-    }
-
     .nav-btn {
         position: absolute;
         top: 50%;
         transform: translateY(-50%);
-        width: 50px;
-        height: 50px;
+        width: 40px;
+        height: 40px;
         border-radius: 50%;
         border: none;
+        background: rgba(255,255,255,0.8);
+        cursor: pointer;
+        z-index: 20;
         display: flex;
         align-items: center;
         justify-content: center;
-        cursor: pointer;
-        z-index: 10;
-        opacity: 1;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-        transition: none; /* Remove all transitions */
     }
-
-    .nav-btn:hover {
-        opacity: 1;
-    }
-
     .nav-left { left: 20px; }
     .nav-right { right: 20px; }
-
-    .carousel-dots-{{ section.id }} {
+    .controls {
         position: absolute;
-        bottom: 40px;
-        left: 50%;
-        transform: translateX(-50%);
-        display: flex;
-        gap: 12px;
-        z-index: 10;
+        bottom: 10px;
+        width: 100%;
+        text-align: center;
+        font-size: 0.8rem;
+        opacity: 0.6;
     }
-    .carousel-dot-{{ section.id }} {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        background: rgba(0,0,0,0.3);
-        cursor: pointer;
-        transition: all 0.3s;
-        border: 1px solid rgba(255,255,255,0.3);
+    .tag {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        background: #000;
+        color: #fff;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        font-weight: bold;
     }
-    .carousel-dot-{{ section.id }}:hover {
-        background: {{ section.settings.text_color | color_modify: 'alpha', 0.5 }};
-    }
-    .carousel-dot-{{ section.id }}.active {
-        background: {{ section.settings.text_color }};
-        transform: scale(1.3);
-        box-shadow: 0 0 10px rgba(255,255,255,0.5);
-    }
-
+    
     @media (max-width: 768px) {
         .carousel-section-wrapper-{{ section.id }} {
             height: {{ section.settings.mobile_height }}px;
         }
-        
-        .nav-btn {
-            width: 40px;
-            height: 40px;
+        .card {
+            width: 200px;
+            height: 300px;
         }
-        .nav-left { left: 10px; }
-        .nav-right { right: 10px; }
     }
 </style>
 
@@ -1437,15 +460,13 @@
         });
 
         function initCarousel(sectionId) {
-            const wrapperId = `carousel-${sectionId}`;
-            const carousel = document.getElementById(wrapperId);
-            if (!carousel) return;
+            const wrapper = document.querySelector(`.carousel-section-wrapper-${sectionId}`);
+            const carousel = document.getElementById(`carousel-${sectionId}`);
+            if (!carousel || !wrapper) return;
 
             const cards = carousel.querySelectorAll(".card");
-            const wrapper = carousel.closest(".carousel-section-wrapper");
             const navLeft = wrapper.querySelector(".nav-left");
             const navRight = wrapper.querySelector(".nav-right");
-
             const numberOfCards = cards.length;
             if (numberOfCards === 0) return;
 
@@ -1455,603 +476,146 @@
             
             window.addEventListener('resize', () => {
                 radius = window.innerWidth < 768 ? radiusMobile : radiusDesktop;
+                updatePositions();
             });
 
             const angleIncrement = 360 / numberOfCards;
-            
-            // Auto Rotate Settings
             const autoRotate = {{ section.settings.auto_rotate }};
-            const rotationDir = "{{ section.settings.rotation_direction }}";
+            const rotationDir = "{{ rotation_direction }}";
             const baseSpeed = {{ section.settings.auto_rotate_speed }} * 0.05;
             const autoRotateSpeed = rotationDir === 'right' ? -baseSpeed : baseSpeed;
-            const pauseOnHover = {{ section.settings.pause_on_hover }};
-            const enableSmartScroll = {{ section.settings.enable_smart_scroll | default: true }};
-            const enableHorizontalScroll = {{ section.settings.enable_horizontal_scroll | default: true }};
-            const pauseOnCardsOnly = {{ section.settings.pause_on_cards_only | default: true }};
+            const pauseOnHover = {{ pause_on_hover }};
             
-            const enableKeyboard = {{ section.settings.enable_keyboard }};
-            const enableSnap = {{ section.settings.enable_snap | default: true }};
-            const entranceAnim = "{{ section.settings.entrance_animation }}";
-            
-            // Entrance Animation Logic
-            if (entranceAnim !== 'none') {
-                const observer = new IntersectionObserver((entries) => {
-                    entries.forEach(entry => {
-                        if (entry.isIntersecting) {
-                            wrapper.classList.add('animate-in');
-                            const innerCards = wrapper.querySelectorAll('.card-inner-{{ section.id }}');
-                            innerCards.forEach(card => {
-                                if (entranceAnim === 'fade-up') card.style.animation = `fadeUp 0.8s ease-out forwards`;
-                                else if (entranceAnim === 'zoom-in') card.style.animation = `zoomIn 0.8s ease-out forwards`;
-                                // Re-apply float if needed after entrance
-                                if ({{ section.settings.enable_float }}) {
-                                    setTimeout(() => {
-                                        card.style.animation = `float-{{ section.id }} 4s ease-in-out infinite`;
-                                    }, 1000 + (innerCards.length * 100));
-                                }
-                            });
-                            observer.unobserve(wrapper);
-                        }
-                    });
-                }, { threshold: 0.2 });
-                observer.observe(wrapper);
-            }
-
-            // Initialize card positions
-            cards.forEach((card, index) => {
-                const angle = index * angleIncrement;
-                const baseTransform = `rotateY(${angle}deg) translateZ(${radius}px)`;
-                card.style.transform = baseTransform;
-                
-                // Card Tilt Effect
-                if ({{ section.settings.card_tilt }}) {
-                    card.addEventListener('mousemove', (e) => {
-                        const rect = card.getBoundingClientRect();
-                        const x = e.clientX - rect.left;
-                        const y = e.clientY - rect.top;
-                        const centerX = rect.width / 2;
-                        const centerY = rect.height / 2;
-                        
-                        const rotateX = ((y - centerY) / centerY) * -10; 
-                        const rotateY = ((x - centerX) / centerX) * 10;
-                        
-                        card.style.transform = `${baseTransform} rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
-                    });
-                    
-                    card.addEventListener('mouseleave', () => {
-                        card.style.transform = baseTransform;
-                    });
-                }
-                
-                // Prevent native drag on images inside cards
-                const imgs = card.querySelectorAll('img');
-                imgs.forEach(img => {
-                    img.addEventListener('dragstart', (e) => e.preventDefault());
-                });
-
-                // Prevent link navigation if dragged
-                const linkOverlay = card.querySelector('.card-link-overlay');
-                if (linkOverlay) {
-                    linkOverlay.addEventListener('click', (e) => {
-                        if (isDraggingWasTrue) {
-                            e.preventDefault();
-                            e.stopPropagation();
-                        }
-                    });
-                }
-
-                // Click to Center
-                card.addEventListener('click', (e) => {
-                    // Only if not dragging (movedDistance check)
-                    // If drag was significant, don't trigger click action
-                    if (isDraggingWasTrue) {
-                        isDraggingWasTrue = false;
-                        e.preventDefault();
-                        e.stopPropagation();
-                        return;
-                    }
-                    
-                    if (Math.abs(velocity) > 0.1) return;
-                    
-                    // ... logic to center ...
-                    
-                    const currentRotation = targetAngle % 360;
-                    // We want the card's angle (index * angleIncrement) to be at 0 (front)
-                    // But wait, the carousel rotates, the cards are fixed relative to carousel.
-                    // Card 0 is at 0 deg. Card 1 at 60 deg.
-                    // To bring Card 1 to front (0 deg absolute), carousel must rotate to -60 deg.
-                    const cardAngle = index * angleIncrement;
-                    const desiredCarouselAngle = -cardAngle;
-                    
-                    // Find shortest path from current targetAngle to a generic (desiredCarouselAngle + k*360)
-                    // Normalize current targetAngle to 0-360 relative base
-                    // Easier: just find difference
-                    
-                    let currentBase = targetAngle % 360;
-                    if (currentBase < 0) currentBase += 360; // 0 to 360
-                    
-                    let desiredBase = desiredCarouselAngle % 360;
-                    if (desiredBase < 0) desiredBase += 360; // 0 to 360
-                    
-                    let diff = desiredBase - currentBase;
-                    if (diff > 180) diff -= 360;
-                    if (diff < -180) diff += 360;
-                    
-                    targetAngle += diff;
-                    
-                    velocity = 0;
-                    isInteracting = true;
-                    // Keep interacting state for a bit so it snaps/stays
-                    clearTimeout(wrapper._interactTimeout);
-                    wrapper._interactTimeout = setTimeout(() => isInteracting = false, 2000);
-                });
-            });
-
-            // Dots Logic
-            const dotsContainer = wrapper.querySelector(`.carousel-dots-{{ section.id }}`);
-            let dots = [];
-            if (dotsContainer) {
-                cards.forEach((_, i) => {
-                    const dot = document.createElement('div');
-                    dot.className = `carousel-dot-{{ section.id }}`;
-                    dot.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        const cardAngle = i * angleIncrement;
-                        let currentBase = targetAngle % 360;
-                        if (currentBase < 0) currentBase += 360;
-                        let desiredBase = -cardAngle % 360;
-                        if (desiredBase < 0) desiredBase += 360;
-                        let diff = desiredBase - currentBase;
-                        if (diff > 180) diff -= 360;
-                        if (diff < -180) diff += 360;
-                        
-                        targetAngle += diff;
-                        velocity = 0;
-                        startInteraction();
-                        endInteraction();
-                    });
-                    dotsContainer.appendChild(dot);
-                    dots.push(dot);
-                });
-            }
-
-            // Scroll Sync
-            if ({{ section.settings.scroll_sync }}) {
-                let lastScrollY = window.scrollY;
-                window.addEventListener('scroll', () => {
-                    const scrollY = window.scrollY;
-                    const delta = scrollY - lastScrollY;
-                    lastScrollY = scrollY;
-                    
-                    if (Math.abs(delta) > 0) {
-                        targetAngle += delta * 0.1;
-                        velocity = 0;
-                        isInteracting = true;
-                        clearTimeout(wrapper._scrollTimeout);
-                        wrapper._scrollTimeout = setTimeout(() => isInteracting = false, 100);
-                    }
-                }, { passive: true });
-            }
-
-            // Gyroscope
-            if ({{ section.settings.gyro_control }} && window.DeviceOrientationEvent) {
-                window.addEventListener("deviceorientation", (event) => {
-                    const tilt = event.gamma;
-                    if (tilt && Math.abs(tilt) > 2) { 
-                        targetAngle += tilt * 0.05;
-                        velocity = 0;
-                        isInteracting = true;
-                    }
-                }, true);
-            }
-
-            // Variables for interaction
-            let isDragging = false;
-            let isDraggingWasTrue = false; // Flag to check if drag happened during click
-            let startX = 0;
-            let lastX = 0;
             let currentAngle = 0;
             let targetAngle = 0;
             let velocity = 0;
+            let isDragging = false;
+            let startX = 0;
+            let lastX = 0;
+            let isInteracting = false;
             let animationId;
-            let isInteracting = false; 
-            
-            const friction = {{ section.settings.friction }} / 100; 
-            const sensitivity = {{ section.settings.rotation_sensitivity }};
 
-            if (carousel.dataset.animationId) {
-                cancelAnimationFrame(carousel.dataset.animationId);
+            function updatePositions() {
+                cards.forEach((card, index) => {
+                    const angle = index * angleIncrement;
+                    // Initial base transform logic
+                });
             }
 
             function animate() {
                 if (!isDragging) {
-                    velocity *= friction;
+                    velocity *= 0.95; // Friction
+                    if (Math.abs(velocity) < 0.001) velocity = 0;
                     
-                    // Snap Logic
-                    if (Math.abs(velocity) < 0.5) { // Threshold for snapping
-                         if (enableSnap && (isInteracting || !autoRotate)) {
-                             const nearest = Math.round(targetAngle / angleIncrement) * angleIncrement;
-                             // Smooth snap
-                             targetAngle += (nearest - targetAngle) * 0.05;
-                         }
-                    }
-
-                    if (Math.abs(velocity) < 0.001) {
-                        velocity = 0;
-                        if (autoRotate && !isInteracting) {
-                            targetAngle += autoRotateSpeed;
-                        }
+                    if (velocity === 0 && autoRotate && !isInteracting) {
+                        targetAngle += autoRotateSpeed;
                     } else {
                         targetAngle += velocity;
                     }
                 }
-
-                // Smooth interpolation for visual flow
+                
                 currentAngle += (targetAngle - currentAngle) * 0.1;
-                if (Math.abs(targetAngle - currentAngle) < 0.01) currentAngle = targetAngle;
-
+                
+                // Rotate the entire carousel container
                 carousel.style.transform = `rotateY(${currentAngle}deg)`;
 
-                // Update cards for Zoom/Wave/Opacity/Z-index
-                // We need to calculate properties for each card based on currentAngle
+                // Counter-rotate cards so they face forward (billboard effect) or just arrange them
+                // For 3D carousel, we typically rotate the carousel and items are fixed in circle
+                // But items need to be placed in circle first.
+                
                 cards.forEach((card, i) => {
-                     // Calculate relative angle
-                     const cardBaseAngle = i * angleIncrement;
-                     let relativeAngle = (cardBaseAngle + currentAngle) % 360;
-                     if (relativeAngle < 0) relativeAngle += 360;
-                     if (relativeAngle > 180) relativeAngle -= 360; // -180 to 180 range
+                     const cardAngle = i * angleIncrement;
+                     // Position card in 3D space
+                     // rotateY(cardAngle) -> points card outwards from center
+                     // translateZ(radius) -> pushes it out
+                     card.style.transform = `rotateY(${cardAngle}deg) translateZ(${radius}px)`;
                      
-                     // Z-index based on proximity to 0 (front)
-                     // Smaller absolute angle = higher z-index
-                     const absAngle = Math.abs(relativeAngle);
-                     const zIndex = 1000 - Math.round(absAngle);
-                     card.style.zIndex = zIndex;
+                     // Optional: Opacity/Z-index based on rotation relative to camera
+                     // Camera is at 0deg (front)
+                     // Card's absolute angle = cardAngle + currentAngle
+                     let absoluteAngle = (cardAngle + currentAngle) % 360;
+                     if (absoluteAngle < 0) absoluteAngle += 360;
+                     if (absoluteAngle > 180) absoluteAngle -= 360;
                      
-                     // Active Zoom
-                     if ({{ section.settings.active_zoom }}) {
-                         const scale = (absAngle < (angleIncrement / 2)) ? 1.15 : 1.0;
-                         // We can't overwrite transform directly because it has translateZ/rotateY base
-                         // But we can update it if we reconstruct it or use a child element for scale?
-                         // Better: reconstruct the transform string
-                         
-                         const baseTransform = `rotateY(${cardBaseAngle}deg) translateZ(${radius}px)`;
-                         let extraTransform = '';
-                         
-                         if (scale > 1.0) extraTransform += ` scale(${scale})`;
-                         
-                         // Wave Animation
-                         if ({{ section.settings.enable_wave }}) {
-                             const time = Date.now() * 0.002;
-                             const waveY = Math.sin(time + (i * 0.5)) * 20;
-                             extraTransform += ` translateY(${waveY}px)`;
-                         }
-                         
-                         // Spread on Hover
-                         if ({{ section.settings.hover_spread }} && wrapper.matches(':hover')) {
-                             // We need to modify the translateZ radius
-                             // This is hard to inject into baseTransform string without regex or reconstructing
-                             // Let's just assume baseTransform is fixed and we modify it? No.
-                             // Reconstruct:
-                             const currentRadius = radius * 1.5;
-                             card.style.transform = `rotateY(${cardBaseAngle}deg) translateZ(${currentRadius}px) ${extraTransform}`;
-                         } else {
-                             card.style.transform = baseTransform + extraTransform;
-                         }
-                     } else {
-                         // Non-zoom path (still needs wave/spread check)
-                         const baseTransform = `rotateY(${cardBaseAngle}deg) translateZ(${radius}px)`;
-                         let extraTransform = '';
-                         
-                         if ({{ section.settings.enable_wave }}) {
-                             const time = Date.now() * 0.002;
-                             const waveY = Math.sin(time + (i * 0.5)) * 20;
-                             extraTransform += ` translateY(${waveY}px)`;
-                         }
-                         
-                         if ({{ section.settings.hover_spread }} && wrapper.matches(':hover')) {
-                             const currentRadius = radius * 1.5;
-                             card.style.transform = `rotateY(${cardBaseAngle}deg) translateZ(${currentRadius}px) ${extraTransform}`;
-                         } else {
-                             card.style.transform = baseTransform + extraTransform;
-                         }
-                     }
+                     // z-index: closer to 0 is higher
+                     card.style.zIndex = 1000 - Math.round(Math.abs(absoluteAngle));
                      
-                     // Opacity Fade for back cards
-                     // Map 180deg (back) to 0.2 opacity, 0deg (front) to 1.0
-                     // FIX: Keep front cards fully opaque (safe zone) to prevent bleed-through
-                     
-                     if ({{ section.settings.enable_depth_fade }}) {
-                        let opacity = 1;
-                        if (absAngle > 15) { // 15 degrees safe zone
-                           opacity = 1 - ((absAngle - 15) / 165) * 0.8;
-                        }
-                        const minOpacity = {{ section.settings.min_depth_opacity }} / 100;
-                        card.style.opacity = Math.max(minOpacity, opacity);
-                     } else {
-                        card.style.opacity = 1;
+                     // Opacity depth fade
+                     if ({{ enable_depth_fade }}) {
+                        let opacity = 1 - (Math.abs(absoluteAngle) / 180);
+                        if (opacity < 0.2) opacity = 0.2;
+                        card.style.opacity = opacity;
                      }
                 });
                 
-                // Update Dots
-                if (dots.length > 0) {
-                    let normalized = (-currentAngle % 360);
-                    if (normalized < 0) normalized += 360;
-                    let activeIndex = Math.round(normalized / angleIncrement) % numberOfCards;
-                    
-                    dots.forEach((dot, i) => {
-                        if (i === activeIndex) dot.classList.add('active');
-                        else dot.classList.remove('active');
-                    });
-                }
-
                 animationId = requestAnimationFrame(animate);
-                carousel.dataset.animationId = animationId;
             }
-
+            
             animate();
 
-            // Interaction Helpers
-            const startInteraction = () => { 
-                isInteracting = true; 
-                clearTimeout(wrapper._interactTimeout);
-            };
-            const endInteraction = () => { 
-                // Delay ending interaction to allow for reading/snapping
-                clearTimeout(wrapper._interactTimeout);
-                wrapper._interactTimeout = setTimeout(() => {
-                    isInteracting = false; 
-                }, 2000);
-            };
-            
-            if (pauseOnHover) {
-                if (pauseOnCardsOnly) {
-                    cards.forEach(card => {
-                        card.addEventListener('mouseenter', startInteraction);
-                        card.addEventListener('mouseleave', endInteraction);
-                    });
-                } else {
-                    wrapper.addEventListener('mouseenter', startInteraction);
-                    wrapper.addEventListener('mouseleave', endInteraction);
-                }
-            }
-
-            // Button Events
-            if (navLeft) {
-                navLeft.addEventListener("click", (e) => {
-                    e.stopPropagation(); 
-                    targetAngle += angleIncrement;
-                    velocity = 0;
-                    startInteraction();
-                    endInteraction(); // Set timeout
-                });
-            }
-            if (navRight) {
-                navRight.addEventListener("click", (e) => {
-                    e.stopPropagation();
-                    targetAngle -= angleIncrement;
-                    velocity = 0;
-                    startInteraction();
-                    endInteraction();
-                });
-            }
-
-            // Keyboard Events
-            if (enableKeyboard) {
-                wrapper.addEventListener("keydown", (e) => {
-                    if (e.key === "ArrowLeft") {
-                        targetAngle += angleIncrement;
-                        velocity = 0;
-                    } else if (e.key === "ArrowRight") {
-                        targetAngle -= angleIncrement;
-                        velocity = 0;
-                    }
-                });
-            }
-
-            // Scroll Lock Logic
-             let isScrollLocked = true;
-             let scrollAccumulator = 0;
-             const scrollThreshold = 400; // Threshold for release
-             let resetLockTimer;
-
-             // Reset lock on mouse enter
-             wrapper.addEventListener('mouseenter', () => {
-                 isScrollLocked = true;
-                 scrollAccumulator = 0;
-             });
-             
-             // Also reset on mouse leave to ensure next entry is locked
-             wrapper.addEventListener('mouseleave', () => {
-                 isScrollLocked = true;
-                 scrollAccumulator = 0;
-             });
-
-             // Wheel Event (2-Finger Scroll)
-             const onWheel = (e) => {
-                  // Reset lock if scrolling stops (allows re-locking for reverse scroll)
-                  clearTimeout(resetLockTimer);
-                  resetLockTimer = setTimeout(() => {
-                      isScrollLocked = true;
-                      scrollAccumulator = 0;
-                  }, 200);
-
-                   // Strict Full View Activation Logic
-                   // Only activate if the section is FULLY visible (or takes up most of the screen)
-                   // and ignore mouse hover position completely.
-                   const rect = wrapper.getBoundingClientRect();
-                   const windowHeight = window.innerHeight;
-                   
-                   // Check if top is visible (>= 0) and bottom is visible (<= windowHeight)
-                   // Allow a small tolerance (e.g., -10px to +10px)
-                   const isFullyVisible = (rect.top >= -50) && (rect.bottom <= windowHeight + 50);
-                   
-                   // Also handle case where section is TALLER than screen (cover mode)
-                   // If section covers 90% of screen, treat as "full view"
-                   const overlap = Math.max(0, Math.min(rect.bottom, windowHeight) - Math.max(rect.top, 0));
-                   const screenCoverage = overlap / windowHeight;
-                   const isCoveringScreen = screenCoverage > 0.9;
-
-                   const isActive = isFullyVisible || isCoveringScreen;
-
-                   if (!isActive) {
-                       return; // Allow native scroll if not fully in view
-                   }
-
-                    if (isScrollLocked) {
-                        // Combine vertical and horizontal scroll deltas
-                        let delta = e.deltaY;
-                        
-                        // Add horizontal scroll if enabled
-                        if (enableHorizontalScroll) {
-                            delta += e.deltaX;
-                        }
-
-                        // Normalize angle to positive 0-360 range for calculations
-                        // targetAngle decreases for Next, so -targetAngle is positive progress
-                        let effectiveAngle = (-targetAngle) % 360;
-                        if (effectiveAngle < 0) effectiveAngle += 360; 
-                        
-                        // Define boundaries based on angles
-                        const lastCardAngle = (numberOfCards - 1) * angleIncrement;
-                        // Reduced buffer to make it stricter at the edges
-                        const boundaryBuffer = angleIncrement * 0.1; 
-                        
-                        // Check End Boundary (Scrolling Next/Down)
-                        // If we are past the Last Card's center plus buffer, we are trying to wrap to Start
-                        if (effectiveAngle > (lastCardAngle + boundaryBuffer) && delta > 0) {
-                            isScrollLocked = false;
-                            return; // Allow native scroll immediately
-                        }
-                        
-                        // Check Start Boundary (Scrolling Prev/Up)
-                        // If we are before the First Card (near 0) and trying to go negative (wrap to End)
-                        if (effectiveAngle < boundaryBuffer && delta < 0) {
-                            isScrollLocked = false;
-                            return; // Allow native scroll immediately
-                        }
-                        
-                        // Special Case: If we are effectively AT the boundary (within buffer) AND trying to go further
-                        // We should probably unlock to prevent "stuck" feeling
-                        if (Math.abs(effectiveAngle - lastCardAngle) < boundaryBuffer && delta > 0) {
-                             isScrollLocked = false;
-                             return;
-                        }
-                        if (effectiveAngle < boundaryBuffer && delta < 0) {
-                             isScrollLocked = false;
-                             return;
-                        }
-
-                        // If we are here, we are scrolling WITHIN the carousel items
-                        e.preventDefault(); // Stop page scroll
-                        e.stopPropagation(); // Stop event bubbling
-                        
-                        // Smooth Continuous Scroll
-                        const scrollSensitivity = 0.35; // Slightly increased for responsiveness
-                        targetAngle -= delta * scrollSensitivity;
-                        velocity = 0;
-                        startInteraction();
-                        endInteraction();
-                    }
-                  // If not locked, do nothing (allow native scroll)
-              };
-
-            // Mouse Events
+            // Interaction
             const onMouseDown = (e) => {
-                // Ignore if clicked on buttons
-                if (e.target.closest('.nav-btn')) return;
-                
-                // Allow drag on anything inside the wrapper
-                e.preventDefault(); // Prevent native drag/text selection
                 isDragging = true;
                 isInteracting = true;
-                isDraggingWasTrue = false; // Reset
                 startX = e.clientX;
                 lastX = e.clientX;
-                velocity = 0;
                 wrapper.style.cursor = "grabbing";
-                wrapper.focus(); 
             };
-
+            
             const onMouseMove = (e) => {
                 if (!isDragging) return;
-                e.preventDefault();
                 const x = e.clientX;
-                const deltaX = x - lastX;
-                
-                // If moved significantly, mark as dragged
-                if (Math.abs(x - startX) > 5) {
-                    isDraggingWasTrue = true;
-                }
-
-                targetAngle += deltaX * sensitivity;
-                velocity = deltaX * sensitivity;
+                const delta = x - lastX;
+                targetAngle += delta * 0.5;
+                velocity = delta * 0.5;
                 lastX = x;
             };
-
+            
             const onMouseUp = () => {
-                if (!isDragging) return;
                 isDragging = false;
                 wrapper.style.cursor = "grab";
-                // Don't immediately set isInteracting false here, let mouseleave handle it 
-                // or if we want auto-rotate to resume immediately:
-                // isInteracting = false; (But better to wait for mouseleave so user can read)
+                setTimeout(() => isInteracting = false, 1000);
             };
 
-            // Touch Events
-            const onTouchStart = (e) => {
-                if (e.target.closest('.nav-btn')) return;
+            wrapper.addEventListener('mousedown', onMouseDown);
+            window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('mouseup', onMouseUp);
+            
+            // Touch support
+            wrapper.addEventListener('touchstart', (e) => {
                 isDragging = true;
                 isInteracting = true;
-                startX = e.touches[0].clientX;
                 lastX = e.touches[0].clientX;
-                velocity = 0;
-            };
-
-            const onTouchMove = (e) => {
+            });
+            wrapper.addEventListener('touchmove', (e) => {
                 if (!isDragging) return;
                 const x = e.touches[0].clientX;
-                const deltaX = x - lastX;
-                targetAngle += deltaX * sensitivity;
-                velocity = deltaX * sensitivity;
+                const delta = x - lastX;
+                targetAngle += delta * 0.5;
+                velocity = delta * 0.5;
                 lastX = x;
-            };
-
-            const onTouchEnd = () => {
+            });
+            wrapper.addEventListener('touchend', () => {
                 isDragging = false;
-                // isInteracting = false; 
-                setTimeout(() => { isInteracting = false; }, 2000); // Resume auto-rotate after touch ends
-            };
-
-            // Cleanup previous listeners
-            if (enableSmartScroll) {
-                wrapper.removeEventListener("wheel", wrapper._onWheel);
+                setTimeout(() => isInteracting = false, 1000);
+            });
+            
+            if (navLeft) navLeft.addEventListener('click', () => {
+                targetAngle += angleIncrement;
+                isInteracting = true;
+                setTimeout(() => isInteracting = false, 1000);
+            });
+            
+            if (navRight) navRight.addEventListener('click', () => {
+                targetAngle -= angleIncrement;
+                isInteracting = true;
+                setTimeout(() => isInteracting = false, 1000);
+            });
+            
+            if (pauseOnHover) {
+                wrapper.addEventListener('mouseenter', () => isInteracting = true);
+                wrapper.addEventListener('mouseleave', () => isInteracting = false);
             }
-            wrapper.removeEventListener("mousedown", wrapper._onMouseDown);
-            window.removeEventListener("mousemove", wrapper._onMouseMove);
-            window.removeEventListener("mouseup", wrapper._onMouseUp);
-            wrapper.removeEventListener("touchstart", wrapper._onTouchStart);
-            window.removeEventListener("touchmove", wrapper._onTouchMove);
-            window.removeEventListener("touchend", wrapper._onTouchEnd);
-
-            // Add new listeners
-            if (enableSmartScroll) {
-                wrapper.addEventListener("wheel", onWheel, { passive: false });
-            }
-            wrapper.addEventListener("mousedown", onMouseDown);
-            window.addEventListener("mousemove", onMouseMove);
-            window.addEventListener("mouseup", onMouseUp);
-            wrapper.addEventListener("touchstart", onTouchStart, {passive: true});
-            window.addEventListener("touchmove", onTouchMove, {passive: true});
-            window.addEventListener("touchend", onTouchEnd);
-
-            // Store references for cleanup
-            wrapper._onWheel = onWheel;
-            wrapper._onMouseDown = onMouseDown;
-            wrapper._onMouseMove = onMouseMove;
-            wrapper._onMouseUp = onMouseUp;
-            wrapper._onTouchStart = onTouchStart;
-            wrapper._onTouchMove = onTouchMove;
-            wrapper._onTouchEnd = onTouchEnd;
         }
     })();
 </script>
