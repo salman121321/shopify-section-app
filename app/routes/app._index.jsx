@@ -478,6 +478,7 @@ export default function Index() {
                )}
             </Box>
 
+            </Layout>
           </BlockStack>
         </Grid.Cell>
       </Grid>
@@ -696,7 +697,7 @@ export default function Index() {
         <Toast content={toastMessage} onDismiss={() => setToastMessage(null)} />
       )}
 
-    </Page>
+      </Page>
     </Frame>
   );
 }
