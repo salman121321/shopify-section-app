@@ -34,18 +34,19 @@ import { authenticate } from "../shopify.server";
 export const loader = async ({ request }) => {
   const { session } = await authenticate.admin(request);
   
-  // Auto-redirect if required scopes are missing
+  // Check scopes but DO NOT redirect server-side (causes iframe error)
   const currentScopes = new Set(session.scope ? session.scope.split(",") : []);
   const requiredScopes = ["read_themes", "write_themes", "write_products"];
   const hasAllScopes = requiredScopes.every(scope => currentScopes.has(scope));
 
+  const shop = session.shop.replace(".myshopify.com", "");
+  
   if (!hasAllScopes) {
       console.log("Missing scopes. Current:", session.scope, "Required:", requiredScopes.join(","));
-      throw redirect(`/auth/login?shop=${session.shop}`);
+      return { shop, reauthRequired: true, host: session.shop };
   }
 
-  const shop = session.shop.replace(".myshopify.com", "");
-  return { shop };
+  return { shop, reauthRequired: false, host: session.shop };
 };
 
 // Live Preview Component for "My Custom Section"
@@ -156,10 +157,20 @@ const ThreeDCarouselPreview = ({ settings, compact = false }) => {
 };
 
 export default function Index() {
-  const { shop } = useLoaderData();
+  const { shop, reauthRequired, host } = useLoaderData();
   const themesFetcher = useFetcher();
   const sectionFetcher = useFetcher();
   
+  // Auto-redirect for re-auth
+  useEffect(() => {
+    if (reauthRequired) {
+        // Redirect the top-level window to the auth endpoint
+        // This breaks out of the iframe and avoids "refused to connect"
+        const authUrl = `/auth/login?shop=${shop}`;
+        window.open(authUrl, "_top");
+    }
+  }, [reauthRequired, shop]);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [categorySearchQuery, setCategorySearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
