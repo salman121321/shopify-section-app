@@ -388,27 +388,52 @@ export default function Index() {
            }}>
               <div style={{
                  width: viewMode === 'desktop' ? '100%' : '375px',
-                 height: viewMode === 'desktop' ? '100%' : '667px',
+                 height: viewMode === 'desktop' ? '100%' : '812px',
                  backgroundColor: '#fff',
-                 boxShadow: '0 0 20px rgba(0,0,0,0.1)',
+                 boxShadow: viewMode === 'mobile' ? '0 20px 40px rgba(0,0,0,0.2)' : '0 0 20px rgba(0,0,0,0.1)',
                  transition: 'all 0.3s ease',
-                 overflow: 'auto',
-                 borderRadius: viewMode === 'mobile' ? '8px' : '0',
-                 border: viewMode === 'mobile' ? '8px solid #333' : 'none'
+                 overflow: 'hidden', // Hide overflow on frame to clip content
+                 borderRadius: viewMode === 'mobile' ? '40px' : '0',
+                 border: viewMode === 'mobile' ? '14px solid #1a1a1a' : 'none',
+                 position: 'relative'
               }}>
-                 {previewModal.section.renderPreview ? (
-                    previewModal.section.renderPreview(previewModal.section.defaultSettings, false)
-                 ) : previewModal.section.image ? (
-                    <img 
-                       src={previewModal.section.image} 
-                       alt="Full Preview" 
-                       style={{width: '100%', height: 'auto', display: 'block'}} 
-                    />
-                 ) : (
-                    <Box display="flex" alignItems="center" justifyContent="center" height="100%">
-                       <Text as="p">No preview available</Text>
-                    </Box>
+                 {/* Mobile Notch (Only visible in mobile view) */}
+                 {viewMode === 'mobile' && (
+                    <div style={{
+                       position: 'absolute',
+                       top: 0,
+                       left: '50%',
+                       transform: 'translateX(-50%)',
+                       width: '150px',
+                       height: '24px',
+                       backgroundColor: '#1a1a1a',
+                       borderBottomLeftRadius: '16px',
+                       borderBottomRightRadius: '16px',
+                       zIndex: 10
+                    }}></div>
                  )}
+
+                 {/* Content Scroll Area */}
+                 <div style={{
+                    width: '100%',
+                    height: '100%',
+                    overflow: 'auto',
+                    paddingTop: viewMode === 'mobile' ? '24px' : '0' // Space for notch
+                 }}>
+                    {previewModal.section.renderPreview ? (
+                       previewModal.section.renderPreview(previewModal.section.defaultSettings, false)
+                    ) : previewModal.section.image ? (
+                       <img 
+                          src={previewModal.section.image} 
+                          alt="Full Preview" 
+                          style={{width: '100%', height: 'auto', display: 'block'}} 
+                       />
+                    ) : (
+                       <Box display="flex" alignItems="center" justifyContent="center" height="100%">
+                          <Text as="p">No preview available</Text>
+                       </Box>
+                    )}
+                 </div>
               </div>
            </div>
         </div>
