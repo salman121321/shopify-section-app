@@ -359,15 +359,30 @@ export default function Index() {
                              </InlineStack>
                              <Text variant="bodySm" tone="subdued" truncate as="p">{section.description}</Text>
                              
-                             <Button 
-                                fullWidth
-                                variant={section.status === "active" ? "primary" : "secondary"}
-                                disabled={section.status !== "active"}
-                                url={`https://admin.shopify.com/store/${shop}/themes/current/editor`}
-                                target="_blank"
-                             >
-                                {section.status === "active" ? "Customize" : "Notify Me"}
-                             </Button>
+                             {section.manageUrl && section.status === "active" ? (
+                               <BlockStack gap="200">
+                                 <Button fullWidth variant="primary" url={section.manageUrl}>
+                                   Edit Content
+                                 </Button>
+                                 <Button 
+                                    fullWidth
+                                    url={`https://admin.shopify.com/store/${shop}/themes/current/editor`}
+                                    target="_blank"
+                                 >
+                                    Customize Theme
+                                 </Button>
+                               </BlockStack>
+                             ) : (
+                               <Button 
+                                  fullWidth
+                                  variant={section.status === "active" ? "primary" : "secondary"}
+                                  disabled={section.status !== "active"}
+                                  url={`https://admin.shopify.com/store/${shop}/themes/current/editor`}
+                                  target="_blank"
+                               >
+                                  {section.status === "active" ? "Customize" : "Notify Me"}
+                               </Button>
+                             )}
                            </BlockStack>
                          </Box>
                       </Card>

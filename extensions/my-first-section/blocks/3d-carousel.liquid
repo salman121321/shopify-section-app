@@ -16,6 +16,13 @@
       "info": "If enabled, content will be pulled from the '3D Carousel Builder' in the App."
     },
     {
+      "type": "text",
+      "id": "carousel_id",
+      "label": "Carousel Group ID",
+      "default": "default",
+      "info": "Enter the ID of the Carousel Group you created in the App Dashboard (e.g., 'homepage', 'sale'). Default is 'default'."
+    },
+    {
       "type": "header",
       "content": "Content Source"
     },
@@ -289,9 +296,23 @@
         
         {%- if section.settings.use_app_data and app.metafields.shopi_section.carousel_data != blank -%}
              {%- assign app_data_active = true -%}
-             {%- assign app_slides = app.metafields.shopi_section.carousel_data.value -%}
-             {%- assign total_items = app_slides.size -%}
-        {%- else -%}
+             {%- assign carousel_id = section.settings.carousel_id | default: "default" -%}
+             {%- assign app_slides = app.metafields.shopi_section.carousel_data.value[carousel_id] -%}
+             
+             {%- if app_slides == blank -%}
+                <!-- Fallback to default if specified ID is empty or invalid -->
+                {%- assign app_slides = app.metafields.shopi_section.carousel_data.value['default'] -%}
+             {%- endif -%}
+
+             {%- if app_slides != blank -%}
+                {%- assign total_items = app_slides.size -%}
+             {%- endif -%}
+        {%- endif -%}
+
+        {%- if app_data_active == false or total_items == 0 -%}
+             <!-- If App Data is disabled or empty, use Theme Settings -->
+             {%- assign app_data_active = false -%}
+             
             {%- if section.settings.product_list != blank -%}
                  {%- assign total_items = total_items | plus: section.settings.product_list.count -%}
             {%- elsif section.settings.collection != blank -%}

@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { json } from "@remix-run/node";
-import { useLoaderData, useSubmit, Form } from "@remix-run/react";
+import { useLoaderData, useSubmit } from "@remix-run/react";
 import {
   Page,
   Layout,
@@ -13,6 +13,7 @@ import {
   Banner,
   InlineStack,
   Divider,
+  Select,
 } from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
 
@@ -20,8 +21,6 @@ import { authenticate } from "../shopify.server";
 export const loader = async ({ request }) => {
   const { admin } = await authenticate.admin(request);
 
-  // Define the Metafield namespace and key
-  // Namespace: "shopi_section", Key: "carousel_data"
   const response = await admin.graphql(
     `#graphql
     query getCarouselData {
@@ -36,13 +35,21 @@ export const loader = async ({ request }) => {
   const responseJson = await response.json();
   const metafieldValue = responseJson.data?.currentAppInstallation?.metafield?.value;
 
-  let carouselData = [];
+  let carouselData = {};
   if (metafieldValue) {
     try {
-      carouselData = JSON.parse(metafieldValue);
+      const parsed = JSON.parse(metafieldValue);
+      // Ensure backwards compatibility or new format
+      if (Array.isArray(parsed)) {
+        carouselData = { "default": parsed };
+      } else {
+        carouselData = parsed;
+      }
     } catch (e) {
       console.error("Error parsing metafield JSON", e);
     }
+  } else {
+    carouselData = { "default": [] };
   }
 
   return json({ carouselData });
@@ -54,8 +61,6 @@ export const action = async ({ request }) => {
   const formData = await request.formData();
   const carouselJson = formData.get("carouselJson");
 
-  // Use metafieldsSet to save data
-  // We save it to the App Installation (so it's global for the shop)
   const response = await admin.graphql(
     `#graphql
     mutation CreateCarouselMetafield($metafields: [MetafieldsSetInput!]!) {
@@ -97,38 +102,71 @@ export const action = async ({ request }) => {
 
 export default function CarouselBuilder() {
   const { carouselData: initialData } = useLoaderData();
-  const [slides, setSlides] = useState(initialData || []);
+  const [allCarousels, setAllCarousels] = useState(initialData);
+  const [selectedCarouselId, setSelectedCarouselId] = useState("default");
+  const [newCarouselId, setNewCarouselId] = useState("");
+  const [slides, setSlides] = useState(initialData["default"] || []);
   const submit = useSubmit();
 
+  // Update slides when selected carousel changes
+  useEffect(() => {
+    setSlides(allCarousels[selectedCarouselId] || []);
+  }, [selectedCarouselId, allCarousels]);
+
   const addSlide = () => {
-    setSlides([...slides, { title: "", subtitle: "", imageUrl: "", link: "" }]);
+    const updatedSlides = [...slides, { title: "", subtitle: "", imageUrl: "", link: "" }];
+    setSlides(updatedSlides);
+    updateAllCarousels(selectedCarouselId, updatedSlides);
   };
 
   const removeSlide = (index) => {
-    const newSlides = slides.filter((_, i) => i !== index);
-    setSlides(newSlides);
+    const updatedSlides = slides.filter((_, i) => i !== index);
+    setSlides(updatedSlides);
+    updateAllCarousels(selectedCarouselId, updatedSlides);
   };
 
   const updateSlide = (index, field, value) => {
-    const newSlides = [...slides];
-    newSlides[index] = { ...newSlides[index], [field]: value };
-    setSlides(newSlides);
+    const updatedSlides = [...slides];
+    updatedSlides[index] = { ...updatedSlides[index], [field]: value };
+    setSlides(updatedSlides);
+    updateAllCarousels(selectedCarouselId, updatedSlides);
+  };
+
+  const updateAllCarousels = (id, currentSlides) => {
+    setAllCarousels(prev => ({
+      ...prev,
+      [id]: currentSlides
+    }));
   };
 
   const handleSave = () => {
     const formData = new FormData();
-    formData.append("carouselJson", JSON.stringify(slides));
+    formData.append("carouselJson", JSON.stringify(allCarousels));
     submit(formData, { method: "post" });
   };
+
+  const handleCreateCarousel = () => {
+    if (newCarouselId && !allCarousels[newCarouselId]) {
+      setAllCarousels(prev => ({
+        ...prev,
+        [newCarouselId]: []
+      }));
+      setSelectedCarouselId(newCarouselId);
+      setNewCarouselId("");
+    }
+  };
+
+  const carouselOptions = Object.keys(allCarousels).map(key => ({ label: key, value: key }));
 
   return (
     <Page title="3D Carousel Builder" backAction={{ url: "/app" }}>
       <Layout>
         <Layout.Section>
-          <Banner title="How this works" tone="info">
+          <Banner title="How to use" tone="info">
             <p>
-              Add slides here. The data will be saved to your store's Metafields.
-              Your 3D Carousel section can then read this data automatically if you enable "Use App Data" in the Theme Editor.
+              1. Create a "Carousel Group" (e.g., 'homepage', 'product-page').<br/>
+              2. Add slides to that group.<br/>
+              3. In the Theme Editor, enter the Group ID in the "Carousel ID" setting.
             </p>
           </Banner>
         </Layout.Section>
@@ -136,10 +174,43 @@ export default function CarouselBuilder() {
         <Layout.Section>
           <Card>
             <BlockStack gap="400">
-              <Text variant="headingMd" as="h2">
-                Manage Slides
-              </Text>
+              <Text variant="headingMd" as="h2">Select Carousel Group</Text>
+              <InlineStack gap="300" align="start" blockAlign="end">
+                <Box minWidth="200px">
+                  <Select
+                    label="Active Group"
+                    options={carouselOptions}
+                    value={selectedCarouselId}
+                    onChange={setSelectedCarouselId}
+                  />
+                </Box>
+                <Box minWidth="200px">
+                    <TextField
+                        label="New Group ID"
+                        value={newCarouselId}
+                        onChange={setNewCarouselId}
+                        placeholder="e.g. summer-sale"
+                        autoComplete="off"
+                        connectedRight={<Button onClick={handleCreateCarousel}>Create</Button>}
+                    />
+                </Box>
+              </InlineStack>
+            </BlockStack>
+          </Card>
+        </Layout.Section>
+
+        <Layout.Section>
+          <Card>
+            <BlockStack gap="400">
+              <InlineStack align="space-between">
+                <Text variant="headingMd" as="h2">
+                    Editing: {selectedCarouselId}
+                </Text>
+                <Button variant="primary" onClick={handleSave}>Save All Changes</Button>
+              </InlineStack>
               
+              <Divider />
+
               {slides.map((slide, index) => (
                 <Box key={index} background="bg-surface-secondary" padding="400" borderRadius="200">
                   <BlockStack gap="300">
@@ -179,7 +250,7 @@ export default function CarouselBuilder() {
 
               {slides.length === 0 && (
                 <Text tone="subdued" as="p" alignment="center">
-                  No slides added yet. Click "Add Slide" to start.
+                  No slides in this group. Click "Add Slide" to start.
                 </Text>
               )}
 
@@ -187,7 +258,7 @@ export default function CarouselBuilder() {
               
               <InlineStack align="end" gap="300">
                 <Button onClick={addSlide}>Add Slide</Button>
-                <Button variant="primary" onClick={handleSave}>Save Carousel Data</Button>
+                <Button variant="primary" onClick={handleSave}>Save All Changes</Button>
               </InlineStack>
             </BlockStack>
           </Card>
