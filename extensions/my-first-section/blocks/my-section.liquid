@@ -1,0 +1,31 @@
+{% schema %}
+{
+  "name": "My Custom Section",
+  "target": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Hello from Shopify Section App"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text Color",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background Color",
+      "default": "#f4f4f4"
+    }
+  ]
+}
+{% endschema %}
+
+<div style="background-color: {{ block.settings.background_color }}; color: {{ block.settings.text_color }}; padding: 40px; text-align: center;">
+  <h2 style="margin: 0; font-size: 24px;">{{ block.settings.heading }}</h2>
+  <p style="margin-top: 10px;">This section is powered by your Shopify App!</p>
+</div>
