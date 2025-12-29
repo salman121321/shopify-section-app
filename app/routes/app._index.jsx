@@ -34,19 +34,19 @@ import { authenticate } from "../shopify.server";
 export const loader = async ({ request }) => {
   const { session } = await authenticate.admin(request);
   
-  // Check scopes
+  // Check scopes against Environment Variable (SCOPES)
   const currentScopes = new Set(session.scope ? session.scope.split(",").map(s => s.trim()) : []);
-  const requiredScopes = ["read_themes", "write_themes", "write_products"];
-  const hasAllScopes = requiredScopes.every(scope => currentScopes.has(scope));
+  const envScopes = process.env.SCOPES ? process.env.SCOPES.split(",").map(s => s.trim()) : ["read_themes", "write_themes", "write_products"];
+  const hasAllScopes = envScopes.every(scope => currentScopes.has(scope));
 
   const shop = session.shop.replace(".myshopify.com", "");
   
   if (!hasAllScopes) {
-      console.log("Missing scopes. Current:", session.scope, "Required:", requiredScopes.join(","));
-      return { shop, reauthRequired: true, host: session.shop };
+      console.log("Missing scopes. Current:", session.scope, "Required:", envScopes.join(","));
+      return { shop, reauthRequired: true, host: session.shop, requiredScopes: envScopes };
   }
 
-  return { shop, reauthRequired: false, host: session.shop };
+  return { shop, reauthRequired: false, host: session.shop, requiredScopes: envScopes };
 };
 
 // Live Preview Component for "My Custom Section"
@@ -157,7 +157,7 @@ const ThreeDCarouselPreview = ({ settings, compact = false }) => {
 };
 
 export default function Index() {
-  const { shop, reauthRequired, host } = useLoaderData();
+  const { shop, reauthRequired, host, requiredScopes } = useLoaderData();
   const themesFetcher = useFetcher();
   const sectionFetcher = useFetcher();
   
@@ -560,13 +560,13 @@ export default function Index() {
       >
         <Modal.Section>
             <Banner tone="critical">
-                <p>Automatic update failed. Please manually update permissions.</p>
-                <p>Missing scopes: {
-                     ["read_themes", "write_themes", "write_products"]
-                     .filter(s => !(host ? false : true)) // Simplify for UI, real check is server side
-                     .join(", ")
-                }</p>
-            </Banner>
+                 <p>Automatic update failed. Please manually update permissions.</p>
+                 <p>Missing scopes: {
+                      (requiredScopes || ["read_themes", "write_themes", "write_products"])
+                      .filter(s => !(host ? false : true)) // Simplify for UI
+                      .join(", ")
+                 }</p>
+             </Banner>
         </Modal.Section>
       </Modal>
 
