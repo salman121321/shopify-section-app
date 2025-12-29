@@ -313,7 +313,7 @@ export default function Index() {
             <Box>
                <Grid>
                   {filteredSections.map((section) => (
-                    <Grid.Cell key={section.id} columnSpan={{ xs: 6, sm: 6, md: 3, lg: 3, xl: 3 }}>
+                    <Grid.Cell key={section.id} columnSpan={{ xs: 12, sm: 6, md: 4, lg: 4, xl: 4 }}>
                       <Card padding="0">
                          {/* Live Preview Container with Hover Effect */}
                          <div 
