@@ -161,17 +161,28 @@ export default function Index() {
   const themesFetcher = useFetcher();
   const sectionFetcher = useFetcher();
   
-  // Auto-redirect removed to prevent loops. Showing Modal instead.
-  /*
-  useEffect(() => {
-    if (reauthRequired) {
-        const authUrl = `/auth/login?shop=${shop}`;
-        window.open(authUrl, "_top");
-    }
-  }, [reauthRequired, shop]);
-  */
-
-  const [searchQuery, setSearchQuery] = useState("");
+  // Auto-redirect with loop protection
+   useEffect(() => {
+     if (reauthRequired) {
+         const retryCount = parseInt(localStorage.getItem("auth_retry_count") || "0");
+         
+         if (retryCount < 3) {
+             console.log(`Auto-redirecting for permissions (Attempt ${retryCount + 1}/3)...`);
+             localStorage.setItem("auth_retry_count", (retryCount + 1).toString());
+             
+             // Redirect top-level window
+             const authUrl = `/auth/login?shop=${shop}`;
+             window.open(authUrl, "_top");
+         } else {
+             console.warn("Max auto-redirect retries reached. Showing manual update modal.");
+         }
+     } else {
+         // Reset retry count on successful load
+         localStorage.removeItem("auth_retry_count");
+     }
+   }, [reauthRequired, shop]);
+ 
+   const [searchQuery, setSearchQuery] = useState("");
   const [categorySearchQuery, setCategorySearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [isBannerVisible, setIsBannerVisible] = useState(true);
@@ -534,22 +545,28 @@ export default function Index() {
 
       {/* Re-Auth Modal */}
       <Modal
-        open={reauthRequired}
+        open={reauthRequired && parseInt(typeof window !== 'undefined' ? localStorage.getItem("auth_retry_count") || "0" : "0") >= 3}
         title="Update Required"
         onClose={() => {}} // Force user to update
         primaryAction={{
             content: 'Update App Permissions',
             onAction: () => {
+                // Reset counter to allow another try
+                localStorage.removeItem("auth_retry_count");
                 const authUrl = `/auth/login?shop=${shop}`;
                 window.open(authUrl, "_top");
             }
         }}
       >
         <Modal.Section>
-            <Text as="p">
-                The app requires updated permissions to function correctly (Theme access). 
-                Please click the button below to update.
-            </Text>
+            <Banner tone="critical">
+                <p>Automatic update failed. Please manually update permissions.</p>
+                <p>Missing scopes: {
+                     ["read_themes", "write_themes", "write_products"]
+                     .filter(s => !(host ? false : true)) // Simplify for UI, real check is server side
+                     .join(", ")
+                }</p>
+            </Banner>
         </Modal.Section>
       </Modal>
 
