@@ -183,7 +183,6 @@ export default function Index() {
       description: "A stunning 3D product carousel with interactive physics and glassmorphism effects.",
       category: "products",
       status: "active",
-      manageUrl: "/app/carousel",
       defaultSettings: {
         heading: "Featured Products",
         subheading: "Check out our latest collection",
@@ -313,7 +312,7 @@ export default function Index() {
             <Box>
                <Grid>
                   {filteredSections.map((section) => (
-                    <Grid.Cell key={section.id} columnSpan={{ xs: 12, sm: 6, md: 4, lg: 4, xl: 4 }}>
+                    <Grid.Cell key={section.id} columnSpan={{ xs: 6, sm: 6, md: 3, lg: 3, xl: 3 }}>
                       <Card padding="0">
                          {/* Live Preview Container with Hover Effect */}
                          <div 
@@ -352,38 +351,30 @@ export default function Index() {
                            <BlockStack gap="200">
                              <InlineStack align="space-between">
                                 <Text variant="headingMd" as="h3">{section.title}</Text>
-                                {section.status === "active" ? (
-                                   <Badge tone="success">Installed</Badge>
-                                ) : (
-                                   <Badge tone="attention">Coming Soon</Badge>
-                                )}
+                                <Badge tone={section.status === "active" ? "success" : "critical"}>
+                                    {section.status === "active" ? "Active" : "Inactive"}
+                                </Badge>
                              </InlineStack>
                              <Text variant="bodySm" tone="subdued" truncate as="p">{section.description}</Text>
                              
-                             {section.manageUrl && section.status === "active" ? (
-                               <BlockStack gap="200">
-                                 <Button fullWidth variant="primary" url={section.manageUrl}>
-                                   Edit Content
-                                 </Button>
-                                 <Button 
+                             <BlockStack gap="200">
+                                <Button 
                                     fullWidth
+                                    variant={section.status === "active" ? "primary" : "secondary"}
+                                    onClick={() => handleToggleSection(section.id, section.status === "active")}
+                                >
+                                    {section.status === "active" ? "Deactivate" : "Activate"}
+                                </Button>
+                                <Button 
+                                    fullWidth
+                                    variant="plain"
                                     url={`https://admin.shopify.com/store/${shop}/themes/current/editor`}
                                     target="_blank"
-                                 >
-                                    Customize Theme
-                                 </Button>
-                               </BlockStack>
-                             ) : (
-                               <Button 
-                                  fullWidth
-                                  variant={section.status === "active" ? "primary" : "secondary"}
-                                  disabled={section.status !== "active"}
-                                  url={`https://admin.shopify.com/store/${shop}/themes/current/editor`}
-                                  target="_blank"
-                               >
-                                  {section.status === "active" ? "Customize" : "Notify Me"}
-                               </Button>
-                             )}
+                                    disabled={section.status !== "active"}
+                                >
+                                    Customize in Theme
+                                </Button>
+                             </BlockStack>
                            </BlockStack>
                          </Box>
                       </Card>

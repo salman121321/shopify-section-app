@@ -22,7 +22,6 @@ export default function App() {
         <Link to="/app" rel="home">
           Home
         </Link>
-        <Link to="/app/carousel">3D Carousel Builder</Link>
         <Link to="/app/additional">Additional page</Link>
       </NavMenu>
       <Outlet />
