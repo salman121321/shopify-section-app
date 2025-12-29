@@ -364,8 +364,6 @@ export default function Index() {
         <Grid.Cell columnSpan={{ xs: 6, sm: 4, md: 4, lg: 10, xl: 10 }}>
           <BlockStack gap="500">
             
-            <Layout>
-            
             {/* Search Bar */}
             <Card>
                <InlineStack align="space-between" blockAlign="center">
@@ -478,7 +476,6 @@ export default function Index() {
                )}
             </Box>
 
-            </Layout>
           </BlockStack>
         </Grid.Cell>
       </Grid>
