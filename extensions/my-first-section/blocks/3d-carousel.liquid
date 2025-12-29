@@ -1,3 +1,363 @@
+{% assign rotation_direction = section.settings.rotation_direction | default: 'left' %}
+{% assign pause_on_hover = section.settings.pause_on_hover | default: true %}
+{% assign enable_depth_fade = section.settings.enable_depth_fade | default: true %}
+{% assign text_color = section.settings.text_color | default: '#000000' %}
+{% assign show_dots = section.settings.show_dots | default: false %}
+{% assign show_arrows = section.settings.show_arrows | default: true %}
+{% assign show_button = section.settings.show_button | default: true %}
+{% assign button_text = section.settings.button_text | default: 'View' %}
+{% assign show_badge = section.settings.show_badge | default: true %}
+
+<div class="carousel-section-wrapper carousel-section-wrapper-{{ section.id }}" style="
+    overflow: hidden; 
+    padding: 60px 0; 
+    position: relative; 
+    background: transparent;
+    min-height: 500px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    perspective: 1000px;
+">
+    <style>
+        .carousel-container {
+            position: relative;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            height: 400px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .carousel {
+            position: relative;
+            width: 300px;
+            height: 400px;
+            transform-style: preserve-3d;
+            transition: transform 0.1s ease-out;
+        }
+        .card {
+            position: absolute;
+            width: 300px;
+            height: 400px;
+            left: 0;
+            top: 0;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            transition: opacity 0.3s;
+            backface-visibility: hidden; /* Optimize rendering */
+        }
+        .card-inner-{{ section.id }} {
+            width: 100%;
+            height: 100%;
+            background: {% if section.settings.card_style == 'glass' %}rgba(255,255,255,0.7){% else %}#ffffff{% endif %};
+            {% if section.settings.card_style == 'glass' %}backdrop-filter: blur(10px);{% endif %}
+            border-radius: 16px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .card-image-wrapper {
+            width: 100%;
+            height: 60%;
+            overflow: hidden;
+        }
+        .card-image-wrapper img, .card-image-wrapper svg {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .card-content {
+            padding: 20px;
+            text-align: center;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .nav-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            cursor: pointer;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .nav-left { left: 20px; }
+        .nav-right { right: 20px; }
+        .tag {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #ff4d4d;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .btn-view {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 8px 16px;
+            background: #000;
+            color: #fff;
+            border-radius: 20px;
+            font-size: 14px;
+            text-decoration: none;
+        }
+        .controls {
+            position: absolute;
+            bottom: 10px;
+            width: 100%;
+            text-align: center;
+            font-size: 12px;
+            opacity: 0.6;
+        }
+    </style>
+    
+    <div class="carousel-container">
+        {% if section.settings.heading != blank %}
+            <div style="position: absolute; top: -50px; left: 0; width: 100%; text-align: center; z-index: 5;">
+                <h2 style="margin: 0; font-size: 2rem; color: {{ text_color }};">{{ section.settings.heading }}</h2>
+            </div>
+        {% endif %}
+
+        <div class="carousel" id="carousel-{{ section.id }}">
+            {% assign items = '' %}
+            {% assign use_manual = false %}
+            
+            {% if section.settings.product_list != blank %}
+                {% assign items = section.settings.product_list %}
+            {% elsif section.settings.collection != blank %}
+                {% assign items = collections[section.settings.collection].products %}
+            {% else %}
+                {% assign use_manual = true %}
+            {% endif %}
+
+            {% if use_manual %}
+                 {% comment %} Manual Slides Loop {% endcomment %}
+                 {% for i in (1..5) %}
+                    {% capture image_key %}slide_{{ i }}_image{% endcapture %}
+                    {% capture title_key %}slide_{{ i }}_title{% endcapture %}
+                    {% capture link_key %}slide_{{ i }}_link{% endcapture %}
+                    {% assign image = section.settings[image_key] %}
+                    {% assign title = section.settings[title_key] %}
+                    {% assign url = section.settings[link_key] %}
+                    
+                    {% if image != blank %}
+                        <div class="card card-{{ section.id }}">
+                            <div class="card-inner-{{ section.id }}">
+                                <div class="card-image-wrapper">
+                                    <img src="{{ image | image_url: width: 600 }}" alt="{{ title }}" loading="lazy" width="300" height="240">
+                                </div>
+                                <div class="card-content">
+                                    <h3 style="color: {{ text_color }}">{{ title }}</h3>
+                                    {% if show_button and url != blank %}
+                                        <div class="card-actions">
+                                            <span class="btn-view">{{ button_text }}</span>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                {% if url != blank %}
+                                    <a href="{{ url }}" class="card-link-overlay" style="position:absolute;top:0;left:0;width:100%;height:100%;"></a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+                 {% endfor %}
+            {% else %}
+                {% for item in items limit: section.settings.product_limit %}
+                    {% assign title = item.title %}
+                    {% assign price = item.price | money %}
+                    {% assign image = item.featured_image %}
+                    {% assign url = item.url %}
+                    {% assign badge = '' %}
+                    {% if item.compare_at_price > item.price %}{% assign badge = 'Sale' %}{% endif %}
+
+                    <div class="card card-{{ section.id }}">
+                        <div class="card-inner-{{ section.id }}">
+                            <div class="card-image-wrapper">
+                                {% if image != blank %}
+                                    <img src="{{ image | image_url: width: 600 }}" alt="{{ title }}" loading="lazy" width="300" height="240">
+                                {% else %}
+                                    {{ 'product-1' | placeholder_svg_tag: 'placeholder-svg' }}
+                                {% endif %}
+                            </div>
+                            <div class="card-content">
+                                {% if show_badge and badge != blank %}
+                                    <span class="tag">{{ badge }}</span>
+                                {% endif %}
+                                <h3 style="color: {{ text_color }}">{{ title }}</h3>
+                                <div class="price" style="color: {{ text_color }}">{{ price }}</div>
+                                {% if show_button %}
+                                    <div class="card-actions">
+                                        <span class="btn-view">{{ button_text }}</span>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <a href="{{ url }}" class="card-link-overlay" style="position:absolute;top:0;left:0;width:100%;height:100%;"></a>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+    </div>
+    
+    {% if show_arrows %}
+        <button class="nav-btn nav-btn-{{ section.id }} nav-left" aria-label="Rotate Left">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        </button>
+        <button class="nav-btn nav-btn-{{ section.id }} nav-right" aria-label="Rotate Right">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        </button>
+    {% endif %}
+
+    <div class="controls" style="color: {{ text_color }}">
+        <p>Drag, Scroll or Use Arrows</p>
+    </div>
+</div>
+
+<script>
+    (function() {
+        const sectionId = "{{ section.id }}";
+        const wrapper = document.querySelector(`.carousel-section-wrapper-${sectionId}`);
+        const carousel = wrapper.querySelector(`#carousel-${sectionId}`);
+        const cards = Array.from(carousel.querySelectorAll(`.card-${sectionId}`));
+        const navLeft = wrapper.querySelector(`.nav-btn-${sectionId}.nav-left`);
+        const navRight = wrapper.querySelector(`.nav-btn-${sectionId}.nav-right`);
+        
+        if (cards.length === 0) return;
+
+        const radius = 400; // Distance from center
+        const angleIncrement = 360 / cards.length;
+        let currentAngle = 0;
+        let targetAngle = 0;
+        let isDragging = false;
+        let startX = 0;
+        let lastX = 0;
+        let velocity = 0;
+        let animationId;
+        let isInteracting = false;
+        
+        // Settings
+        const autoRotate = true;
+        const autoRotateSpeed = "{{ rotation_direction }}" === 'left' ? 0.2 : -0.2;
+        const pauseOnHover = {{ pause_on_hover }};
+        
+        function animate() {
+            if (!isDragging) {
+                velocity *= 0.95; // Friction
+                if (Math.abs(velocity) < 0.001) velocity = 0;
+                
+                if (velocity === 0 && autoRotate && !isInteracting) {
+                    targetAngle += autoRotateSpeed;
+                } else {
+                    targetAngle += velocity;
+                }
+            }
+            
+            currentAngle += (targetAngle - currentAngle) * 0.1;
+            carousel.style.transform = `rotateY(${currentAngle}deg)`;
+            
+            cards.forEach((card, i) => {
+                 const cardAngle = i * angleIncrement;
+                 card.style.transform = `rotateY(${cardAngle}deg) translateZ(${radius}px)`;
+                 
+                 let absoluteAngle = (cardAngle + currentAngle) % 360;
+                 if (absoluteAngle < 0) absoluteAngle += 360;
+                 
+                 // z-index logic
+                 let distFromFront = Math.min(absoluteAngle, 360 - absoluteAngle);
+                 card.style.zIndex = 1000 - Math.round(distFromFront);
+                 
+                 if ({{ enable_depth_fade }}) {
+                    let opacity = 1 - (distFromFront / 180);
+                    if (opacity < 0.2) opacity = 0.2;
+                    card.style.opacity = opacity;
+                 }
+            });
+            
+            animationId = requestAnimationFrame(animate);
+        }
+        
+        animate();
+
+        // Interaction
+        const onMouseDown = (e) => {
+            isDragging = true;
+            isInteracting = true;
+            startX = e.clientX;
+            lastX = e.clientX;
+            wrapper.style.cursor = "grabbing";
+        };
+        
+        const onMouseMove = (e) => {
+            if (!isDragging) return;
+            const x = e.clientX;
+            const delta = x - lastX;
+            targetAngle += delta * 0.5;
+            velocity = delta * 0.5;
+            lastX = x;
+        };
+        
+        const onMouseUp = () => {
+            isDragging = false;
+            wrapper.style.cursor = "grab";
+            setTimeout(() => isInteracting = false, 1000);
+        };
+
+        wrapper.addEventListener('mousedown', onMouseDown);
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+        
+        // Touch support
+        wrapper.addEventListener('touchstart', (e) => {
+            isDragging = true;
+            isInteracting = true;
+            lastX = e.touches[0].clientX;
+        });
+        wrapper.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            const x = e.touches[0].clientX;
+            const delta = x - lastX;
+            targetAngle += delta * 0.5;
+            velocity = delta * 0.5;
+            lastX = x;
+        });
+        wrapper.addEventListener('touchend', () => {
+            isDragging = false;
+            setTimeout(() => isInteracting = false, 1000);
+        });
+        
+        if (navLeft) navLeft.addEventListener('click', () => {
+            targetAngle += angleIncrement;
+            isInteracting = true;
+            setTimeout(() => isInteracting = false, 1000);
+        });
+        
+        if (navRight) navRight.addEventListener('click', () => {
+            targetAngle -= angleIncrement;
+            isInteracting = true;
+            setTimeout(() => isInteracting = false, 1000);
+        });
+        
+        if (pauseOnHover) {
+            wrapper.addEventListener('mouseenter', () => isInteracting = true);
+            wrapper.addEventListener('mouseleave', () => isInteracting = false);
+        }
+    })();
+</script>
+
 {% schema %}
 {
   "name": "3D Carousel Pro",
@@ -30,575 +390,154 @@
     },
     {
       "type": "header",
-      "content": "Content"
+      "content": "Manual Slides (Fallback)"
+    },
+    {
+      "type": "image_picker",
+      "id": "slide_1_image",
+      "label": "Slide 1 Image"
     },
     {
       "type": "text",
-      "id": "heading",
-      "label": "Heading",
-      "default": "Featured Products"
+      "id": "slide_1_title",
+      "label": "Slide 1 Title"
     },
     {
-      "type": "richtext",
-      "id": "subheading",
-      "label": "Subheading"
+      "type": "url",
+      "id": "slide_1_link",
+      "label": "Slide 1 Link"
+    },
+    {
+      "type": "image_picker",
+      "id": "slide_2_image",
+      "label": "Slide 2 Image"
+    },
+    {
+      "type": "text",
+      "id": "slide_2_title",
+      "label": "Slide 2 Title"
+    },
+    {
+      "type": "url",
+      "id": "slide_2_link",
+      "label": "Slide 2 Link"
+    },
+    {
+      "type": "image_picker",
+      "id": "slide_3_image",
+      "label": "Slide 3 Image"
+    },
+    {
+      "type": "text",
+      "id": "slide_3_title",
+      "label": "Slide 3 Title"
+    },
+    {
+      "type": "url",
+      "id": "slide_3_link",
+      "label": "Slide 3 Link"
+    },
+    {
+      "type": "image_picker",
+      "id": "slide_4_image",
+      "label": "Slide 4 Image"
+    },
+    {
+      "type": "text",
+      "id": "slide_4_title",
+      "label": "Slide 4 Title"
+    },
+    {
+      "type": "url",
+      "id": "slide_4_link",
+      "label": "Slide 4 Link"
+    },
+    {
+      "type": "image_picker",
+      "id": "slide_5_image",
+      "label": "Slide 5 Image"
+    },
+    {
+      "type": "text",
+      "id": "slide_5_title",
+      "label": "Slide 5 Title"
+    },
+    {
+      "type": "url",
+      "id": "slide_5_link",
+      "label": "Slide 5 Link"
     },
     {
       "type": "header",
       "content": "Appearance"
     },
     {
-      "type": "range",
-      "id": "section_height",
-      "min": 400,
-      "max": 1000,
-      "step": 50,
-      "unit": "px",
-      "label": "Desktop Height",
-      "default": 650
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Featured Collection"
     },
     {
-      "type": "range",
-      "id": "mobile_height",
-      "min": 300,
-      "max": 800,
-      "step": 50,
-      "unit": "px",
-      "label": "Mobile Height",
-      "default": 500
-    },
-    {
-      "type": "range",
-      "id": "carousel_radius",
-      "min": 200,
-      "max": 1200,
-      "step": 50,
-      "unit": "px",
-      "label": "Radius (Desktop)",
-      "default": 450
-    },
-    {
-      "type": "range",
-      "id": "mobile_carousel_radius",
-      "min": 50,
-      "max": 600,
-      "step": 10,
-      "unit": "px",
-      "label": "Radius (Mobile)",
-      "default": 200
+      "type": "color",
+      "id": "text_color",
+      "label": "Text Color",
+      "default": "#000000"
     },
     {
       "type": "select",
       "id": "card_style",
       "label": "Card Style",
       "options": [
-        { "value": "solid", "label": "Solid" },
-        { "value": "glass", "label": "Glassmorphism" },
-        { "value": "neon", "label": "Neon" }
+        {
+          "value": "default",
+          "label": "Default"
+        },
+        {
+          "value": "glass",
+          "label": "Glass Effect"
+        }
       ],
-      "default": "solid"
+      "default": "default"
     },
     {
-      "type": "color",
-      "id": "background_color",
-      "label": "Background Color",
-      "default": "#f0f0f0"
-    },
-    {
-      "type": "image_picker",
-      "id": "background_image",
-      "label": "Background Image"
-    },
-    {
-      "type": "header",
-      "content": "Behavior"
+      "type": "select",
+      "id": "rotation_direction",
+      "label": "Rotation Direction",
+      "options": [
+        { "value": "left", "label": "Left" },
+        { "value": "right", "label": "Right" }
+      ],
+      "default": "left"
     },
     {
       "type": "checkbox",
-      "id": "auto_rotate",
-      "label": "Auto Rotate",
+      "id": "pause_on_hover",
+      "label": "Pause on Hover",
       "default": true
     },
     {
-      "type": "range",
-      "id": "auto_rotate_speed",
-      "min": 1,
-      "max": 20,
-      "step": 1,
-      "label": "Rotation Speed",
-      "default": 5
-    }
-  ],
-  "blocks": [
+      "type": "checkbox",
+      "id": "enable_depth_fade",
+      "label": "Enable Depth Fade",
+      "default": true
+    },
     {
-      "type": "carousel_item",
-      "name": "Carousel Item",
-      "settings": [
-        {
-          "type": "image_picker",
-          "id": "image",
-          "label": "Image"
-        },
-        {
-          "type": "text",
-          "id": "title",
-          "label": "Title",
-          "default": "Product Title"
-        },
-        {
-          "type": "text",
-          "id": "price",
-          "label": "Price",
-          "default": "$19.99"
-        },
-        {
-          "type": "url",
-          "id": "link",
-          "label": "Link"
-        }
-      ]
+      "type": "checkbox",
+      "id": "show_arrows",
+      "label": "Show Arrows",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_button",
+      "label": "Show View Button",
+      "default": true
     }
   ],
   "presets": [
     {
-      "name": "3D Carousel Pro",
-      "blocks": [
-        { "type": "carousel_item" },
-        { "type": "carousel_item" },
-        { "type": "carousel_item" },
-        { "type": "carousel_item" },
-        { "type": "carousel_item" }
-      ]
+      "name": "3D Carousel Pro"
     }
   ]
 }
 {% endschema %}
-
-{% comment %}
-  Assign defaults for removed settings to prevent JS errors
-{% endcomment %}
-{% assign rotation_direction = section.settings.rotation_direction | default: 'left' %}
-{% assign pause_on_hover = section.settings.pause_on_hover | default: true %}
-{% assign enable_depth_fade = section.settings.enable_depth_fade | default: true %}
-{% assign text_color = section.settings.text_color | default: '#000000' %}
-{% assign show_dots = section.settings.show_dots | default: false %}
-{% assign show_arrows = section.settings.show_arrows | default: true %}
-{% assign show_button = section.settings.show_button | default: true %}
-{% assign button_text = section.settings.button_text | default: 'View' %}
-{% assign show_badge = section.settings.show_badge | default: true %}
-
-<div class="carousel-section-wrapper carousel-section-wrapper-{{ section.id }}" style="
-    background-color: {{ section.settings.background_color }};
-    {% if section.settings.background_image != blank %}
-        background-image: url({{ section.settings.background_image | image_url: width: 2000 }});
-        background-size: cover;
-        background-position: center;
-    {% endif %}
-    height: {{ section.settings.section_height }}px;
-    position: relative;
-    overflow: hidden;
-">
-    
-    <div class="carousel-container">
-        {% if section.settings.heading != blank %}
-            <div style="position: absolute; top: 20px; left: 0; width: 100%; text-align: center; z-index: 5;">
-                <h2 style="margin: 0; font-size: 2rem; color: {{ text_color }};">{{ section.settings.heading }}</h2>
-                {% if section.settings.subheading != blank %}
-                    <div style="margin-top: 5px; color: {{ text_color }}; opacity: 0.8;">{{ section.settings.subheading }}</div>
-                {% endif %}
-            </div>
-        {% endif %}
-
-        <div class="carousel" id="carousel-{{ section.id }}">
-            <div class="carousel-track">
-                {% comment %} Determine Items {% endcomment %}
-                {% assign items = '' %}
-                {% assign source_type = 'blocks' %}
-                
-                {% if section.settings.product_list != blank %}
-                    {% assign source_type = 'products' %}
-                    {% assign items = section.settings.product_list %}
-                {% elsif section.settings.collection != blank %}
-                    {% assign source_type = 'collection' %}
-                    {% assign items = collections[section.settings.collection].products | limit: section.settings.product_limit %}
-                {% else %}
-                    {% assign items = section.blocks %}
-                {% endif %}
-
-                {% for item in items %}
-                    {% assign title = '' %}
-                    {% assign price = '' %}
-                    {% assign image = '' %}
-                    {% assign url = '' %}
-                    {% assign badge = '' %}
-
-                    {% if source_type == 'blocks' %}
-                        {% assign title = item.settings.title %}
-                        {% assign price = item.settings.price %}
-                        {% assign image = item.settings.image %}
-                        {% assign url = item.settings.link %}
-                    {% else %}
-                        {% assign title = item.title %}
-                        {% assign price = item.price | money %}
-                        {% assign image = item.featured_image %}
-                        {% assign url = item.url %}
-                        {% if item.compare_at_price > item.price %}{% assign badge = 'Sale' %}{% endif %}
-                    {% endif %}
-
-                    <div class="card card-{{ section.id }}">
-                        <div class="card-inner-{{ section.id }}">
-                            <div class="card-image-wrapper">
-                                {% if image != blank %}
-                                    <img src="{{ image | image_url: width: 600 }}" alt="{{ title }}" loading="lazy">
-                                {% else %}
-                                    {{ 'product-1' | placeholder_svg_tag: 'placeholder-svg' }}
-                                {% endif %}
-                            </div>
-                            
-                            <div class="card-content">
-                                {% if show_badge and badge != blank %}
-                                    <span class="tag">{{ badge }}</span>
-                                {% endif %}
-                                
-                                <h3 style="color: {{ text_color }}">{{ title }}</h3>
-                                <div class="price" style="color: {{ text_color }}">{{ price }}</div>
-                                
-                                {% if show_button %}
-                                    <div class="card-actions">
-                                        <span class="btn-view">{{ button_text }}</span>
-                                    </div>
-                                {% endif %}
-                            </div>
-                            
-                            {% if url != blank %}
-                                <a href="{{ url }}" class="card-link-overlay"></a>
-                            {% endif %}
-                        </div>
-                    </div>
-                {% endfor %}
-            </div>
-        </div>
-    </div>
-    
-    {% if show_arrows %}
-        <button class="nav-btn nav-btn-{{ section.id }} nav-left" aria-label="Rotate Left">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-        </button>
-        <button class="nav-btn nav-btn-{{ section.id }} nav-right" aria-label="Rotate Right">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-        </button>
-    {% endif %}
-
-    {% if show_dots %}
-        <div class="carousel-dots carousel-dots-{{ section.id }}"></div>
-    {% endif %}
-
-    <div class="controls" style="color: {{ text_color }}">
-        <p>Drag, Scroll or Use Arrows</p>
-    </div>
-</div>
-
-<style>
-    /* Essential CSS */
-    .carousel-section-wrapper * { box-sizing: border-box; }
-    .carousel-section-wrapper {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        width: 100%;
-        touch-action: none;
-        outline: none;
-    }
-    .carousel-container {
-        position: relative;
-        z-index: 2;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        width: 100%;
-        height: 100%;
-        perspective: 1000px; /* Essential for 3D */
-    }
-    .carousel {
-        width: 100%;
-        height: 100%;
-        position: absolute;
-        transform-style: preserve-3d;
-    }
-    .card {
-        position: absolute;
-        left: 0; 
-        right: 0;
-        margin: auto;
-        top: 15%; /* Center vertically approx */
-        width: 280px; /* Default width */
-        height: 400px; /* Default height */
-        backface-visibility: visible;
-        transition: transform 0.1s;
-    }
-    .card-inner-{{ section.id }} {
-        width: 100%;
-        height: 100%;
-        background: {% if section.settings.card_style == 'glass' %}rgba(255,255,255,0.7){% else %}#ffffff{% endif %};
-        {% if section.settings.card_style == 'glass' %}backdrop-filter: blur(10px);{% endif %}
-        border-radius: 16px;
-        padding: 15px;
-        display: flex;
-        flex-direction: column;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-    }
-    .card-image-wrapper {
-        width: 100%;
-        height: 60%;
-        border-radius: 12px;
-        overflow: hidden;
-        margin-bottom: 10px;
-    }
-    .card-image-wrapper img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-    .card-content {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-    }
-    .btn-view {
-        background: #000;
-        color: #fff;
-        padding: 8px 20px;
-        border-radius: 20px;
-        font-size: 0.8rem;
-        display: inline-block;
-        margin-top: auto;
-    }
-    .card-link-overlay {
-        position: absolute;
-        top: 0; left: 0; width: 100%; height: 100%;
-        z-index: 10;
-        cursor: pointer;
-    }
-    .nav-btn {
-        position: absolute;
-        top: 50%;
-        transform: translateY(-50%);
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        border: none;
-        background: rgba(255,255,255,0.8);
-        cursor: pointer;
-        z-index: 20;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    .nav-left { left: 20px; }
-    .nav-right { right: 20px; }
-    .controls {
-        position: absolute;
-        bottom: 10px;
-        width: 100%;
-        text-align: center;
-        font-size: 0.8rem;
-        opacity: 0.6;
-    }
-    .tag {
-        position: absolute;
-        top: 10px;
-        left: 10px;
-        background: #000;
-        color: #fff;
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 0.7rem;
-        font-weight: bold;
-    }
-    
-    @media (max-width: 768px) {
-        .carousel-section-wrapper-{{ section.id }} {
-            height: {{ section.settings.mobile_height }}px;
-        }
-        .card {
-            width: 200px;
-            height: 300px;
-        }
-    }
-</style>
-
-<script>
-    (function() {
-        const init = () => {
-             initCarousel("{{ section.id }}");
-        };
-        
-        document.addEventListener("DOMContentLoaded", init);
-        document.addEventListener("shopify:section:load", function(e) {
-            if (e.target.id === "shopify-section-{{ section.id }}") {
-                init();
-            }
-        });
-
-        function initCarousel(sectionId) {
-            const wrapper = document.querySelector(`.carousel-section-wrapper-${sectionId}`);
-            const carousel = document.getElementById(`carousel-${sectionId}`);
-            if (!carousel || !wrapper) return;
-
-            const cards = carousel.querySelectorAll(".card");
-            const navLeft = wrapper.querySelector(".nav-left");
-            const navRight = wrapper.querySelector(".nav-right");
-            const numberOfCards = cards.length;
-            if (numberOfCards === 0) return;
-
-            const radiusDesktop = {{ section.settings.carousel_radius }};
-            const radiusMobile = {{ section.settings.mobile_carousel_radius }};
-            let radius = window.innerWidth < 768 ? radiusMobile : radiusDesktop;
-            
-            window.addEventListener('resize', () => {
-                radius = window.innerWidth < 768 ? radiusMobile : radiusDesktop;
-                updatePositions();
-            });
-
-            const angleIncrement = 360 / numberOfCards;
-            const autoRotate = {{ section.settings.auto_rotate }};
-            const rotationDir = "{{ rotation_direction }}";
-            const baseSpeed = {{ section.settings.auto_rotate_speed }} * 0.05;
-            const autoRotateSpeed = rotationDir === 'right' ? -baseSpeed : baseSpeed;
-            const pauseOnHover = {{ pause_on_hover }};
-            
-            let currentAngle = 0;
-            let targetAngle = 0;
-            let velocity = 0;
-            let isDragging = false;
-            let startX = 0;
-            let lastX = 0;
-            let isInteracting = false;
-            let animationId;
-
-            function updatePositions() {
-                cards.forEach((card, index) => {
-                    const angle = index * angleIncrement;
-                    // Initial base transform logic
-                });
-            }
-
-            function animate() {
-                if (!isDragging) {
-                    velocity *= 0.95; // Friction
-                    if (Math.abs(velocity) < 0.001) velocity = 0;
-                    
-                    if (velocity === 0 && autoRotate && !isInteracting) {
-                        targetAngle += autoRotateSpeed;
-                    } else {
-                        targetAngle += velocity;
-                    }
-                }
-                
-                currentAngle += (targetAngle - currentAngle) * 0.1;
-                
-                // Rotate the entire carousel container
-                carousel.style.transform = `rotateY(${currentAngle}deg)`;
-
-                // Counter-rotate cards so they face forward (billboard effect) or just arrange them
-                // For 3D carousel, we typically rotate the carousel and items are fixed in circle
-                // But items need to be placed in circle first.
-                
-                cards.forEach((card, i) => {
-                     const cardAngle = i * angleIncrement;
-                     // Position card in 3D space
-                     // rotateY(cardAngle) -> points card outwards from center
-                     // translateZ(radius) -> pushes it out
-                     card.style.transform = `rotateY(${cardAngle}deg) translateZ(${radius}px)`;
-                     
-                     // Optional: Opacity/Z-index based on rotation relative to camera
-                     // Camera is at 0deg (front)
-                     // Card's absolute angle = cardAngle + currentAngle
-                     let absoluteAngle = (cardAngle + currentAngle) % 360;
-                     if (absoluteAngle < 0) absoluteAngle += 360;
-                     if (absoluteAngle > 180) absoluteAngle -= 360;
-                     
-                     // z-index: closer to 0 is higher
-                     card.style.zIndex = 1000 - Math.round(Math.abs(absoluteAngle));
-                     
-                     // Opacity depth fade
-                     if ({{ enable_depth_fade }}) {
-                        let opacity = 1 - (Math.abs(absoluteAngle) / 180);
-                        if (opacity < 0.2) opacity = 0.2;
-                        card.style.opacity = opacity;
-                     }
-                });
-                
-                animationId = requestAnimationFrame(animate);
-            }
-            
-            animate();
-
-            // Interaction
-            const onMouseDown = (e) => {
-                isDragging = true;
-                isInteracting = true;
-                startX = e.clientX;
-                lastX = e.clientX;
-                wrapper.style.cursor = "grabbing";
-            };
-            
-            const onMouseMove = (e) => {
-                if (!isDragging) return;
-                const x = e.clientX;
-                const delta = x - lastX;
-                targetAngle += delta * 0.5;
-                velocity = delta * 0.5;
-                lastX = x;
-            };
-            
-            const onMouseUp = () => {
-                isDragging = false;
-                wrapper.style.cursor = "grab";
-                setTimeout(() => isInteracting = false, 1000);
-            };
-
-            wrapper.addEventListener('mousedown', onMouseDown);
-            window.addEventListener('mousemove', onMouseMove);
-            window.addEventListener('mouseup', onMouseUp);
-            
-            // Touch support
-            wrapper.addEventListener('touchstart', (e) => {
-                isDragging = true;
-                isInteracting = true;
-                lastX = e.touches[0].clientX;
-            });
-            wrapper.addEventListener('touchmove', (e) => {
-                if (!isDragging) return;
-                const x = e.touches[0].clientX;
-                const delta = x - lastX;
-                targetAngle += delta * 0.5;
-                velocity = delta * 0.5;
-                lastX = x;
-            });
-            wrapper.addEventListener('touchend', () => {
-                isDragging = false;
-                setTimeout(() => isInteracting = false, 1000);
-            });
-            
-            if (navLeft) navLeft.addEventListener('click', () => {
-                targetAngle += angleIncrement;
-                isInteracting = true;
-                setTimeout(() => isInteracting = false, 1000);
-            });
-            
-            if (navRight) navRight.addEventListener('click', () => {
-                targetAngle -= angleIncrement;
-                isInteracting = true;
-                setTimeout(() => isInteracting = false, 1000);
-            });
-            
-            if (pauseOnHover) {
-                wrapper.addEventListener('mouseenter', () => isInteracting = true);
-                wrapper.addEventListener('mouseleave', () => isInteracting = false);
-            }
-        }
-    })();
-</script>
