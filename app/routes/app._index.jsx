@@ -165,10 +165,10 @@ export default function Index() {
 
   // Load themes on mount
   useEffect(() => {
-    if (themesFetcher.state === "idle" && themesFetcher.data == null) {
+    if (themesFetcher.state === "idle" && !themesFetcher.data) {
       themesFetcher.load("/api/themes");
     }
-  }, [themesFetcher]);
+  }, []); // Run once on mount
 
   useEffect(() => {
     if (themesFetcher.data && themesFetcher.data.themes) {
@@ -270,10 +270,17 @@ export default function Index() {
     setPreviewModal({ open: true, section });
   };
   
-  const themeOptions = themes.map(theme => ({
-    label: `${theme.name} (${theme.role === 'main' ? 'Live' : 'Draft'})`,
-    value: theme.id.toString()
-  }));
+  const themeOptions = themes.map(theme => {
+    let roleLabel = theme.role;
+    if (theme.role === 'main') roleLabel = 'Live';
+    else if (theme.role === 'unpublished') roleLabel = 'Draft';
+    else if (theme.role === 'demo') roleLabel = 'Demo';
+    
+    return {
+      label: `${theme.name} (${roleLabel})`,
+      value: theme.id.toString()
+    };
+  });
 
   return (
     <Frame>
@@ -519,6 +526,13 @@ export default function Index() {
                     <Box display="flex" justifyContent="center" padding="400">
                         <Spinner size="large" />
                     </Box>
+                ) : themes.length === 0 ? (
+                    <BlockStack gap="200">
+                        <Banner tone="warning">
+                            No themes found or failed to load.
+                        </Banner>
+                        <Button onClick={() => themesFetcher.load("/api/themes")}>Retry Loading Themes</Button>
+                    </BlockStack>
                 ) : (
                     <Select
                         label="Select Theme"

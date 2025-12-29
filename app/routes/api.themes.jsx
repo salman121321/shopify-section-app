@@ -9,8 +9,16 @@ export const loader = async ({ request }) => {
       session: admin.session,
     });
     
+    // Handle different response structures
+    const themesData = response.data || response;
+    
+    if (!Array.isArray(themesData)) {
+        console.error("Invalid themes response format:", themesData);
+        return json({ themes: [] });
+    }
+
     // Sort themes: Live theme first, then others
-    const themes = response.data.sort((a, b) => {
+    const themes = themesData.sort((a, b) => {
         if (a.role === 'main') return -1;
         if (b.role === 'main') return 1;
         return 0;
