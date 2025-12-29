@@ -5,12 +5,18 @@ export const loader = async ({ request }) => {
   const { admin } = await authenticate.admin(request);
   
   try {
-    // Try fetching without explicit session first, as admin context handles it
+    // Try fetching with explicit session
     const response = await admin.rest.resources.Theme.all({
       session: admin.session,
     });
     
-    console.log("Themes API Response:", JSON.stringify(response, null, 2));
+    // If response is undefined or null, it might be due to API version mismatch or auth issue
+    if (!response) {
+       console.error("Themes API returned no response");
+       return json({ error: "No response from Shopify API" }, { status: 500 });
+    }
+
+    console.log("Themes API Response Keys:", Object.keys(response));
 
     // Handle different response structures
     const themesData = response.data || response;
