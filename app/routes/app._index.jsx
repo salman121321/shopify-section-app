@@ -532,6 +532,22 @@ export default function Index() {
                             {themesFetcher.data?.error ? (
                               <>
                                 <p>Error: {themesFetcher.data.error}</p>
+                                {(themesFetcher.data.error.includes("Access denied") || themesFetcher.data.error.includes("scope")) && (
+                                   <div style={{ marginTop: '0.5rem' }}>
+                                      <Button 
+                                        variant="primary"
+                                        onClick={() => {
+                                            // Force re-auth
+                                            const shop = new URLSearchParams(window.location.search).get("shop");
+                                            // Redirect to auth endpoint
+                                            window.open(`/auth/login?shop=${shop}`, "_top");
+                                        }}
+                                      >
+                                        Grant Permissions
+                                      </Button>
+                                      <p style={{ marginTop: '0.25rem' }}><small>App needs permission to read themes.</small></p>
+                                   </div>
+                                )}
                                 {themesFetcher.data.details && <p><small>{themesFetcher.data.details}</small></p>}
                               </>
                             ) : (

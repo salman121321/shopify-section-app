@@ -2,8 +2,10 @@ import { json } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
 
 export const loader = async ({ request }) => {
-  const { admin } = await authenticate.admin(request);
+  const { admin, session } = await authenticate.admin(request);
   
+  console.log("DEBUG: Session Scopes:", session.scope);
+
   try {
     // Use GraphQL to fetch themes - more robust than REST in this context
     const response = await admin.graphql(
