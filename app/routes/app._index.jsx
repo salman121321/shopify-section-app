@@ -18,7 +18,9 @@ import {
   ActionList,
   Modal,
   Scrollable,
-  Divider
+  Divider,
+  ColorPicker,
+  RangeSlider
 } from "@shopify/polaris";
 import { SearchIcon, HomeIcon, ProductIcon, SettingsIcon, PaintBrushFlatIcon, ViewIcon } from "@shopify/polaris-icons";
 import { TitleBar } from "@shopify/app-bridge-react";
@@ -28,6 +30,34 @@ export const loader = async ({ request }) => {
   const { session } = await authenticate.admin(request);
   const shop = session.shop.replace(".myshopify.com", "");
   return { shop };
+};
+
+// Live Preview Component for "My Custom Section"
+const MyCustomSectionPreview = ({ settings, compact = false }) => {
+  return (
+    <div style={{
+      backgroundColor: settings.backgroundColor || "#f4f4f4",
+      color: settings.textColor || "#000000",
+      padding: compact ? '20px' : '40px',
+      textAlign: 'center',
+      width: '100%',
+      height: '100%',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'center',
+      alignItems: 'center',
+      minHeight: compact ? '180px' : '300px',
+      borderTopLeftRadius: compact ? '8px' : '0',
+      borderTopRightRadius: compact ? '8px' : '0',
+    }}>
+      <h2 style={{ margin: 0, fontSize: compact ? '18px' : '24px', fontWeight: 'bold' }}>
+        {settings.heading || "Hello from Shopify Section App"}
+      </h2>
+      <p style={{ marginTop: '10px', fontSize: compact ? '12px' : '16px' }}>
+        This section is powered by your Shopify App!
+      </p>
+    </div>
+  );
 };
 
 export default function Index() {
@@ -58,7 +88,13 @@ export default function Index() {
       description: "A customizable section with heading and colors.",
       category: "headers",
       status: "active",
-      image: "https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png"
+      // No image, we use preview component
+      defaultSettings: {
+        heading: "Hello from Shopify Section App",
+        textColor: "#000000",
+        backgroundColor: "#f4f4f4"
+      },
+      renderPreview: (settings, compact) => <MyCustomSectionPreview settings={settings} compact={compact} />
     }
   ];
 
@@ -178,13 +214,15 @@ export default function Index() {
                   {filteredSections.map((section) => (
                     <Grid.Cell key={section.id} columnSpan={{ xs: 6, sm: 6, md: 3, lg: 3, xl: 3 }}>
                       <Card padding="0">
-                         {/* Image Container with Hover Effect */}
+                         {/* Live Preview Container with Hover Effect */}
                          <div 
                            style={{position: 'relative', height: '180px', overflow: 'hidden', cursor: 'pointer', borderTopLeftRadius: '8px', borderTopRightRadius: '8px'}}
                            className="section-image-container"
                            onClick={() => handlePreview(section)}
                          >
-                            {section.image ? (
+                            {section.renderPreview ? (
+                               section.renderPreview(section.defaultSettings, true)
+                            ) : section.image ? (
                                <img 
                                  src={section.image} 
                                  alt={section.title} 
@@ -260,24 +298,28 @@ export default function Index() {
       >
         <Modal.Section>
            <BlockStack gap="400">
-              {previewModal.section?.image ? (
-                 <div 
-                    onContextMenu={(e) => e.preventDefault()} 
-                    style={{
-                       display: 'flex', justifyContent: 'center', background: '#f4f4f4', padding: '20px', borderRadius: '8px',
-                       userSelect: 'none', WebkitUserSelect: 'none'
-                    }}
-                 >
+              {/* Modal Live Preview */}
+              <div 
+                 onContextMenu={(e) => e.preventDefault()} 
+                 style={{
+                    display: 'flex', justifyContent: 'center', background: '#e0e0e0', padding: '20px', borderRadius: '8px',
+                    userSelect: 'none', WebkitUserSelect: 'none', minHeight: '300px'
+                 }}
+              >
+                 {previewModal.section?.renderPreview ? (
+                    previewModal.section.renderPreview(previewModal.section.defaultSettings, false)
+                 ) : previewModal.section?.image ? (
                     <img 
                        src={previewModal.section.image} 
                        alt="Preview" 
                        style={{maxWidth: '100%', maxHeight: '60vh', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'}} 
                        draggable="false"
                     />
-                 </div>
-              ) : (
-                 <Banner tone="warning">No preview available for this section.</Banner>
-              )}
+                 ) : (
+                    <Banner tone="warning">No preview available for this section.</Banner>
+                 )}
+              </div>
+
               <Text variant="bodyLg" as="p">{previewModal.section?.description}</Text>
               <InlineStack align="end">
                  <Button onClick={() => setPreviewModal({ open: false, section: null })}>Close</Button>
