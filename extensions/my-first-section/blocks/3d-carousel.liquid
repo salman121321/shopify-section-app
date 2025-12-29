@@ -179,30 +179,13 @@
 {% endcomment %}
 {% assign rotation_direction = section.settings.rotation_direction | default: 'left' %}
 {% assign pause_on_hover = section.settings.pause_on_hover | default: true %}
-{% assign enable_smart_scroll = section.settings.enable_smart_scroll | default: true %}
-{% assign enable_horizontal_scroll = section.settings.enable_horizontal_scroll | default: true %}
-{% assign pause_on_cards_only = section.settings.pause_on_cards_only | default: true %}
-{% assign enable_keyboard = section.settings.enable_keyboard | default: true %}
-{% assign enable_snap = section.settings.enable_snap | default: true %}
-{% assign entrance_animation = section.settings.entrance_animation | default: 'fade-up' %}
-{% assign enable_float = section.settings.enable_float | default: true %}
-{% assign active_zoom = section.settings.active_zoom | default: true %}
-{% assign enable_wave = section.settings.enable_wave | default: false %}
-{% assign hover_spread = section.settings.hover_spread | default: true %}
 {% assign enable_depth_fade = section.settings.enable_depth_fade | default: true %}
-{% assign min_depth_opacity = section.settings.min_depth_opacity | default: 40 %}
-{% assign scroll_sync = section.settings.scroll_sync | default: false %}
-{% assign gyro_control = section.settings.gyro_control | default: false %}
-{% assign friction = section.settings.friction | default: 90 %}
-{% assign rotation_sensitivity = section.settings.rotation_sensitivity | default: 1.0 %}
 {% assign text_color = section.settings.text_color | default: '#000000' %}
 {% assign show_dots = section.settings.show_dots | default: false %}
 {% assign show_arrows = section.settings.show_arrows | default: true %}
-{% assign enable_arrow_hover_effect = section.settings.enable_arrow_hover_effect | default: true %}
 {% assign show_button = section.settings.show_button | default: true %}
 {% assign button_text = section.settings.button_text | default: 'View' %}
 {% assign show_badge = section.settings.show_badge | default: true %}
-{% assign card_tilt = section.settings.card_tilt | default: true %}
 
 <div class="carousel-section-wrapper carousel-section-wrapper-{{ section.id }}" style="
     background-color: {{ section.settings.background_color }};
@@ -356,7 +339,7 @@
     .card-inner-{{ section.id }} {
         width: 100%;
         height: 100%;
-        background: {{ section.settings.card_style == 'glass' ? 'rgba(255,255,255,0.7)' : '#ffffff' }};
+        background: {% if section.settings.card_style == 'glass' %}rgba(255,255,255,0.7){% else %}#ffffff{% endif %};
         {% if section.settings.card_style == 'glass' %}backdrop-filter: blur(10px);{% endif %}
         border-radius: 16px;
         padding: 15px;
