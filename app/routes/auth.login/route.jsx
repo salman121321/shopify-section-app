@@ -17,13 +17,15 @@ import { loginErrorMessage } from "./error.server";
 export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
 
 export const loader = async ({ request }) => {
-  const errors = loginErrorMessage(await login(request));
+  const scopes = (process.env.SCOPES || "write_products,read_themes,write_themes").split(",").map(s => s.trim());
+  const errors = loginErrorMessage(await login(request, { scopes }));
 
   return { errors, polarisTranslations };
 };
 
 export const action = async ({ request }) => {
-  const errors = loginErrorMessage(await login(request));
+  const scopes = (process.env.SCOPES || "write_products,read_themes,write_themes").split(",").map(s => s.trim());
+  const errors = loginErrorMessage(await login(request, { scopes }));
 
   return {
     errors,
