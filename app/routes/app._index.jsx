@@ -34,19 +34,21 @@ import { authenticate } from "../shopify.server";
 export const loader = async ({ request }) => {
   const { session } = await authenticate.admin(request);
   
-  // Check scopes against Environment Variable (SCOPES) with EXACT SAME logic as shopify.server.js
+  // Check scopes (Soft Check - do not block)
   const currentScopes = new Set(session.scope ? session.scope.split(",").map(s => s.trim()) : []);
   const envScopes = (process.env.SCOPES || "write_products,read_themes,write_themes").split(",").map(s => s.trim());
   const hasAllScopes = envScopes.every(scope => currentScopes.has(scope));
 
   const shop = session.shop.replace(".myshopify.com", "");
   
-  if (!hasAllScopes) {
-      console.log("Missing scopes. Current:", session.scope, "Required:", envScopes.join(","));
-      return { shop, reauthRequired: true, host: session.shop, requiredScopes: envScopes };
-  }
-
-  return { shop, reauthRequired: false, host: session.shop, requiredScopes: envScopes };
+  // Pass scope status to UI
+  return { 
+    shop, 
+    reauthRequired: !hasAllScopes, 
+    host: session.shop, 
+    requiredScopes: envScopes,
+    currentScopesRaw: session.scope || "No scopes found"
+  };
 };
 
 // Live Preview Component for "My Custom Section"
@@ -157,30 +159,12 @@ const ThreeDCarouselPreview = ({ settings, compact = false }) => {
 };
 
 export default function Index() {
-  const { shop, reauthRequired, host, requiredScopes } = useLoaderData();
+  const { shop, reauthRequired, host, requiredScopes, currentScopesRaw } = useLoaderData();
   const themesFetcher = useFetcher();
   const sectionFetcher = useFetcher();
   
-  // Auto-redirect with loop protection
-   useEffect(() => {
-     if (reauthRequired) {
-         const retryCount = parseInt(localStorage.getItem("auth_retry_count") || "0");
-         
-         if (retryCount < 3) {
-             console.log(`Auto-redirecting for permissions (Attempt ${retryCount + 1}/3)...`);
-             localStorage.setItem("auth_retry_count", (retryCount + 1).toString());
-             
-             // Redirect top-level window
-             const authUrl = `/auth/login?shop=${shop}`;
-             window.open(authUrl, "_top");
-         } else {
-             console.warn("Max auto-redirect retries reached. Showing manual update modal.");
-         }
-     } else {
-         // Reset retry count on successful load
-         localStorage.removeItem("auth_retry_count");
-     }
-   }, [reauthRequired, shop]);
+  // Auto-redirect removed to stop loops. We will rely on the Banner below.
+  // This prevents the "bar bar refresh" issue completely.
  
    const [searchQuery, setSearchQuery] = useState("");
   const [categorySearchQuery, setCategorySearchQuery] = useState("");
@@ -383,6 +367,24 @@ export default function Index() {
         <Grid.Cell columnSpan={{ xs: 6, sm: 4, md: 4, lg: 10, xl: 10 }}>
           <BlockStack gap="500">
             
+            {reauthRequired && (
+                 <Banner 
+                    tone="warning" 
+                    title="Update Required"
+                    action={{
+                        content: 'Update Permissions', 
+                        onAction: () => {
+                             const authUrl = `/auth/login?shop=${shop}`;
+                             window.open(authUrl, "_top");
+                        }
+                    }}
+                 >
+                     <p>The app needs updated permissions to function correctly.</p>
+                     <p><strong>Required:</strong> {(requiredScopes || []).join(", ")}</p>
+                     <p><strong>Current:</strong> {currentScopesRaw}</p>
+                 </Banner>
+            )}
+            
             {/* Search Bar */}
             <Card>
                <InlineStack align="space-between" blockAlign="center">
@@ -543,8 +545,8 @@ export default function Index() {
         </Modal.Section>
       </Modal>
 
-      {/* Re-Auth Modal */}
-      <Modal
+      {/* Re-Auth Modal - Removed as we use Banner now */}
+      {/* <Modal
         open={reauthRequired && parseInt(typeof window !== 'undefined' ? localStorage.getItem("auth_retry_count") || "0" : "0") >= 3}
         title="Update Required"
         onClose={() => {}} // Force user to update
@@ -568,7 +570,7 @@ export default function Index() {
                  }</p>
              </Banner>
         </Modal.Section>
-      </Modal>
+      </Modal> */}
 
       {/* Theme Selection Modal */}
       <Modal
