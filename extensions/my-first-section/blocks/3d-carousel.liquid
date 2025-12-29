@@ -2,21 +2,33 @@
 {
   "name": "3D Carousel Pro",
   "target": "section",
+  "class": "section",
   "settings": [
     {
       "type": "header",
-      "content": "Data Source"
+      "content": "App Dashboard Control"
+    },
+    {
+      "type": "checkbox",
+      "id": "use_app_data",
+      "label": "Use Data from App Dashboard",
+      "default": false,
+      "info": "If enabled, content will be pulled from the '3D Carousel Builder' in the App."
+    },
+    {
+      "type": "header",
+      "content": "Content Source"
     },
     {
       "type": "product_list",
       "id": "product_list",
-      "label": "Product List",
+      "label": "Bulk Product Selection",
       "limit": 12
     },
     {
       "type": "collection",
       "id": "collection",
-      "label": "Collection"
+      "label": "Collection (Fallback)"
     },
     {
       "type": "range",
@@ -28,8 +40,60 @@
       "default": 10
     },
     {
+      "type": "paragraph",
+      "content": "Custom Image Slides (Display first)"
+    },
+    {
+      "type": "checkbox",
+      "id": "slide_1_enable",
+      "label": "Enable Custom Slide 1",
+      "default": false
+    },
+    {
+      "type": "image_picker",
+      "id": "slide_1_image",
+      "label": "Slide 1 Image"
+    },
+    {
+      "type": "url",
+      "id": "slide_1_link",
+      "label": "Slide 1 Link"
+    },
+    {
+      "type": "checkbox",
+      "id": "slide_2_enable",
+      "label": "Enable Custom Slide 2",
+      "default": false
+    },
+    {
+      "type": "image_picker",
+      "id": "slide_2_image",
+      "label": "Slide 2 Image"
+    },
+    {
+      "type": "url",
+      "id": "slide_2_link",
+      "label": "Slide 2 Link"
+    },
+    {
+      "type": "checkbox",
+      "id": "slide_3_enable",
+      "label": "Enable Custom Slide 3",
+      "default": false
+    },
+    {
+      "type": "image_picker",
+      "id": "slide_3_image",
+      "label": "Slide 3 Image"
+    },
+    {
+      "type": "url",
+      "id": "slide_3_link",
+      "label": "Slide 3 Link"
+    },
+    {
       "type": "header",
-      "content": "Section Content"
+      "content": "Text & Headings"
     },
     {
       "type": "text",
@@ -44,19 +108,8 @@
       "default": "<p>Check out our latest collection</p>"
     },
     {
-      "type": "select",
-      "id": "header_alignment",
-      "label": "Alignment",
-      "options": [
-        { "value": "left", "label": "Left" },
-        { "value": "center", "label": "Center" },
-        { "value": "right", "label": "Right" }
-      ],
-      "default": "center"
-    },
-    {
       "type": "header",
-      "content": "Colors & Style"
+      "content": "Appearance & Layout"
     },
     {
       "type": "color",
@@ -67,30 +120,14 @@
     {
       "type": "color",
       "id": "heading_color",
-      "label": "Heading Color",
+      "label": "Text Color",
       "default": "#1a1a1a"
     },
     {
       "type": "color",
-      "id": "subheading_color",
-      "label": "Text Color",
-      "default": "#4a4a4a"
-    },
-    {
-        "type": "color",
-        "id": "card_bg_color",
-        "label": "Card Background",
-        "default": "#ffffff"
-    },
-    {
-        "type": "color",
-        "id": "text_color",
-        "label": "Card Title Color",
-        "default": "#1a1a1a"
-    },
-    {
-      "type": "header",
-      "content": "Layout"
+      "id": "card_bg_color",
+      "label": "Card Background",
+      "default": "#ffffff"
     },
     {
       "type": "checkbox",
@@ -130,42 +167,34 @@
       "default": "solid"
     },
     {
-      "type": "header",
-      "content": "Animation"
-    },
-    {
       "type": "checkbox",
       "id": "auto_rotate",
       "label": "Auto Rotate",
       "default": true
-    },
-    {
-      "type": "range",
-      "id": "auto_rotate_speed",
-      "min": 0,
-      "max": 10,
-      "step": 1,
-      "label": "Speed",
-      "default": 2
     }
   ]
 }
 {% endschema %}
 
 {%- style -%}
-    .carousel-section-wrapper-{{ block.id }} {
-        background-color: {{ block.settings.background_color }};
-        height: {{ block.settings.section_height }}px;
+    .carousel-section-wrapper-{{ section.id }} {
+        background-color: {{ section.settings.background_color }};
+        height: {{ section.settings.section_height }}px;
         position: relative;
         overflow: hidden;
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
+        {% if section.settings.full_width == false %}
+            max-width: 1200px;
+            margin: 0 auto;
+            border-radius: 20px;
+        {% endif %}
     }
 
-    .carousel-content-{{ block.id }} {
-        text-align: {{ block.settings.header_alignment }};
+    .carousel-content-{{ section.id }} {
+        text-align: center;
         z-index: 2;
         margin-bottom: 20px;
         position: absolute;
@@ -175,19 +204,19 @@
         padding: 0 20px;
     }
 
-    .carousel-heading-{{ block.id }} {
-        color: {{ block.settings.heading_color }};
+    .carousel-heading-{{ section.id }} {
+        color: {{ section.settings.heading_color }};
         font-size: 32px;
         margin: 0 0 10px 0;
     }
 
-    .carousel-subheading-{{ block.id }} {
-        color: {{ block.settings.subheading_color }};
+    .carousel-subheading-{{ section.id }} {
+        color: {{ section.settings.heading_color }};
         font-size: 16px;
         margin: 0;
     }
 
-    .carousel-scene-{{ block.id }} {
+    .carousel-scene-{{ section.id }} {
         perspective: 1000px;
         width: 280px;
         height: 400px;
@@ -195,31 +224,32 @@
         transform-style: preserve-3d;
     }
 
-    .carousel-card-{{ block.id }} {
+    .carousel-card-{{ section.id }} {
         position: absolute;
         width: 100%;
         height: 100%;
         left: 0;
         top: 0;
         border-radius: 16px;
-        background: {{ block.settings.card_bg_color }};
+        background: {{ section.settings.card_bg_color }};
         box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         display: flex;
         flex-direction: column;
         overflow: hidden;
         transition: transform 0.5s;
+        text-decoration: none;
         
-        {% if block.settings.card_style == 'glass' %}
+        {% if section.settings.card_style == 'glass' %}
             background: rgba(255, 255, 255, 0.7);
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.3);
-        {% elsif block.settings.card_style == 'outlined' %}
+        {% elsif section.settings.card_style == 'outlined' %}
             background: transparent;
-            border: 2px solid {{ block.settings.heading_color }};
+            border: 2px solid {{ section.settings.heading_color }};
         {% endif %}
     }
 
-    .card-image-{{ block.id }} {
+    .card-image-{{ section.id }} {
         width: 100%;
         height: 60%;
         object-fit: cover;
@@ -236,104 +266,194 @@
         object-fit: cover;
     }
 
-    .card-info-{{ block.id }} {
+    .card-info-{{ section.id }} {
         padding: 15px;
         text-align: center;
-        color: {{ block.settings.text_color }};
+        color: {{ section.settings.heading_color }};
     }
 {%- endstyle -%}
 
-<div class="carousel-section-wrapper-{{ block.id }}">
-    <div class="carousel-content-{{ block.id }}">
-        {% if block.settings.heading != blank %}
-            <h2 class="carousel-heading-{{ block.id }}">{{ block.settings.heading }}</h2>
+<div class="carousel-section-wrapper-{{ section.id }}">
+    <div class="carousel-content-{{ section.id }}">
+        {% if section.settings.heading != blank %}
+            <h2 class="carousel-heading-{{ section.id }}">{{ section.settings.heading }}</h2>
         {% endif %}
-        {% if block.settings.subheading != blank %}
-            <div class="carousel-subheading-{{ block.id }}">{{ block.settings.subheading }}</div>
+        {% if section.settings.subheading != blank %}
+            <div class="carousel-subheading-{{ section.id }}">{{ section.settings.subheading }}</div>
         {% endif %}
     </div>
 
-    <div class="carousel-scene-{{ block.id }}" id="scene-{{ block.id }}">
-        {%- assign product_limit = block.settings.product_limit -%}
+    <div class="carousel-scene-{{ section.id }}" id="scene-{{ section.id }}">
+        {%- assign total_items = 0 -%}
+        {%- assign app_data_active = false -%}
         
-        {%- if block.settings.product_list != blank -%}
-            {%- assign total_items = block.settings.product_list.count -%}
-            {%- if total_items > product_limit -%}
-                {%- assign total_items = product_limit -%}
-            {%- endif -%}
-            
-            {%- for product in block.settings.product_list limit: product_limit -%}
-                {%- assign angle_step = 360.0 | divided_by: total_items -%}
-                {%- assign angle = forloop.index0 | times: angle_step -%}
-                
-                <div class="carousel-card-{{ block.id }}" style="transform: rotateY({{ angle }}deg) translateZ({{ block.settings.carousel_radius }}px);">
-                    <div class="card-image-{{ block.id }}">
-                        {% if product.featured_image %}
-                            {{ product.featured_image | image_url: width: 400 | image_tag: class: 'card-image-content' }}
-                        {% else %}
-                             {{ 'product-1' | placeholder_svg_tag: 'card-image-content' }}
-                        {% endif %}
-                    </div>
-                    <div class="card-info-{{ block.id }}">
-                        <strong>{{ product.title }}</strong>
-                        <p>{{ product.price | money }}</p>
-                    </div>
-                </div>
-            {%- endfor -%}
-            
-        {%- elsif block.settings.collection != blank -%}
-             {%- assign total_items = block.settings.collection.products_count -%}
-             {%- if total_items > product_limit -%}
-                {%- assign total_items = product_limit -%}
-             {%- endif -%}
-             {%- if total_items == 0 %}{% assign total_items = 6 %}{% endif %}
-
-            {%- for product in block.settings.collection.products limit: product_limit -%}
-                {%- assign angle_step = 360.0 | divided_by: total_items -%}
-                {%- assign angle = forloop.index0 | times: angle_step -%}
-
-                <div class="carousel-card-{{ block.id }}" style="transform: rotateY({{ angle }}deg) translateZ({{ block.settings.carousel_radius }}px);">
-                    <div class="card-image-{{ block.id }}">
-                        {% if product.featured_image %}
-                            {{ product.featured_image | image_url: width: 400 | image_tag: class: 'card-image-content' }}
-                        {% else %}
-                             {{ 'product-1' | placeholder_svg_tag: 'card-image-content' }}
-                        {% endif %}
-                    </div>
-                    <div class="card-info-{{ block.id }}">
-                        <strong>{{ product.title }}</strong>
-                        <p>{{ product.price | money }}</p>
-                    </div>
-                </div>
-            {%- endfor -%}
+        {%- if section.settings.use_app_data and app.metafields.shopi_section.carousel_data != blank -%}
+             {%- assign app_data_active = true -%}
+             {%- assign app_slides = app.metafields.shopi_section.carousel_data.value -%}
+             {%- assign total_items = app_slides.size -%}
         {%- else -%}
-            <!-- Fallback Mock Cards -->
-            {%- assign total_items = 6 -%}
-            {%- for i in (1..6) -%}
-                {%- assign angle = i | minus: 1 | times: 60 -%}
-                <div class="carousel-card-{{ block.id }}" style="transform: rotateY({{ angle }}deg) translateZ({{ block.settings.carousel_radius }}px);">
-                    <div class="card-image-{{ block.id }}">
-                        {{ 'product-' | append: i | placeholder_svg_tag: 'card-image-content' }}
-                    </div>
-                    <div class="card-info-{{ block.id }}">
-                        <strong>Sample Product {{ i }}</strong>
-                        <p>$99.00</p>
-                    </div>
-                </div>
-            {%- endfor -%}
+            {%- if section.settings.product_list != blank -%}
+                 {%- assign total_items = total_items | plus: section.settings.product_list.count -%}
+            {%- elsif section.settings.collection != blank -%}
+                 {%- assign total_items = total_items | plus: section.settings.collection.products_count -%}
+            {%- endif -%}
+
+            {%- if section.settings.slide_1_enable -%}{% assign total_items = total_items | plus: 1 %}{%- endif -%}
+            {%- if section.settings.slide_2_enable -%}{% assign total_items = total_items | plus: 1 %}{%- endif -%}
+            {%- if section.settings.slide_3_enable -%}{% assign total_items = total_items | plus: 1 %}{%- endif -%}
+            
+            {%- if total_items > section.settings.product_limit %}{% assign total_items = section.settings.product_limit %}{% endif %}
         {%- endif -%}
+
+        {%- if total_items == 0 %}{% assign total_items = 6 %}{% endif %}
+
+        {%- assign current_index = 0 -%}
+        {%- assign angle_step = 360.0 | divided_by: total_items -%}
+
+        {%- if app_data_active -%}
+             <!-- Render App Dashboard Slides -->
+             {%- for slide in app_slides -%}
+                {%- assign angle = current_index | times: angle_step -%}
+                
+                {% if slide.link != blank %}
+                    <a href="{{ slide.link }}" class="carousel-card-{{ section.id }}" style="transform: rotateY({{ angle }}deg) translateZ({{ section.settings.carousel_radius }}px);">
+                {% else %}
+                    <div class="carousel-card-{{ section.id }}" style="transform: rotateY({{ angle }}deg) translateZ({{ section.settings.carousel_radius }}px);">
+                {% endif %}
+                
+                    <div class="card-image-{{ section.id }}">
+                        {% if slide.imageUrl != blank %}
+                            <img src="{{ slide.imageUrl }}" class="card-image-content" alt="{{ slide.title }}" width="400" height="300" loading="lazy">
+                        {% else %}
+                             {{ 'image' | placeholder_svg_tag: 'card-image-content' }}
+                        {% endif %}
+                    </div>
+                    <div class="card-info-{{ section.id }}">
+                        <strong>{{ slide.title | default: 'Slide' }}</strong>
+                        <p>{{ slide.subtitle }}</p>
+                    </div>
+                
+                {% if slide.link != blank %}
+                    </a>
+                {% else %}
+                    </div>
+                {% endif %}
+
+                {%- assign current_index = current_index | plus: 1 -%}
+             {%- endfor -%}
+        
+        {%- else -%}
+            <!-- Render Custom Slides First -->
+            {%- for i in (1..3) -%}
+                {%- capture enable_key -%}slide_{{i}}_enable{%- endcapture -%}
+                {%- if section.settings[enable_key] -%}
+                    {%- capture image_key -%}slide_{{i}}_image{%- endcapture -%}
+                    {%- capture link_key -%}slide_{{i}}_link{%- endcapture -%}
+                    
+                    {%- assign custom_image = section.settings[image_key] -%}
+                    {%- assign custom_link = section.settings[link_key] -%}
+
+                    {%- assign angle = current_index | times: angle_step -%}
+                    
+                    {% if custom_link != blank %}
+                        <a href="{{ custom_link }}" class="carousel-card-{{ section.id }}" style="transform: rotateY({{ angle }}deg) translateZ({{ section.settings.carousel_radius }}px);">
+                    {% else %}
+                        <div class="carousel-card-{{ section.id }}" style="transform: rotateY({{ angle }}deg) translateZ({{ section.settings.carousel_radius }}px);">
+                    {% endif %}
+                    
+                        <div class="card-image-{{ section.id }}">
+                            {% if custom_image %}
+                                {{ custom_image | image_url: width: 400 | image_tag: class: 'card-image-content' }}
+                            {% else %}
+                                 {{ 'image' | placeholder_svg_tag: 'card-image-content' }}
+                            {% endif %}
+                        </div>
+                        <div class="card-info-{{ section.id }}">
+                            <strong>Slide {{ i }}</strong>
+                            <p>Click to view</p>
+                        </div>
+                    
+                    {% if custom_link != blank %}
+                        </a>
+                    {% else %}
+                        </div>
+                    {% endif %}
+
+                    {%- assign current_index = current_index | plus: 1 -%}
+                {%- endif -%}
+            {%- endfor -%}
+
+            <!-- Render Product List / Collection -->
+            {%- if section.settings.product_list != blank -%}
+                 {%- for product in section.settings.product_list limit: section.settings.product_limit -%}
+                    {%- if current_index < total_items -%}
+                        {%- assign angle = current_index | times: angle_step -%}
+                        <a href="{{ product.url }}" class="carousel-card-{{ section.id }}" style="transform: rotateY({{ angle }}deg) translateZ({{ section.settings.carousel_radius }}px);">
+                            <div class="card-image-{{ section.id }}">
+                                {% if product.featured_image %}
+                                    {{ product.featured_image | image_url: width: 400 | image_tag: class: 'card-image-content' }}
+                                {% else %}
+                                    {{ 'product-1' | placeholder_svg_tag: 'card-image-content' }}
+                                {% endif %}
+                            </div>
+                            <div class="card-info-{{ section.id }}">
+                                <strong>{{ product.title }}</strong>
+                                <p>{{ product.price | money }}</p>
+                            </div>
+                        </a>
+                        {%- assign current_index = current_index | plus: 1 -%}
+                    {%- endif -%}
+                 {%- endfor -%}
+            {%- elsif section.settings.collection != blank -%}
+                 {%- for product in section.settings.collection.products limit: section.settings.product_limit -%}
+                    {%- if current_index < total_items -%}
+                        {%- assign angle = current_index | times: angle_step -%}
+                        <a href="{{ product.url }}" class="carousel-card-{{ section.id }}" style="transform: rotateY({{ angle }}deg) translateZ({{ section.settings.carousel_radius }}px);">
+                            <div class="card-image-{{ section.id }}">
+                                {% if product.featured_image %}
+                                    {{ product.featured_image | image_url: width: 400 | image_tag: class: 'card-image-content' }}
+                                {% else %}
+                                    {{ 'product-1' | placeholder_svg_tag: 'card-image-content' }}
+                                {% endif %}
+                            </div>
+                            <div class="card-info-{{ section.id }}">
+                                <strong>{{ product.title }}</strong>
+                                <p>{{ product.price | money }}</p>
+                            </div>
+                        </a>
+                        {%- assign current_index = current_index | plus: 1 -%}
+                    {%- endif -%}
+                 {%- endfor -%}
+            {%- endif -%}
+
+            <!-- Fallback if nothing configured -->
+            {%- if current_index == 0 -%}
+                {%- for i in (1..6) -%}
+                    {%- assign angle = i | minus: 1 | times: 60 -%}
+                    <div class="carousel-card-{{ section.id }}" style="transform: rotateY({{ angle }}deg) translateZ({{ section.settings.carousel_radius }}px);">
+                        <div class="card-image-{{ section.id }}">
+                            {{ 'product-' | append: i | placeholder_svg_tag: 'card-image-content' }}
+                        </div>
+                        <div class="card-info-{{ section.id }}">
+                            <strong>Sample Product {{ i }}</strong>
+                            <p>$99.00</p>
+                        </div>
+                    </div>
+                {%- endfor -%}
+            {%- endif -%}
+        {%- endif -%}
+
     </div>
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const scene = document.getElementById('scene-{{ block.id }}');
-    const radius = {{ block.settings.carousel_radius }};
-    const autoRotate = {{ block.settings.auto_rotate }};
-    const speed = {{ block.settings.auto_rotate_speed }};
+    const scene = document.getElementById('scene-{{ section.id }}');
+    const autoRotate = {{ section.settings.auto_rotate }};
+    const speed = 2; // Fixed speed
     let angle = 0;
 
-    if(autoRotate && speed > 0) {
+    if(autoRotate) {
         setInterval(() => {
             angle -= speed * 0.1;
             scene.style.transform = `perspective(1000px) rotateY(${angle}deg)`;
