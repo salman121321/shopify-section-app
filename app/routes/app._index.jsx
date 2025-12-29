@@ -163,8 +163,14 @@ export default function Index() {
   const themesFetcher = useFetcher();
   const sectionFetcher = useFetcher();
   
-  // Auto-redirect removed to stop loops. We will rely on the Banner below.
-  // This prevents the "bar bar refresh" issue completely.
+  // RESTORED: Automatic Redirect (Now Safe due to backend fixes)
+  useEffect(() => {
+    if (reauthRequired) {
+        console.log("Missing scopes detected. Redirecting to auth...");
+        // Use window.top.location for reliable breaking out of iframe
+        window.top.location.href = `/auth/login?shop=${shop}`;
+    }
+  }, [reauthRequired, shop]);
  
    const [searchQuery, setSearchQuery] = useState("");
   const [categorySearchQuery, setCategorySearchQuery] = useState("");
@@ -368,21 +374,15 @@ export default function Index() {
           <BlockStack gap="500">
             
             {reauthRequired && (
-                 <Banner 
-                    tone="warning" 
-                    title="Update Required"
-                    action={{
-                        content: 'Update Permissions', 
-                        onAction: () => {
-                             const authUrl = `/auth/login?shop=${shop}`;
-                             window.open(authUrl, "_top");
-                        }
-                    }}
-                 >
-                     <p>The app needs updated permissions to function correctly.</p>
-                     <p><strong>Required:</strong> {(requiredScopes || []).join(", ")}</p>
-                     <p><strong>Current:</strong> {currentScopesRaw}</p>
-                 </Banner>
+                 <Card>
+                    <BlockStack gap="400" align="center">
+                        <div style={{textAlign: 'center', padding: '20px'}}>
+                            <Spinner size="large" />
+                            <Text variant="headingMd" as="h2">Updating Permissions...</Text>
+                            <p>Redirecting you to approve new features...</p>
+                        </div>
+                    </BlockStack>
+                 </Card>
             )}
             
             {/* Search Bar */}
@@ -414,7 +414,7 @@ export default function Index() {
              )}
 
             {/* Sections Grid */}
-            <Box>
+            {!reauthRequired && <Box>
                <Grid>
                   {filteredSections.map((section) => (
                     <Grid.Cell key={section.id} columnSpan={{ xs: 6, sm: 6, md: 3, lg: 3, xl: 3 }}>
@@ -495,7 +495,7 @@ export default function Index() {
                     <p>Try changing your search or category filter.</p>
                   </EmptyState>
                )}
-            </Box>
+            </Box>}
 
           </BlockStack>
         </Grid.Cell>
