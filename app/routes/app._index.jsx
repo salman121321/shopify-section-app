@@ -163,15 +163,6 @@ export default function Index() {
   const themesFetcher = useFetcher();
   const sectionFetcher = useFetcher();
   
-  // RESTORED: Automatic Redirect (Now Safe due to backend fixes)
-  useEffect(() => {
-    if (reauthRequired) {
-        console.log("Missing scopes detected. Redirecting to auth...");
-        // Use window.top.location for reliable breaking out of iframe
-        window.top.location.href = `/auth/login?shop=${shop}`;
-    }
-  }, [reauthRequired, shop]);
- 
    const [searchQuery, setSearchQuery] = useState("");
   const [categorySearchQuery, setCategorySearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -373,17 +364,7 @@ export default function Index() {
         <Grid.Cell columnSpan={{ xs: 6, sm: 4, md: 4, lg: 10, xl: 10 }}>
           <BlockStack gap="500">
             
-            {reauthRequired && (
-                 <Card>
-                    <BlockStack gap="400" align="center">
-                        <div style={{textAlign: 'center', padding: '20px'}}>
-                            <Spinner size="large" />
-                            <Text variant="headingMd" as="h2">Updating Permissions...</Text>
-                            <p>Redirecting you to approve new features...</p>
-                        </div>
-                    </BlockStack>
-                 </Card>
-            )}
+            <Layout>
             
             {/* Search Bar */}
             <Card>
@@ -414,7 +395,7 @@ export default function Index() {
              )}
 
             {/* Sections Grid */}
-            {!reauthRequired && <Box>
+            <Box>
                <Grid>
                   {filteredSections.map((section) => (
                     <Grid.Cell key={section.id} columnSpan={{ xs: 6, sm: 6, md: 3, lg: 3, xl: 3 }}>
@@ -495,7 +476,7 @@ export default function Index() {
                     <p>Try changing your search or category filter.</p>
                   </EmptyState>
                )}
-            </Box>}
+            </Box>
 
           </BlockStack>
         </Grid.Cell>
