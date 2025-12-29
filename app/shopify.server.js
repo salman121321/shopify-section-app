@@ -12,8 +12,8 @@ const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,
   apiSecretKey: process.env.SHOPIFY_API_SECRET || "",
   apiVersion: ApiVersion.January25,
-  // Ensure scopes are set correctly even if env var is missing/outdated
-  scopes: process.env.SCOPES?.split(",") || ["write_products", "read_themes", "write_themes"],
+  // Force correct scopes ignoring potentially outdated env var
+  scopes: ["write_products", "read_themes", "write_themes"],
   appUrl: process.env.SHOPIFY_APP_URL || "",
   authPathPrefix: "/auth",
   sessionStorage: new PrismaSessionStorage(prisma),
