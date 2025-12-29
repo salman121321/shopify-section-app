@@ -5,35 +5,59 @@ export const loader = async ({ request }) => {
   const { admin } = await authenticate.admin(request);
   
   try {
-    // Try fetching with explicit session
-    const response = await admin.rest.resources.Theme.all({
-      session: admin.session,
+    // Use GraphQL to fetch themes - more robust than REST in this context
+    const response = await admin.graphql(
+      `#graphql
+      query {
+        themes(first: 20) {
+          edges {
+            node {
+              id
+              name
+              role
+            }
+          }
+        }
+      }`
+    );
+
+    const responseJson = await response.json();
+    
+    if (responseJson.errors) {
+        console.error("GraphQL Errors:", responseJson.errors);
+        throw new Error(responseJson.errors[0].message);
+    }
+
+    const themesData = responseJson.data.themes.edges.map(edge => {
+        const theme = edge.node;
+        // GraphQL returns ID as "gid://shopify/Theme/123456", we need just "123456" for REST compatibility downstream if needed,
+        // but for now let's keep it as string ID. 
+        // Our frontend expects 'id' and 'role' and 'name'.
+        // We might need to parse the ID if other parts of the app expect a number, 
+        // but the Select component works with strings.
+        // However, the Asset API in api.section.jsx expects a numeric ID for the REST client.
+        // Let's extract the numeric ID.
+        const numericId = theme.id.split('/').pop();
+        return {
+            ...theme,
+            id: numericId
+        };
     });
-    
-    // If response is undefined or null, it might be due to API version mismatch or auth issue
-    if (!response) {
-       console.error("Themes API returned no response");
-       return json({ error: "No response from Shopify API" }, { status: 500 });
-    }
-
-    console.log("Themes API Response Keys:", Object.keys(response));
-
-    // Handle different response structures
-    const themesData = response.data || response;
-    
-    if (!Array.isArray(themesData)) {
-        console.error("Invalid themes response format:", themesData);
-        return json({ themes: [], error: "Invalid response format from Shopify" });
-    }
 
     // Sort themes: Live theme first, then others
     const themes = themesData.sort((a, b) => {
-        if (a.role === 'main') return -1;
-        if (b.role === 'main') return 1;
+        if (a.role === 'MAIN') return -1; // GraphQL returns uppercase 'MAIN'
+        if (b.role === 'MAIN') return 1;
         return 0;
     });
+    
+    // Normalize roles for frontend (frontend expects lowercase 'main')
+    const normalizedThemes = themes.map(t => ({
+        ...t,
+        role: t.role.toLowerCase()
+    }));
 
-    return json({ themes });
+    return json({ themes: normalizedThemes });
   } catch (error) {
     console.error("Failed to fetch themes:", error);
     return json({ 
