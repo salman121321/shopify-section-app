@@ -69,6 +69,6 @@ export const action = async ({ request }) => {
 
   } catch (error) {
     console.error("Asset API Error:", error);
-    return json({ error: "Failed to update theme asset" }, { status: 500 });
+    return json({ error: `Failed to update theme asset: ${error.message || JSON.stringify(error)}` }, { status: 500 });
   }
 };
