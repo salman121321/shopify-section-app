@@ -1,6 +1,7 @@
 {% schema %}
 {
   "name": "3D Carousel Pro",
+  "target": "section",
   "settings": [
     {
       "type": "text",
@@ -975,14 +976,14 @@
                     {% assign products_source = section.settings.product_list %}
                     {% assign source_type = 'product_list' %}
                 {% elsif section.settings.collection != blank %}
-                    {% assign products_source = section.settings.collection.products | limit: section.settings.product_limit %}
+                    {% assign products_source = section.settings.collection.products %}
                     {% assign source_type = 'collection' %}
                 {% elsif dashboard_blocks != blank %}
                     {% assign products_source = dashboard_blocks %}
                     {% assign source_type = 'dashboard_blocks' %}
                 {% endif %}
 
-                {% for item in products_source %}
+                {% for item in products_source limit: section.settings.product_limit %}
                     {% assign title = '' %}
                     {% assign price = '' %}
                     {% assign image = '' %}
@@ -1039,9 +1040,9 @@
                             <div class="card-image-wrapper">
                                 {% if image != blank %}
                                    {% if source_type == 'dashboard_blocks' %}
-                                        <img src="{{ image }}" alt="{{ title }}" loading="lazy">
+                                        <img src="{{ image }}" alt="{{ title }}" loading="lazy" width="600" height="600">
                                    {% else %}
-                                        <img src="{{ image | image_url: width: 600 }}" alt="{{ title }}" loading="lazy">
+                                        <img src="{{ image | image_url: width: 600 }}" alt="{{ title }}" loading="lazy" width="600" height="600">
                                    {% endif %}
                                 {% else %}
                                     {{ 'product-1' | placeholder_svg_tag: 'placeholder-svg' }}
