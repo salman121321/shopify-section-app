@@ -34,9 +34,9 @@ import { authenticate } from "../shopify.server";
 export const loader = async ({ request }) => {
   const { session } = await authenticate.admin(request);
   
-  // Check scopes against Environment Variable (SCOPES)
+  // Check scopes against Environment Variable (SCOPES) with EXACT SAME logic as shopify.server.js
   const currentScopes = new Set(session.scope ? session.scope.split(",").map(s => s.trim()) : []);
-  const envScopes = process.env.SCOPES ? process.env.SCOPES.split(",").map(s => s.trim()) : ["read_themes", "write_themes", "write_products"];
+  const envScopes = (process.env.SCOPES || "write_products,read_themes,write_themes").split(",").map(s => s.trim());
   const hasAllScopes = envScopes.every(scope => currentScopes.has(scope));
 
   const shop = session.shop.replace(".myshopify.com", "");
