@@ -124,7 +124,7 @@ export default function Index() {
                    />
                 </Box>
                 <Divider />
-                <Scrollable shadow style={{height: 'calc(100vh - 180px)'}}>
+                <Scrollable shadow style={{height: 'calc(100vh - 230px)'}}>
                    <ActionList
                       actionRole="menuitem"
                       items={filteredCategories.map(cat => ({
@@ -140,6 +140,16 @@ export default function Index() {
                         </Box>
                     )}
                 </Scrollable>
+                <Divider />
+                <ActionList
+                  actionRole="menuitem"
+                  items={[{
+                    content: "Settings",
+                    icon: SettingsIcon,
+                    active: selectedCategory === "settings",
+                    onAction: () => setSelectedCategory("settings"),
+                  }]}
+                />
              </LegacyCard>
              <Box paddingBlockStart="400">
                <Card>
