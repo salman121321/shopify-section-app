@@ -1,5 +1,5 @@
-import { useState, useCallback } from "react";
-import { useLoaderData } from "@remix-run/react";
+import { useState, useCallback, useEffect } from "react";
+import { useLoaderData, useFetcher } from "@remix-run/react";
 import {
   Page,
   Text,
@@ -20,9 +20,13 @@ import {
   Scrollable,
   Divider,
   ColorPicker,
-  RangeSlider
+  RangeSlider,
+  Select,
+  Spinner,
+  Toast,
+  Frame
 } from "@shopify/polaris";
-import { SearchIcon, HomeIcon, ProductIcon, SettingsIcon, PaintBrushFlatIcon, ViewIcon, MaximizeIcon, MinimizeIcon, DesktopIcon, MobileIcon } from "@shopify/polaris-icons";
+import { SearchIcon, HomeIcon, ProductIcon, SettingsIcon, PaintBrushFlatIcon, ViewIcon, MaximizeIcon, MinimizeIcon, DesktopIcon, MobileIcon, PlusIcon } from "@shopify/polaris-icons";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 
@@ -141,6 +145,9 @@ const ThreeDCarouselPreview = ({ settings, compact = false }) => {
 
 export default function Index() {
   const { shop } = useLoaderData();
+  const themesFetcher = useFetcher();
+  const sectionFetcher = useFetcher();
+  
   const [searchQuery, setSearchQuery] = useState("");
   const [categorySearchQuery, setCategorySearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -148,9 +155,64 @@ export default function Index() {
   const [previewModal, setPreviewModal] = useState({ open: false, section: null });
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [viewMode, setViewMode] = useState("desktop"); // desktop | mobile
+  
+  // Theme Selection State
+  const [themeModalOpen, setThemeModalOpen] = useState(false);
+  const [selectedSectionForInstall, setSelectedSectionForInstall] = useState(null);
+  const [selectedThemeId, setSelectedThemeId] = useState("");
+  const [themes, setThemes] = useState([]);
+  const [toastMessage, setToastMessage] = useState(null);
+
+  // Load themes on mount
+  useEffect(() => {
+    if (themesFetcher.state === "idle" && themesFetcher.data == null) {
+      themesFetcher.load("/api/themes");
+    }
+  }, [themesFetcher]);
+
+  useEffect(() => {
+    if (themesFetcher.data && themesFetcher.data.themes) {
+      setThemes(themesFetcher.data.themes);
+      // Default to main theme
+      const mainTheme = themesFetcher.data.themes.find(t => t.role === 'main');
+      if (mainTheme) setSelectedThemeId(mainTheme.id.toString());
+    }
+  }, [themesFetcher.data]);
+
+  // Handle installation response
+  useEffect(() => {
+    if (sectionFetcher.state === "idle" && sectionFetcher.data) {
+        if (sectionFetcher.data.success) {
+            setToastMessage(sectionFetcher.data.message);
+            setThemeModalOpen(false);
+            // Refresh logic could go here if we tracked installed state per theme
+        } else if (sectionFetcher.data.error) {
+            setToastMessage("Error: " + sectionFetcher.data.error);
+        }
+    }
+  }, [sectionFetcher.state, sectionFetcher.data]);
 
   // Handle Banner Dismiss
   const handleBannerDismiss = useCallback(() => setIsBannerVisible(false), []);
+
+  const handleInstallClick = (section) => {
+    setSelectedSectionForInstall(section);
+    setThemeModalOpen(true);
+  };
+
+  const handleConfirmInstall = () => {
+    if (!selectedThemeId || !selectedSectionForInstall) return;
+    
+    sectionFetcher.submit(
+      { 
+        action: "activate", 
+        themeId: selectedThemeId, 
+        sectionId: selectedSectionForInstall.id 
+      },
+      { method: "post", action: "/api/section" }
+    );
+  };
+
 
   const categories = [
     { id: "all", label: "All Sections", icon: HomeIcon },
@@ -207,8 +269,14 @@ export default function Index() {
   const handlePreview = (section) => {
     setPreviewModal({ open: true, section });
   };
+  
+  const themeOptions = themes.map(theme => ({
+    label: `${theme.name} (${theme.role === 'main' ? 'Live' : 'Draft'})`,
+    value: theme.id.toString()
+  }));
 
   return (
+    <Frame>
     <Page fullWidth>
       <TitleBar title="Dashboard" />
       
@@ -298,13 +366,7 @@ export default function Index() {
                   tone="info"
                   onDismiss={handleBannerDismiss}
                 >
-                  <p>Explore our collection of premium sections to enhance your store. Make sure to enable the App Embed first.</p>
-                  <BlockStack gap="200">
-                     <InlineStack gap="300">
-                        <Button url={`https://admin.shopify.com/store/${shop}/themes/current/editor?context=apps&activateAppId=ec818bbb-e7fe-9b80-8c63-162866afa4028167e78f/app-embed`} target="_blank">Enable App Embed</Button>
-                        <Button variant="plain" onClick={handleBannerDismiss}>I have enabled it</Button>
-                     </InlineStack>
-                  </BlockStack>
+                  <p>Explore our collection of premium sections to enhance your store. Select a section to add it to your theme.</p>
                 </Banner>
              )}
 
@@ -352,22 +414,29 @@ export default function Index() {
                              <InlineStack align="space-between">
                                 <Text variant="headingMd" as="h3">{section.title}</Text>
                                 {section.status === "active" ? (
-                                   <Badge tone="success">Installed</Badge>
+                                   <Badge tone="success">Ready</Badge>
                                 ) : (
                                    <Badge tone="attention">Coming Soon</Badge>
                                 )}
                              </InlineStack>
                              <Text variant="bodySm" tone="subdued" truncate as="p">{section.description}</Text>
                              
-                             <Button 
-                                fullWidth
-                                variant={section.status === "active" ? "primary" : "secondary"}
-                                disabled={section.status !== "active"}
-                                url={`https://admin.shopify.com/store/${shop}/themes/current/editor`}
-                                target="_blank"
-                             >
-                                {section.status === "active" ? "Customize" : "Notify Me"}
-                             </Button>
+                             <InlineStack gap="200">
+                                <Button 
+                                    fullWidth
+                                    variant="primary"
+                                    icon={PlusIcon}
+                                    onClick={() => handleInstallClick(section)}
+                                >
+                                    Activate
+                                </Button>
+                                <Button 
+                                    icon={SettingsIcon}
+                                    onClick={() => handlePreview(section)}
+                                >
+                                    Preview
+                                </Button>
+                             </InlineStack>
                            </BlockStack>
                          </Box>
                       </Card>
@@ -424,9 +493,53 @@ export default function Index() {
               <InlineStack align="end" gap="200">
                  <Button icon={MaximizeIcon} onClick={() => { setIsFullScreen(true); setViewMode("desktop"); }}>Live Preview</Button>
                  <Button onClick={() => setPreviewModal({ open: false, section: null })}>Close</Button>
-                 <Button variant="primary" url={`https://admin.shopify.com/store/${shop}/themes/current/editor`} target="_blank">Customize on Store</Button>
+                 <Button variant="primary" onClick={() => {
+                     setPreviewModal({ open: false, section: null });
+                     handleInstallClick(previewModal.section);
+                 }}>Activate Section</Button>
               </InlineStack>
            </BlockStack>
+        </Modal.Section>
+      </Modal>
+
+      {/* Theme Selection Modal */}
+      <Modal
+        open={themeModalOpen}
+        onClose={() => setThemeModalOpen(false)}
+        title={`Activate ${selectedSectionForInstall?.title}`}
+      >
+        <Modal.Section>
+            <BlockStack gap="400">
+                <Text as="p">
+                    Select the theme where you want to add this section. 
+                    The section will be automatically added and activated in the selected theme.
+                </Text>
+                
+                {themesFetcher.state === "loading" ? (
+                    <Box display="flex" justifyContent="center" padding="400">
+                        <Spinner size="large" />
+                    </Box>
+                ) : (
+                    <Select
+                        label="Select Theme"
+                        options={themeOptions}
+                        value={selectedThemeId}
+                        onChange={setSelectedThemeId}
+                    />
+                )}
+            </BlockStack>
+        </Modal.Section>
+        <Modal.Section>
+            <InlineStack align="end" gap="200">
+                <Button onClick={() => setThemeModalOpen(false)}>Cancel</Button>
+                <Button 
+                    variant="primary" 
+                    onClick={handleConfirmInstall}
+                    loading={sectionFetcher.state === "submitting"}
+                >
+                    Add & Activate
+                </Button>
+            </InlineStack>
         </Modal.Section>
       </Modal>
 
@@ -491,58 +604,18 @@ export default function Index() {
                  boxShadow: viewMode === 'mobile' ? '0 20px 40px rgba(0,0,0,0.2)' : '0 0 20px rgba(0,0,0,0.1)',
                  transition: 'all 0.3s ease',
                  overflow: 'hidden', // Hide overflow on frame to clip content
-                 borderRadius: viewMode === 'mobile' ? '40px' : '0',
-                 border: viewMode === 'mobile' ? '14px solid #1a1a1a' : 'none',
-                 position: 'relative'
               }}>
-                 {/* Mobile Notch (Only visible in mobile view) */}
-                 {viewMode === 'mobile' && (
-                    <div style={{
-                       position: 'absolute',
-                       top: 0,
-                       left: '50%',
-                       transform: 'translateX(-50%)',
-                       width: '150px',
-                       height: '24px',
-                       backgroundColor: '#1a1a1a',
-                       borderBottomLeftRadius: '16px',
-                       borderBottomRightRadius: '16px',
-                       zIndex: 10
-                    }}></div>
-                 )}
-
-                 {/* Content Scroll Area */}
-                 <div style={{
-                    width: '100%',
-                    height: '100%',
-                    overflow: 'auto',
-                    paddingTop: viewMode === 'mobile' ? '24px' : '0' // Space for notch
-                 }}>
-                    {previewModal.section.renderPreview ? (
-                       previewModal.section.renderPreview(previewModal.section.defaultSettings, false)
-                    ) : previewModal.section.image ? (
-                       <img 
-                          src={previewModal.section.image} 
-                          alt="Full Preview" 
-                          style={{width: '100%', height: 'auto', display: 'block'}} 
-                       />
-                    ) : (
-                       <Box display="flex" alignItems="center" justifyContent="center" height="100%">
-                          <Text as="p">No preview available</Text>
-                       </Box>
-                    )}
-                 </div>
+                 {previewModal.section.renderPreview(previewModal.section.defaultSettings, false)}
               </div>
            </div>
         </div>
       )}
 
-      {/* CSS for Hover Effect */}
-      <style>{`
-         .section-image-container:hover .hover-overlay {
-            opacity: 1 !important;
-         }
-      `}</style>
+      {toastMessage && (
+        <Toast content={toastMessage} onDismiss={() => setToastMessage(null)} />
+      )}
+
     </Page>
+    </Frame>
   );
 }
