@@ -45,11 +45,6 @@ export default function Index() {
     { id: "all", label: "All Sections", icon: HomeIcon },
     { id: "headers", label: "Headers", icon: PaintBrushFlatIcon },
     { id: "products", label: "Product Page", icon: ProductIcon },
-    { id: "settings", label: "Settings", icon: SettingsIcon },
-    // Simulate many categories for testing scroll
-    ...Array.from({ length: 15 }).map((_, i) => ({
-       id: `cat-${i}`, label: `Category ${i+1}`, icon: PaintBrushFlatIcon 
-    }))
   ];
 
   const filteredCategories = categories.filter(cat => 
@@ -64,30 +59,6 @@ export default function Index() {
       category: "headers",
       status: "active",
       image: "https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png"
-    },
-    {
-      id: "hero-banner",
-      title: "Hero Banner Pro",
-      description: "Advanced hero banner with video support.",
-      category: "headers",
-      status: "coming_soon",
-      image: "https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-lifestyle_1_large.png"
-    },
-    {
-      id: "product-slider",
-      title: "Product Slider",
-      description: "Smooth sliding product carousel.",
-      category: "products",
-      status: "coming_soon",
-      image: "https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-collection-1_large.png"
-    },
-     {
-      id: "settings-panel",
-      title: "Global Settings",
-      description: "Configure global app styles and behaviors.",
-      category: "settings",
-      status: "active",
-      image: null
     }
   ];
 
@@ -124,7 +95,7 @@ export default function Index() {
                    />
                 </Box>
                 <Divider />
-                <Scrollable shadow style={{height: 'calc(100vh - 200px)'}}>
+                <Scrollable shadow style={{height: 'calc(100vh - 230px)'}}>
                    <ActionList
                       actionRole="menuitem"
                       items={filteredCategories.map(cat => ({
@@ -140,9 +111,7 @@ export default function Index() {
                         </Box>
                     )}
                 </Scrollable>
-             </LegacyCard>
-             <Box paddingBlockStart="400">
-               <LegacyCard>
+                <Divider />
                 <ActionList
                   actionRole="menuitem"
                   items={[{
@@ -152,8 +121,7 @@ export default function Index() {
                     onAction: () => setSelectedCategory("settings"),
                   }]}
                 />
-               </LegacyCard>
-             </Box>
+             </LegacyCard>
              <Box paddingBlockStart="400">
                <Card>
                   <BlockStack gap="200">
