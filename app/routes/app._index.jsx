@@ -34,8 +34,8 @@ import { authenticate } from "../shopify.server";
 export const loader = async ({ request }) => {
   const { session } = await authenticate.admin(request);
   
-  // Check scopes but DO NOT redirect server-side (causes iframe error)
-  const currentScopes = new Set(session.scope ? session.scope.split(",") : []);
+  // Check scopes
+  const currentScopes = new Set(session.scope ? session.scope.split(",").map(s => s.trim()) : []);
   const requiredScopes = ["read_themes", "write_themes", "write_products"];
   const hasAllScopes = requiredScopes.every(scope => currentScopes.has(scope));
 
@@ -161,15 +161,15 @@ export default function Index() {
   const themesFetcher = useFetcher();
   const sectionFetcher = useFetcher();
   
-  // Auto-redirect for re-auth
+  // Auto-redirect removed to prevent loops. Showing Modal instead.
+  /*
   useEffect(() => {
     if (reauthRequired) {
-        // Redirect the top-level window to the auth endpoint
-        // This breaks out of the iframe and avoids "refused to connect"
         const authUrl = `/auth/login?shop=${shop}`;
         window.open(authUrl, "_top");
     }
   }, [reauthRequired, shop]);
+  */
 
   const [searchQuery, setSearchQuery] = useState("");
   const [categorySearchQuery, setCategorySearchQuery] = useState("");
@@ -529,6 +529,27 @@ export default function Index() {
                  }}>Activate Section</Button>
               </InlineStack>
            </BlockStack>
+        </Modal.Section>
+      </Modal>
+
+      {/* Re-Auth Modal */}
+      <Modal
+        open={reauthRequired}
+        title="Update Required"
+        onClose={() => {}} // Force user to update
+        primaryAction={{
+            content: 'Update App Permissions',
+            onAction: () => {
+                const authUrl = `/auth/login?shop=${shop}`;
+                window.open(authUrl, "_top");
+            }
+        }}
+      >
+        <Modal.Section>
+            <Text as="p">
+                The app requires updated permissions to function correctly (Theme access). 
+                Please click the button below to update.
+            </Text>
         </Modal.Section>
       </Modal>
 
