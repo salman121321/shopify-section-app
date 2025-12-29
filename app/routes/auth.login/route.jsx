@@ -17,14 +17,21 @@ import { loginErrorMessage } from "./error.server";
 export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
 
 export const loader = async ({ request }) => {
-  const scopes = (process.env.SCOPES || "write_products,read_themes,write_themes").split(",").map(s => s.trim());
+  // Hardcoded fallback to ensure scopes are ALWAYS requested correctly, even if Env Var fails
+  const envScopes = process.env.SCOPES || "write_products,read_themes,write_themes";
+  const scopes = envScopes.split(",").map(s => s.trim());
+  
+  console.log("Initiating login with scopes:", scopes);
+  
   const errors = loginErrorMessage(await login(request, { scopes }));
 
   return { errors, polarisTranslations };
 };
 
 export const action = async ({ request }) => {
-  const scopes = (process.env.SCOPES || "write_products,read_themes,write_themes").split(",").map(s => s.trim());
+  const envScopes = process.env.SCOPES || "write_products,read_themes,write_themes";
+  const scopes = envScopes.split(",").map(s => s.trim());
+  
   const errors = loginErrorMessage(await login(request, { scopes }));
 
   return {
