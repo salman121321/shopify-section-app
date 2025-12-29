@@ -40,27 +40,6 @@
     },
     {
       "type": "text",
-      "id": "label_text",
-      "label": "Label Text"
-    },
-    {
-      "type": "color",
-      "id": "label_color",
-      "label": "Label Color",
-      "default": "#000000"
-    },
-    {
-      "type": "range",
-      "id": "label_size",
-      "min": 10,
-      "max": 30,
-      "step": 1,
-      "unit": "px",
-      "label": "Label Size",
-      "default": 14
-    },
-    {
-      "type": "text",
       "id": "heading",
       "label": "Heading",
       "default": "Featured Products"
@@ -206,43 +185,9 @@
       "default": 0
     },
     {
-      "type": "header",
-      "content": "Background Styling"
-    },
-    {
       "type": "image_picker",
       "id": "background_image",
       "label": "Background Image"
-    },
-    {
-      "type": "select",
-      "id": "bg_size",
-      "label": "Background Size",
-      "options": [
-        { "value": "cover", "label": "Cover" },
-        { "value": "contain", "label": "Contain" },
-        { "value": "auto", "label": "Auto" }
-      ],
-      "default": "cover"
-    },
-    {
-      "type": "select",
-      "id": "bg_position",
-      "label": "Background Position",
-      "options": [
-        { "value": "center", "label": "Center" },
-        { "value": "top", "label": "Top" },
-        { "value": "bottom", "label": "Bottom" },
-        { "value": "left", "label": "Left" },
-        { "value": "right", "label": "Right" }
-      ],
-      "default": "center"
-    },
-    {
-      "type": "checkbox",
-      "id": "bg_fixed",
-      "label": "Fixed Background (Parallax)",
-      "default": false
     },
     {
       "type": "color",
@@ -273,19 +218,9 @@
       "max": 1200,
       "step": 10,
       "unit": "px",
-      "label": "Carousel Radius (Desktop)",
+      "label": "Carousel Radius",
       "info": "Increase to spread cards further apart",
       "default": 450
-    },
-    {
-      "type": "range",
-      "id": "mobile_carousel_radius",
-      "min": 50,
-      "max": 600,
-      "step": 10,
-      "unit": "px",
-      "label": "Carousel Radius (Mobile)",
-      "default": 200
     },
     {
       "type": "header",
@@ -340,18 +275,8 @@
       "max": 500,
       "step": 10,
       "unit": "px",
-      "label": "Card Width (Desktop)",
+      "label": "Card Width",
       "default": 280
-    },
-    {
-      "type": "range",
-      "id": "mobile_card_width",
-      "min": 100,
-      "max": 400,
-      "step": 10,
-      "unit": "px",
-      "label": "Card Width (Mobile)",
-      "default": 180
     },
     {
       "type": "range",
@@ -360,18 +285,8 @@
       "max": 700,
       "step": 10,
       "unit": "px",
-      "label": "Card Height (Desktop)",
+      "label": "Card Height",
       "default": 450
-    },
-    {
-      "type": "range",
-      "id": "mobile_card_height",
-      "min": 150,
-      "max": 600,
-      "step": 10,
-      "unit": "px",
-      "label": "Card Height (Mobile)",
-      "default": 280
     },
     {
         "type": "range",
@@ -472,10 +387,6 @@
             { "value": "center", "label": "Center" }
         ],
         "default": "left"
-    },
-    {
-      "type": "header",
-      "content": "Buttons & Badges"
     },
     {
       "type": "checkbox",
@@ -598,10 +509,6 @@
       "default": false
     },
     {
-      "type": "header",
-      "content": "Animation & Physics"
-    },
-    {
         "type": "select",
         "id": "entrance_animation",
         "label": "Entrance Animation",
@@ -685,37 +592,6 @@
     },
     {
       "type": "range",
-      "id": "rotation_sensitivity",
-      "min": 0.1,
-      "max": 2.0,
-      "step": 0.1,
-      "label": "Drag Sensitivity",
-      "default": 0.2
-    },
-    {
-        "type": "range",
-        "id": "friction",
-        "min": 80,
-        "max": 99,
-        "step": 1,
-        "label": "Smoothness (Friction)",
-        "info": "Higher value means more glide (80-99)",
-        "default": 95
-    },
-    {
-      "type": "checkbox",
-      "id": "scroll_sync",
-      "label": "Rotate on Page Scroll",
-      "default": false
-    },
-    {
-      "type": "checkbox",
-      "id": "gyro_control",
-      "label": "Mobile Gyroscope Control",
-      "default": false
-    },
-    {
-      "type": "range",
       "id": "perspective",
         "min": 500,
         "max": 2000,
@@ -768,12 +644,9 @@
         background-color: {{ section.settings.background_color }};
         {% if section.settings.background_image != blank %}
             background-image: url('{{ section.settings.background_image | image_url: width: 2000 }}');
-            background-size: {{ section.settings.bg_size }};
-            background-position: {{ section.settings.bg_position }};
+            background-size: cover;
+            background-position: center;
             background-repeat: no-repeat;
-            {% if section.settings.bg_fixed %}
-                background-attachment: fixed;
-            {% endif %}
         {% endif %}
         height: {{ section.settings.section_height }}px;
         position: relative;
@@ -784,8 +657,8 @@
 
     @media (max-width: 768px) {
         .carousel-section-wrapper-{{ section.id }} {
-            --card-width: {{ section.settings.mobile_card_width }}px;
-            --card-height: {{ section.settings.mobile_card_height }}px;
+            --card-width: 180px;
+            --card-height: 280px;
         }
     }
 
@@ -946,9 +819,6 @@
     {% if section.settings.heading != blank or section.settings.subheading != blank %}
         <div class="carousel-section-header-{{ section.id }}">
             <div class="carousel-heading-inline" style="display: inline-flex; align-items: baseline; gap: 10px; flex-wrap: wrap; justify-content: inherit;">
-                {% if section.settings.label_text != blank %}
-                    <small class="carousel-label-{{ section.id }}" style="color: {{ section.settings.label_color }}; font-size: {{ section.settings.label_size }}px; font-weight: bold;">{{ section.settings.label_text }}</small>
-                {% endif %}
                 {% if section.settings.heading != blank %}
                     <h2 class="carousel-heading-{{ section.id }}" style="margin: 0;">{{ section.settings.heading }}</h2>
                 {% endif %}
@@ -1358,7 +1228,7 @@
             if (numberOfCards === 0) return;
 
             const radiusDesktop = {{ section.settings.carousel_radius }};
-            const radiusMobile = {{ section.settings.mobile_carousel_radius }};
+            const radiusMobile = 200;
             let radius = window.innerWidth < 768 ? radiusMobile : radiusDesktop;
             
             window.addEventListener('resize', () => {
@@ -1524,7 +1394,7 @@
             }
 
             // Scroll Sync
-            if ({{ section.settings.scroll_sync }}) {
+            if (false) {
                 let lastScrollY = window.scrollY;
                 window.addEventListener('scroll', () => {
                     const scrollY = window.scrollY;
@@ -1542,7 +1412,7 @@
             }
 
             // Gyroscope
-            if ({{ section.settings.gyro_control }} && window.DeviceOrientationEvent) {
+            if (false && window.DeviceOrientationEvent) {
                 window.addEventListener("deviceorientation", (event) => {
                     const tilt = event.gamma;
                     if (tilt && Math.abs(tilt) > 2) { 
@@ -1564,8 +1434,8 @@
             let animationId;
             let isInteracting = false; 
             
-            const friction = {{ section.settings.friction }} / 100; 
-            const sensitivity = {{ section.settings.rotation_sensitivity }};
+            const friction = 95 / 100; 
+            const sensitivity = 0.2;
 
             if (carousel.dataset.animationId) {
                 cancelAnimationFrame(carousel.dataset.animationId);
