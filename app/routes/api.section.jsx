@@ -3,7 +3,7 @@ import { authenticate } from "../shopify.server";
 import { THREE_D_CAROUSEL_LIQUID } from "../templates/three-d-carousel";
 
 export const action = async ({ request }) => {
-  const { admin } = await authenticate.admin(request);
+  const { admin, session } = await authenticate.admin(request);
   const formData = await request.formData();
   
   const action = formData.get("action");
@@ -45,7 +45,7 @@ export const action = async ({ request }) => {
   try {
     if (action === "activate") {
       // 1. Upload the Liquid file to the theme
-      const asset = new admin.rest.resources.Asset({session: admin.session});
+      const asset = new admin.rest.resources.Asset({session: session});
       asset.theme_id = themeId;
       asset.key = sectionData.filename;
       asset.value = sectionData.content;
@@ -57,7 +57,7 @@ export const action = async ({ request }) => {
 
     } else if (action === "deactivate") {
       // Remove the Liquid file from the theme
-      const asset = new admin.rest.resources.Asset({session: admin.session});
+      const asset = new admin.rest.resources.Asset({session: session});
       asset.theme_id = themeId;
       asset.key = sectionData.filename;
       await asset.delete();
