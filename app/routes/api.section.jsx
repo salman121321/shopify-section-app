@@ -149,6 +149,7 @@ export const action = async ({ request }) => {
                     {
                         filename: sectionData.filename,
                         body: {
+                          type: "TEXT",
                           value: sectionData.content
                         }
                     }
