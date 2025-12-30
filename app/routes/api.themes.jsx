@@ -43,6 +43,39 @@ export const loader = async ({ request }) => {
         if (b.role === 'main') return 1;
         return 0;
     });
+
+    // Check for installed sections in the main theme
+    const mainTheme = sortedThemes.find(t => t.role === 'main');
+    const installedSections = [];
+
+    if (mainTheme) {
+        try {
+            // We check for specific known section files
+            const knownSections = [
+                "sections/three-d-carousel.liquid", 
+                "sections/my-custom-section.liquid"
+            ];
+            
+            // We can check them one by one or list all assets. Listing is often safer for permissions if we just read keys.
+            // But let's try checking specific assets to be precise.
+            for (const assetKey of knownSections) {
+                const assetUrl = `https://${shop}/admin/api/${apiVersion}/themes/${mainTheme.id}/assets.json?asset[key]=${assetKey}`;
+                const assetResp = await fetch(assetUrl, {
+                    headers: { "X-Shopify-Access-Token": accessToken }
+                });
+                
+                if (assetResp.ok) {
+                    // If we get a 200 OK, the asset exists
+                    // Map filename back to section ID
+                    if (assetKey.includes("three-d-carousel")) installedSections.push("3d-carousel-pro");
+                    if (assetKey.includes("my-custom-section")) installedSections.push("my-custom-section");
+                }
+            }
+        } catch (assetErr) {
+            console.warn("Failed to check installed assets:", assetErr);
+            // Don't fail the whole request just because asset check failed
+        }
+    }
     
     // Normalize and ensure ID is string for frontend
     const normalizedThemes = sortedThemes.map(t => ({
@@ -51,7 +84,7 @@ export const loader = async ({ request }) => {
         role: t.role
     }));
 
-    return json({ themes: normalizedThemes });
+    return json({ themes: normalizedThemes, installedSections });
   } catch (error) {
     console.error("Failed to fetch themes:", error);
     return json({ 

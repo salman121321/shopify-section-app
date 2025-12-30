@@ -27,7 +27,7 @@ import {
   Toast,
   Frame
 } from "@shopify/polaris";
-import { SearchIcon, HomeIcon, ProductIcon, SettingsIcon, PaintBrushFlatIcon, ViewIcon, MaximizeIcon, MinimizeIcon, DesktopIcon, MobileIcon, PlusIcon } from "@shopify/polaris-icons";
+import { SearchIcon, HomeIcon, ProductIcon, SettingsIcon, PaintBrushFlatIcon, ViewIcon, MaximizeIcon, MinimizeIcon, DesktopIcon, MobileIcon, PlusIcon, CheckIcon } from "@shopify/polaris-icons";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 
@@ -176,6 +176,7 @@ export default function Index() {
   const [selectedSectionForInstall, setSelectedSectionForInstall] = useState(null);
   const [selectedThemeId, setSelectedThemeId] = useState("");
   const [themes, setThemes] = useState([]);
+  const [installedSectionIds, setInstalledSectionIds] = useState([]);
   const [toastMessage, setToastMessage] = useState(null);
 
   // Load themes on mount
@@ -202,6 +203,10 @@ export default function Index() {
         const mainTheme = themesFetcher.data.themes.find(t => t.role === 'main');
         if (mainTheme) setSelectedThemeId(mainTheme.id.toString());
       }
+      
+      if (themesFetcher.data.installedSections) {
+        setInstalledSectionIds(themesFetcher.data.installedSections);
+      }
     }
   }, [themesFetcher.data]);
 
@@ -219,7 +224,10 @@ export default function Index() {
         if (sectionFetcher.data.success) {
             setToastMessage(sectionFetcher.data.message);
             setThemeModalOpen(false);
-            // Refresh logic could go here if we tracked installed state per theme
+            // Optimistically update installed status
+            if (selectedSectionForInstall) {
+                 setInstalledSectionIds(prev => [...prev, selectedSectionForInstall.id]);
+            }
         } else if (sectionFetcher.data.error) {
             setToastMessage("Error: " + sectionFetcher.data.error);
         }
@@ -296,6 +304,11 @@ export default function Index() {
 
   const filteredSections = sections.filter((section) => {
     const matchesSearch = section.title.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    if (selectedCategory === "activated") {
+        return matchesSearch && installedSectionIds.includes(section.id);
+    }
+    
     const matchesCategory = selectedCategory === "all" || section.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
@@ -359,12 +372,20 @@ export default function Index() {
                 <Divider />
                 <ActionList
                   actionRole="menuitem"
-                  items={[{
-                    content: "Settings",
-                    icon: SettingsIcon,
-                    active: selectedCategory === "settings",
-                    onAction: () => setSelectedCategory("settings"),
-                  }]}
+                  items={[
+                    {
+                        content: "Settings",
+                        icon: SettingsIcon,
+                        active: selectedCategory === "settings",
+                        onAction: () => setSelectedCategory("settings"),
+                    },
+                    {
+                        content: "Activated Sections",
+                        icon: CheckIcon,
+                        active: selectedCategory === "activated",
+                        onAction: () => setSelectedCategory("activated"),
+                    }
+                  ]}
                 />
              </LegacyCard>
              <Box paddingBlockStart="400">
@@ -463,14 +484,20 @@ export default function Index() {
                              <Text variant="bodySm" tone="subdued" truncate as="p">{section.description}</Text>
                              
                              <InlineStack gap="200">
-                                <Button 
-                                    fullWidth
-                                    variant="primary"
-                                    icon={PlusIcon}
-                                    onClick={() => handleInstallClick(section)}
-                                >
-                                    Activate
-                                </Button>
+                                {(() => {
+                                    const isInstalled = installedSectionIds.includes(section.id);
+                                    return (
+                                        <Button 
+                                            fullWidth
+                                            variant={isInstalled ? "secondary" : "primary"}
+                                            icon={isInstalled ? CheckIcon : PlusIcon}
+                                            disabled={isInstalled}
+                                            onClick={() => handleInstallClick(section)}
+                                        >
+                                            {isInstalled ? "Activated" : "Activate"}
+                                        </Button>
+                                    );
+                                })()}
                                 <Button 
                                     icon={SettingsIcon}
                                     onClick={() => handlePreview(section)}
