@@ -166,6 +166,20 @@ export default function Index() {
   const { shop, reauthRequired, host, requiredScopes, currentScopesRaw } = useLoaderData();
   const themesFetcher = useFetcher();
   const sectionFetcher = useFetcher();
+
+  // Add hover styles
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.innerHTML = `
+      .section-image-container:hover .hover-overlay {
+        opacity: 1 !important;
+      }
+    `;
+    document.head.appendChild(style);
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
   
    const [searchQuery, setSearchQuery] = useState("");
   const [categorySearchQuery, setCategorySearchQuery] = useState("");
@@ -232,7 +246,8 @@ export default function Index() {
             if (sectionFetcher.data.warning) {
                 setToastMessage("Warning: " + sectionFetcher.data.message);
             } else {
-                setToastMessage(sectionFetcher.data.message);
+                const method = sectionFetcher.data.method || "unknown";
+                setToastMessage(`✓ ${sectionFetcher.data.message} (Method: ${method})`);
             }
             setThemeModalOpen(false);
             // Optimistically update installed status
@@ -244,7 +259,17 @@ export default function Index() {
                  });
             }
         } else if (sectionFetcher.data.error) {
-            setToastMessage("Error: " + sectionFetcher.data.error);
+            const errorMsg = sectionFetcher.data.error;
+            const technicalDetails = sectionFetcher.data.technicalDetails;
+
+            // Show user-friendly error with option to see technical details
+            let displayMsg = `❌ ${errorMsg}`;
+            if (technicalDetails && technicalDetails !== errorMsg) {
+                console.error("Technical Details:", technicalDetails);
+                displayMsg += " (Check console for details)";
+            }
+
+            setToastMessage(displayMsg);
         }
     }
   }, [sectionFetcher.state, sectionFetcher.data]);
@@ -677,12 +702,33 @@ export default function Index() {
             </BlockStack>
         </Modal.Section>
         <Modal.Section>
+            {sectionFetcher.data?.error && (
+                <Box paddingBlockEnd="400">
+                    <Banner tone="critical">
+                        <p>{sectionFetcher.data.error}</p>
+                        {sectionFetcher.data.technicalDetails && (
+                            <details style={{ marginTop: '8px' }}>
+                                <summary style={{ cursor: 'pointer', fontSize: '12px' }}>Technical Details</summary>
+                                <pre style={{ fontSize: '11px', marginTop: '4px', padding: '8px', background: '#f6f6f7', borderRadius: '4px', overflow: 'auto' }}>
+                                    {sectionFetcher.data.technicalDetails}
+                                </pre>
+                            </details>
+                        )}
+                    </Banner>
+                </Box>
+            )}
             <InlineStack align="end" gap="200">
                 <Button onClick={() => setThemeModalOpen(false)}>Cancel</Button>
-                <Button 
-                    variant="primary" 
+                {sectionFetcher.data?.error && (
+                    <Button onClick={handleConfirmInstall} loading={sectionFetcher.state === "submitting"}>
+                        Retry
+                    </Button>
+                )}
+                <Button
+                    variant="primary"
                     onClick={handleConfirmInstall}
                     loading={sectionFetcher.state === "submitting"}
+                    disabled={!selectedThemeId || themes.length === 0}
                 >
                     Add & Activate
                 </Button>
@@ -759,7 +805,12 @@ export default function Index() {
       )}
 
       {toastMessage && (
-        <Toast content={toastMessage} onDismiss={() => setToastMessage(null)} />
+        <Toast
+          content={toastMessage}
+          onDismiss={() => setToastMessage(null)}
+          duration={toastMessage.includes("❌") ? 8000 : 4500}
+          error={toastMessage.includes("❌")}
+        />
       )}
 
         {/* Re-Auth Modal */}
