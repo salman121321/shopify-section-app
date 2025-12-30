@@ -4,7 +4,7 @@ import { authenticate } from "../shopify.server";
 export const action = async ({ request }) => {
   const { admin, session } = await authenticate.admin(request);
 
-  console.log("\n=== TEST UPLOAD ENDPOINT (V2_FIXED) ===");
+  console.log("\n=== TEST UPLOAD ENDPOINT (V3_FORCED_UPDATE) ===");
   console.log("Shop:", session.shop);
   console.log("Access Token:", session.accessToken?.substring(0, 10) + "...");
   console.log("Scopes:", session.scope);
