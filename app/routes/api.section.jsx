@@ -242,6 +242,17 @@ export const action = async ({ request }) => {
       console.log("Attempting REST Asset Update via Shopify Library...");
       
       try {
+          // SCOPE CHECK: Ensure we actually have write_themes
+          // The session might say we do, but the token might be old.
+          const accessScopes = await admin.rest.resources.AccessScope.all({ session: session });
+          const hasWriteThemes = accessScopes.some(scope => scope.handle === "write_themes");
+          
+          if (!hasWriteThemes) {
+               console.error("CRITICAL: Token missing write_themes scope. Forcing Re-auth.");
+               await prisma.session.deleteMany({ where: { shop } });
+               return json({ reauth: true, error: "Missing Write Permissions. Please update app." }, { status: 401 });
+          }
+
           const Asset = admin.rest.resources.Asset;
           const asset = new Asset({ session: session });
           asset.theme_id = cleanThemeId;
@@ -257,65 +268,81 @@ export const action = async ({ request }) => {
       } catch (libErr) {
           console.error("Library Asset Save Failed:", libErr);
           
-          // Fallback to Raw Fetch if library fails (original robust logic)
-          console.log("Falling back to Raw Fetch Retry Strategy...");
+          // GRAPHQL FALLBACK (The Robust Way)
+          console.log("Falling back to GraphQL Injection...");
           
-           // Retry Strategy: Try Latest, then Stable, then LTS
-           const versionsToTry = ["2025-01", "2024-10", "2024-04"];
-           let lastError = null;
-           let lastStatus = 0;
-           let successResponse = null;
-     
-           for (const v of versionsToTry) {
-               console.log(`Trying REST PUT with API Version: ${v}...`);
-               const tryUrl = `https://${shop}/admin/api/${v}/themes/${cleanThemeId}/assets.json`;
-               
-               try {
-                   const response = await fetch(tryUrl, {
-                       method: "PUT",
-                       headers: {
-                           "X-Shopify-Access-Token": accessToken,
-                           "Content-Type": "application/json"
-                       },
-                       body: JSON.stringify({
-                           asset: {
-                               key: sectionData.filename,
-                               value: sectionData.content
-                           }
-                       })
+          try {
+              // 1. Get the checksum/version of the theme (not needed for simple overwrite, but good practice)
+              // 2. Use themeFilesUpsert (Unstable or 2024-10)
+              // NOTE: ThemeFilesUpsertInput must be constructed carefully.
+              
+              const gqlApiVersion = "unstable"; // Required for upsert
+              const gqlUrl = `https://${shop}/admin/api/${gqlApiVersion}/graphql.json`;
+              
+              const query = `
+                mutation themeFilesUpsert($files: [ThemeFilesUpsertInput!]!, $themeId: ID!) {
+                  themeFilesUpsert(files: $files, themeId: $themeId) {
+                    upsertedThemeFiles {
+                      filename
+                    }
+                    userErrors {
+                      code
+                      field
+                      message
+                    }
+                  }
+                }
+              `;
+              
+              const variables = {
+                  themeId: `gid://shopify/Theme/${cleanThemeId}`,
+                  files: [{
+                      filename: sectionData.filename,
+                      body: {
+                          value: sectionData.content
+                      }
+                  }]
+              };
+              
+              const gqlResp = await fetch(gqlUrl, {
+                  method: "POST",
+                  headers: {
+                      "Content-Type": "application/json",
+                      "X-Shopify-Access-Token": accessToken
+                  },
+                  body: JSON.stringify({ query, variables })
+              });
+              
+              const gqlData = await gqlResp.json();
+              console.log("GraphQL Fallback Result:", JSON.stringify(gqlData));
+              
+              if (gqlData.data?.themeFilesUpsert?.upsertedThemeFiles?.length > 0) {
+                   console.log("GraphQL Injection SUCCESS!");
+                   await markSectionInstalled(shop, accessToken, apiVersion, sectionId);
+                   return json({ 
+                       success: true, 
+                       message: "Section injected via GraphQL Fallback.",
+                       method: "graphql" 
                    });
-     
-                   if (response.ok) {
-                       successResponse = response;
-                       console.log(`Success with API Version ${v}`);
-                       break; // Exit loop on success
-                   } else {
-                       lastStatus = response.status;
-                       const text = await response.text();
-                       lastError = `Version ${v} Failed (${response.status}): ${text}`;
-                       console.warn(lastError);
-                       
-                       // If 401/403, no point retrying other versions, it's auth
-                       if (response.status === 401 || response.status === 403) {
-                            await prisma.session.deleteMany({ where: { shop } });
-                            return json({ reauth: true, error: "Authentication failed during write. Reloading..." }, { status: 401 });
-                       }
-                   }
-               } catch (e) {
-                   console.error(`Exception with Version ${v}:`, e);
-                   lastError = e.message;
+              }
+              
+              if (gqlData.errors) {
+                  throw new Error(`GraphQL Error: ${JSON.stringify(gqlData.errors)}`);
+              }
+              if (gqlData.data?.themeFilesUpsert?.userErrors?.length > 0) {
+                  throw new Error(`GraphQL User Error: ${JSON.stringify(gqlData.data.themeFilesUpsert.userErrors)}`);
+              }
+              
+          } catch (gqlErr) {
+               console.error("GraphQL Fallback Failed:", gqlErr);
+               // If both REST and GraphQL fail, return the original library error or a composite
+               
+               // Check if the error is 404 (Theme Locked)
+               if (libErr.message && libErr.message.includes("404")) {
+                    throw new Error(`Failed to inject section. The theme (ID: ${cleanThemeId}) refused both REST and GraphQL connections. It is likely locked or read-only.`);
                }
-           }
-     
-           if (!successResponse) {
-                 console.error("All REST versions failed.");
-                 // If 404 persists across all versions
-                 if (lastStatus === 404) {
-                      // FORCE ERROR - User wants injection or nothing
-                      throw new Error(`Failed to inject section code. The theme (ID: ${cleanThemeId}) refused the connection (404). This usually means the theme is locked or permissions are missing. Please try a different theme.`);
-                 }
-                 throw new Error(`Asset Update Failed: ${lastError}`);
-           }
+               throw new Error(`Asset Injection Failed. REST: ${libErr.message}. GraphQL: ${gqlErr.message}`);
+          }
       }
       
       // If we are here, successResponse is valid.
