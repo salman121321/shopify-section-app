@@ -501,28 +501,15 @@ export default function Index() {
                              <InlineStack gap="200">
                                 {(() => {
                                     const isInstalled = installedSectionIds.includes(section.id);
-                                    // Find main theme ID for customization link
-                                    const mainTheme = themes.find(t => t.role === 'main');
-                                    const mainThemeId = mainTheme ? mainTheme.id : "";
-
                                     return (
                                         <Button 
                                             fullWidth
                                             variant={isInstalled ? "secondary" : "primary"}
-                                            icon={isInstalled ? PaintBrushFlatIcon : PlusIcon}
-                                            onClick={() => {
-                                                if (isInstalled) {
-                                                    if (mainThemeId) {
-                                                        window.open(`https://admin.shopify.com/store/${shop}/themes/${mainThemeId}/editor`, "_blank");
-                                                    } else {
-                                                        setToastMessage("Main theme not found. Please try refreshing.");
-                                                    }
-                                                } else {
-                                                    handleInstallClick(section);
-                                                }
-                                            }}
+                                            icon={isInstalled ? CheckIcon : PlusIcon}
+                                            disabled={isInstalled}
+                                            onClick={() => handleInstallClick(section)}
                                         >
-                                            {isInstalled ? "Customize" : "Activate"}
+                                            {isInstalled ? "Activated" : "Activate"}
                                         </Button>
                                     );
                                 })()}

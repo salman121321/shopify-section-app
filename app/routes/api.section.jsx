@@ -67,7 +67,7 @@ export const action = async ({ request }) => {
           "settings": [
              { "type": "text", "id": "heading", "label": "Heading", "default": "Hello World" }
           ],
-          "presets": [{ "name": "My Custom Section", "category": "Shopi Section" }]
+          "presets": [{ "name": "My Custom Section" }]
         }
         {% endschema %}
         <h2>{{ section.settings.heading }}</h2>
@@ -90,8 +90,8 @@ export const action = async ({ request }) => {
       // FALLBACK: Use direct fetch to bypass library issues
       const shop = session.shop;
       const accessToken = session.accessToken;
-      // Use 2024-10 (Latest Stable) to fix 404 on assets
-      const apiVersion = "2024-10"; 
+      // Use 2024-04 (Stable) to ensure compatibility
+      const apiVersion = "2024-04"; 
       const cleanThemeId = String(themeId).trim();
 
       console.log(`Debug: Shop=${shop}, ThemeID=${cleanThemeId}, TokenLength=${accessToken?.length}`);
@@ -119,22 +119,13 @@ export const action = async ({ request }) => {
       }
       console.log("Diagnostic 1 Success: Theme exists.");
 
-      // DIAGNOSTIC 2: Check Asset Endpoint Reachability (List Assets)
-      // This verifies if the assets endpoint is actually valid for this theme
-      const assetsCheckUrl = `https://${shop}/admin/api/${apiVersion}/themes/${cleanThemeId}/assets.json?limit=1`;
-      const assetsCheckResp = await fetch(assetsCheckUrl, {
-          headers: { "X-Shopify-Access-Token": accessToken }
-      });
-
-      if (!assetsCheckResp.ok) {
-          const text = await assetsCheckResp.text();
-          console.warn(`Diagnostic 2 Failed: Assets endpoint returned ${assetsCheckResp.status}`);
-          if (assetsCheckResp.status === 404) {
-              return json({ error: "This theme does not support Asset API modifications (Assets endpoint 404). It might be a development or trial theme." }, { status: 404 });
-          }
-      } else {
-          console.log("Diagnostic 2 Success: Assets endpoint is reachable.");
-      }
+      // REAL UPDATE: Use REST API
+      console.log("Attempting REST Asset Update...");
+      const url = `https://${shop}/admin/api/${apiVersion}/themes/${cleanThemeId}/assets.json`;
+      
+      // DIAGNOSTIC 2: Check Asset Access (List Assets)
+      // Removed - listing assets can be heavy and we already checked theme existence
+      // If we have write_themes, we should be able to write.
 
       // DIAGNOSTIC 3: Verify Actual Scopes from Shopify
       // Sometimes the session has scopes but the token doesn't (stale token)
@@ -143,9 +134,10 @@ export const action = async ({ request }) => {
           headers: { "X-Shopify-Access-Token": accessToken }
       });
       
+      let activeScopes = [];
       if (scopeResp.ok) {
           const scopeData = await scopeResp.json();
-          const activeScopes = scopeData.access_scopes.map(s => s.handle);
+          activeScopes = scopeData.access_scopes.map(s => s.handle);
           console.log("Verified Active Scopes from Shopify:", activeScopes);
           
           if (!activeScopes.includes("write_themes")) {
@@ -157,10 +149,6 @@ export const action = async ({ request }) => {
           console.warn("Could not verify scopes from API:", await scopeResp.text());
       }
 
-      // REAL UPDATE: Use REST API
-      console.log("Attempting REST Asset Update...");
-      const url = `https://${shop}/admin/api/${apiVersion}/themes/${cleanThemeId}/assets.json`;
-      
       const response = await fetch(url, {
           method: "PUT",
           headers: {
@@ -188,82 +176,161 @@ export const action = async ({ request }) => {
            }
 
             // 404 on PUT usually means the theme ID is wrong OR the endpoint is wrong.
-            // Since we verified the theme exists (Diag 1), it might be the API version or URL format.
-            // But for now, if it's 404, we return error instead of re-auth loops, as we verified scopes.
-           if (response.status === 404) {
-               return json({ error: `Shopify API returned 404 Not Found for Asset PUT. URL: ${url}. Response: ${text}` }, { status: 404 });
-           }
-
-           throw new Error(`Failed to save section: ${response.status} ${text}`);
-      }
-
-      // 2. AUTO-ADD TO HOME PAGE (INDEX.JSON)
-      // Only for Online Store 2.0 Themes (which use templates/index.json)
-      console.log("Attempting to add section to Home Page (templates/index.json)...");
-      try {
-        const indexUrl = `https://${shop}/admin/api/${apiVersion}/themes/${cleanThemeId}/assets.json?asset[key]=templates/index.json`;
-        const indexResp = await fetch(indexUrl, {
-            headers: { "X-Shopify-Access-Token": accessToken }
-        });
-
-        if (indexResp.ok) {
-            const indexData = await indexResp.json();
-            const indexJson = JSON.parse(indexData.asset.value);
-            
-            // Generate unique ID for the new section instance
-            const newSectionInstanceId = `${sectionId.replace(/-/g, "_")}_${Date.now()}`;
-            
-            // Add section definition
-            // Note: 'type' refers to the filename without extension and 'sections/' prefix
-            const sectionType = sectionData.filename.replace("sections/", "").replace(".liquid", "");
-            
-            if (!indexJson.sections) indexJson.sections = {};
-            indexJson.sections[newSectionInstanceId] = {
-                type: sectionType,
-                settings: {}
-            };
-            
-            // Add to order (append to the end of the page)
-            if (!indexJson.order) indexJson.order = [];
-            indexJson.order.push(newSectionInstanceId);
-            
-            console.log(`Adding section instance ${newSectionInstanceId} of type ${sectionType} to index.json`);
-
-            // Save back to Shopify
-            const updateIndexResp = await fetch(`https://${shop}/admin/api/${apiVersion}/themes/${cleanThemeId}/assets.json`, {
-                method: "PUT",
-                headers: {
-                    "X-Shopify-Access-Token": accessToken,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    asset: {
-                        key: "templates/index.json",
-                        value: JSON.stringify(indexJson)
+            // REST failed. Let's try GraphQL Fallback if scope allows
+            if (response.status === 404) {
+                console.log("REST 404 encountered. Attempting GraphQL fallback...");
+                
+                try {
+                    // GraphQL mutation for themeFilesUpsert
+                    const query = `
+                      mutation themeFilesUpsert($files: [ThemeFilesUpsertInput!]!, $themeId: ID!) {
+                        themeFilesUpsert(files: $files, themeId: $themeId) {
+                          upsertedThemeFiles {
+                            filename
+                          }
+                          userErrors {
+                            code
+                            field
+                            message
+                          }
+                        }
+                      }
+                    `;
+                    
+                    const gqlUrl = `https://${shop}/admin/api/${apiVersion}/graphql.json`;
+                    const gqlResp = await fetch(gqlUrl, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-Shopify-Access-Token": accessToken
+                        },
+                        body: JSON.stringify({
+                            query,
+                            variables: {
+                                themeId: `gid://shopify/Theme/${cleanThemeId}`,
+                                files: [
+                                    {
+                                        filename: sectionData.filename,
+                                        body: { value: sectionData.content }
+                                    }
+                                ]
+                            }
+                        })
+                    });
+                    
+                    if (gqlResp.ok) {
+                        const gqlData = await gqlResp.json();
+                        console.log("GraphQL Response:", JSON.stringify(gqlData));
+                        
+                        const userErrors = gqlData.data?.themeFilesUpsert?.userErrors || [];
+                        if (userErrors.length > 0) {
+                             throw new Error(`GraphQL User Errors: ${JSON.stringify(userErrors)}`);
+                        }
+                        
+                        return json({ 
+                            success: true, 
+                            message: `Section added via GraphQL Fallback`,
+                            method: "graphql-fallback"
+                        });
+                    } else {
+                        console.error("GraphQL Fallback Failed:", await gqlResp.text());
                     }
-                })
-            });
+                } catch (gqlErr) {
+                    console.error("GraphQL Fallback Exception:", gqlErr);
+                }
 
-            if (updateIndexResp.ok) {
-                console.log("Successfully added section to Home Page.");
-            } else {
-                console.warn("Failed to update index.json:", await updateIndexResp.text());
-                // We don't fail the whole request if this fails, as the section is technically installed
+                // If GraphQL also failed or didn't run, return the original REST 404 error but with scope info
+                return json({ 
+                    error: `Shopify API returned 404 Not Found for Asset PUT. URL: ${url}. Scopes: ${activeScopes.join(',')}. Response: ${text}` 
+                }, { status: 404 });
             }
-        } else {
-             console.log("templates/index.json not found (likely vintage theme). Skipping auto-add.");
-        }
-      } catch (err) {
-          console.error("Error during auto-add to index.json:", err);
-          // Non-critical error
+
+            throw new Error(`Failed to save section: ${response.status} ${text}`);
       }
 
-      return json({ success: true, message: "Section activated and added to Home Page successfully!" });
-    }
-  } catch (error) {
-    console.error("Error activating section:", error);
-    return json({ error: error.message || "Failed to activate section" }, { status: 500 });
-  }
+      return json({ 
+          success: true, 
+          message: `Section added to ${themeId} via REST (2024-04)`,
+          method: "rest"
+      });
 
-  return json({ error: "Invalid action" }, { status: 400 });
+      const data = await response.json();
+      console.log("Direct Fetch Success:", data);
+      
+      return json({ success: true, message: "Section installed successfully" });
+
+    } else if (action === "deactivate") {
+      // Remove the Liquid file from the theme
+      const shop = session.shop;
+      const accessToken = session.accessToken;
+      const apiVersion = "2024-10";
+      const cleanThemeId = String(themeId).trim();
+      const url = `https://${shop}/admin/api/${apiVersion}/themes/${cleanThemeId}/assets.json?asset[key]=${sectionData.filename}`;
+
+      const response = await fetch(url, {
+          method: "DELETE",
+          headers: {
+              "X-Shopify-Access-Token": accessToken
+          }
+      });
+
+      if (!response.ok) {
+          if (response.status === 401) {
+             console.log("Details: 401 Unauthorized detected. Deleting invalid session to force re-auth.");
+             await prisma.session.deleteMany({ where: { shop } });
+             return json({ reauth: true, error: "Authentication expired. Please reload the page." }, { status: 401 });
+          }
+          const text = await response.text();
+          // If 404 on delete, it's already gone, consider success
+          if (response.status === 404) {
+             return json({ success: true, message: "Section already removed" });
+          }
+          throw new Error(`Shopify API ${response.status}: ${text}`);
+      }
+
+      return json({ success: true, message: "Section removed successfully" });
+    }
+
+    return json({ error: "Invalid action" }, { status: 400 });
+
+  } catch (error) {
+    console.error("Asset API Error:", error);
+    
+    let msg = "Unknown error";
+    let details = "";
+
+    // Check if error is a Response object (common in fetch/shopify-api)
+    if (error && typeof error.text === 'function') {
+        try {
+            const text = await error.text();
+            msg = `API Error ${error.status || ''}: ${text}`;
+            try {
+                const jsonErr = JSON.parse(text);
+                if (jsonErr.errors) {
+                    msg = `Shopify API Error: ${JSON.stringify(jsonErr.errors)}`;
+                }
+            } catch (e) {
+                // Not JSON
+            }
+        } catch (e) {
+            msg = "Failed to read error response body";
+        }
+    } else if (error instanceof Error) {
+        msg = error.message;
+        details = error.stack;
+    } else if (typeof error === 'string') {
+        msg = error;
+    } else {
+        try {
+            msg = JSON.stringify(error);
+        } catch (e) {
+            msg = "Circular error object";
+        }
+    }
+    
+    return json({ 
+        error: `Failed to update theme asset: ${msg}`,
+        details: details || msg
+    }, { status: 500 });
+  }
 };

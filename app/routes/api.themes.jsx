@@ -52,7 +52,7 @@ export const loader = async ({ request }) => {
         try {
             // We check for specific known section files
             const knownSections = [
-                "sections/three-d-carousel.liquid", 
+                "sections/3d-carousel-pro.liquid", 
                 "sections/my-custom-section.liquid"
             ];
             
@@ -67,7 +67,7 @@ export const loader = async ({ request }) => {
                 if (assetResp.ok) {
                     // If we get a 200 OK, the asset exists
                     // Map filename back to section ID
-                    if (assetKey.includes("three-d-carousel")) installedSections.push("3d-carousel-pro");
+                    if (assetKey.includes("3d-carousel-pro")) installedSections.push("3d-carousel-pro");
                     if (assetKey.includes("my-custom-section")) installedSections.push("my-custom-section");
                 }
             }
