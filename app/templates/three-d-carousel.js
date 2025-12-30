@@ -1,4 +1,5 @@
-export const THREE_D_CAROUSEL_LIQUID = `{% schema %}
+export const THREE_D_CAROUSEL_LIQUID = `
+{% schema %}
 {
   "name": "Shopi: 3D Carousel Pro",
   "class": "shopi-section-carousel",
