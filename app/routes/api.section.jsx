@@ -13,9 +13,36 @@ export const action = async ({ request }) => {
 
   const action = formData.get("action");
   const themeId = formData.get("themeId");
+
+  console.log("Received Action:", action);
+  console.log("Received ThemeID:", themeId);
+
+  if (!themeId) {
+    return json({ error: "Theme ID is required" }, { status: 400 });
+  }
+
+  // Verify theme exists
+  try {
+      // Direct REST client usage to verify theme existence and avoid Resource wrapping issues for this check
+      // Note: admin.rest.resources.Theme.find() is the standard way
+      const theme = await admin.rest.resources.Theme.find({
+          session: session,
+          id: Number(themeId)
+      });
+      
+      if (!theme) {
+          console.error(`Theme ${themeId} returned null/undefined`);
+          return json({ error: `Theme with ID ${themeId} not found.` }, { status: 404 });
+      }
+      console.log("Theme verified:", theme.name);
+  } catch (e) {
+      console.error("Theme verification failed:", e);
+      return json({ error: `Theme with ID ${themeId} not accessible. Details: ${e.message}` }, { status: 404 });
+  }
+
   const sectionId = formData.get("sectionId");
 
-  if (!themeId || !sectionId) {
+  if (!sectionId) {
     return json({ error: "Missing required fields" }, { status: 400 });
   }
 
