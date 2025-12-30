@@ -33,7 +33,7 @@ async function markSectionInstalled(shop, accessToken, apiVersion, sectionId) {
         const appInstallation = getData.data?.currentAppInstallation;
         if (!appInstallation) {
             console.error("Failed to get AppInstallation for Metafield update");
-            return;
+            throw new Error("Failed to get AppInstallation for Metafield update (Permissions?)");
         }
 
         let installedSections = [];
@@ -83,12 +83,18 @@ async function markSectionInstalled(shop, accessToken, apiVersion, sectionId) {
             
             const updateData = await updateResp.json();
             console.log("Metafield Update Result:", JSON.stringify(updateData));
+            
+            const userErrors = updateData.data?.metafieldsSet?.userErrors;
+            if (userErrors && userErrors.length > 0) {
+                 throw new Error(`Metafield Update Failed: ${JSON.stringify(userErrors)}`);
+            }
         } else {
             console.log("Section already in metafield list.");
         }
 
     } catch (err) {
         console.error("Failed to update installed section metafield:", err);
+        throw err;
     }
 }
 
