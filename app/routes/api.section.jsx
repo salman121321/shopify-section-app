@@ -122,30 +122,9 @@ export const action = async ({ request }) => {
     return json({ error: "Theme ID is required" }, { status: 400 });
   }
 
-  // Verify theme exists
-  try {
-      // Direct REST client usage to verify theme existence and avoid Resource wrapping issues for this check
-      // Note: admin.rest.resources.Theme.find() is the standard way
-      const theme = await admin.rest.resources.Theme.find({
-          session: session,
-          id: Number(themeId)
-      });
-      
-      if (!theme) {
-          console.error(`Theme ${themeId} returned null/undefined`);
-          return json({ error: `Theme with ID ${themeId} not found.` }, { status: 404 });
-      }
-      console.log("Theme verified:", theme.name);
-  } catch (e) {
-      console.error("Theme verification failed:", e);
-      // Check if this error is also a 401
-      if (e.message && e.message.includes("401")) {
-          console.log("Details: 401 Unauthorized detected during theme check. Deleting invalid session.");
-          await prisma.session.deleteMany({ where: { shop: session.shop } });
-          return json({ reauth: true, error: "Authentication expired. Please reload the page." }, { status: 401 });
-      }
-      return json({ error: `Theme with ID ${themeId} not accessible. Details: ${e.message}` }, { status: 404 });
-  }
+  // Skip early theme verification - we'll verify with direct API calls below
+  // The admin.rest.resources.Theme.find() was causing false 404 errors
+  console.log("Theme ID received:", themeId);
 
   const sectionId = formData.get("sectionId");
 
