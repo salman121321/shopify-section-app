@@ -101,9 +101,9 @@ export const action = async ({ request }) => {
     return json({ success: false, message: `Test 2 failed: ${e.message}`, results }, { status: 500 });
   }
 
-  // Test 3: Direct REST API - Upload Asset
+  // Test 3: GraphQL Upload (Correct method for OS 2.0)
   try {
-    console.log("\n--- Test 3: Upload Asset (Direct REST) ---");
+    console.log("\n--- Test 3: GraphQL Upload (OS 2.0 Method) ---");
 
     const testContent = `{% schema %}
 {
@@ -111,52 +111,87 @@ export const action = async ({ request }) => {
   "settings": []
 }
 {% endschema %}
-<div>Test from Shopi Section</div>`;
+<div>✅ Test from Shopi Section - Uploaded via GraphQL!</div>`;
 
-    const url = `https://${shop}/admin/api/${apiVersion}/themes/${themeId}/assets.json`;
-    console.log("URL:", url);
-    console.log("Uploading to:", "sections/shopi-test.liquid");
+    const graphqlQuery = `
+      mutation themeFilesUpsert($themeId: ID!, $files: [OnlineStoreThemeFilesUpsertFileInput!]!) {
+        themeFilesUpsert(themeId: $themeId, files: $files) {
+          upsertedThemeFiles {
+            filename
+            size
+            contentType
+            checksum
+          }
+          userErrors {
+            filename
+            code
+            message
+          }
+        }
+      }
+    `;
 
-    const response = await fetch(url, {
-      method: "PUT",
-      headers: {
-        "X-Shopify-Access-Token": accessToken,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        asset: {
-          key: "sections/shopi-test.liquid",
+    const themeGid = `gid://shopify/Theme/${themeId}`;
+
+    const variables = {
+      themeId: themeGid,
+      files: [{
+        filename: "sections/shopi-test.liquid",
+        body: {
+          type: "TEXT",
           value: testContent
         }
-      })
-    });
+      }]
+    };
 
-    console.log("Status:", response.status);
+    console.log("Theme GID:", themeGid);
+    console.log("Using GraphQL mutation");
+
+    const response = await admin.graphql(graphqlQuery, { variables });
     const data = await response.json();
-    console.log("Response:", JSON.stringify(data, null, 2));
+
+    console.log("GraphQL Response:", JSON.stringify(data, null, 2));
 
     results.test3 = {
-      status: response.status,
-      success: response.ok,
-      url: url,
+      method: "graphql",
+      themeGid: themeGid,
       filename: "sections/shopi-test.liquid",
       response: data
     };
 
-    if (response.ok) {
-      console.log("✅ All Tests Passed!");
-      results.summary = "✅ ALL TESTS PASSED! Theme is accessible and upload works!";
+    if (data.data?.themeFilesUpsert?.upsertedThemeFiles?.length > 0) {
+      console.log("✅ ✅ ✅ ALL TESTS PASSED! ✅ ✅ ✅");
+      console.log("Uploaded via GraphQL:", data.data.themeFilesUpsert.upsertedThemeFiles[0]);
+
+      results.test3.success = true;
+      results.summary = "✅ ALL TESTS PASSED! Theme accessible and GraphQL upload works!";
+
       return json({
         success: true,
-        message: "✅ All tests passed! Upload works perfectly!",
+        message: "✅ All tests passed! GraphQL upload successful!",
         results: results
       });
-    } else {
-      console.error("❌ Test 3 Failed!");
-      results.summary = `❌ Test 3 (Upload) failed - Status ${response.status}: ${data.errors || 'Unknown error'}`;
+    } else if (data.data?.themeFilesUpsert?.userErrors?.length > 0) {
+      const errors = data.data.themeFilesUpsert.userErrors;
+      console.error("❌ GraphQL User Errors:", errors);
+
+      results.test3.success = false;
+      results.test3.errors = errors;
+      results.summary = `❌ Test 3 failed: ${errors.map(e => `${e.code}: ${e.message}`).join("; ")}`;
+
       return json({
         success: false,
-        message: `Test 3 Failed: Upload returned ${response.status}`,
+        message: `GraphQL upload failed: ${errors[0].message}`,
+        results: results
+      }, { status: 500 });
+    } else {
+      console.error("❌ Unexpected GraphQL response");
+      results.test3.success = false;
+      results.summary = "❌ Unexpected GraphQL response";
+
+      return json({
+        success: false,
+        message: "Unexpected GraphQL response",
         results: results
       }, { status: 500 });
     }
@@ -165,7 +200,7 @@ export const action = async ({ request }) => {
     console.error("❌ Test 3 Exception:", e.message);
     console.error("Stack:", e.stack);
     results.test3 = { error: e.message, stack: e.stack };
-    results.summary = "Test 3 crashed with exception";
+    results.summary = `Test 3 crashed: ${e.message}`;
     return json({
       success: false,
       message: `Test 3 crashed: ${e.message}`,
