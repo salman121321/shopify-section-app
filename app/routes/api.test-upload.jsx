@@ -177,8 +177,9 @@ export const action = async ({ request }) => {
     }
 
     const data = await response.json();
-
-    console.log("GraphQL Response:", JSON.stringify(data, null, 2));
+    
+    // Log the full response for debugging
+    console.log("Full GraphQL Response:", JSON.stringify(data, null, 2));
 
     results.test3 = {
       method: "graphql",
@@ -213,8 +214,18 @@ export const action = async ({ request }) => {
         results: results
       }, { status: 500 });
     } else {
-      console.error("❌ Unexpected GraphQL response");
+      console.error("❌ Unexpected GraphQL response", data);
       results.test3.success = false;
+      results.test3.error = "Unexpected GraphQL response structure";
+      results.test3.fullResponse = data; // Return full data to client for inspection
+      results.summary = "Unexpected GraphQL response (Check console/results)";
+      
+      return json({
+        success: false,
+        message: "Unexpected GraphQL response",
+        results: results
+      }, { status: 500 });
+    }
       results.summary = "❌ Unexpected GraphQL response";
 
       return json({
