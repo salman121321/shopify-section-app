@@ -90,13 +90,38 @@ export const action = async ({ request }) => {
       // FALLBACK: Use direct fetch to bypass library issues
       const shop = session.shop;
       const accessToken = session.accessToken;
-      // Revert to 2024-10 (Most Stable Recent) to rule out version issues
-      const apiVersion = "2024-10"; 
+      // Try 2025-01 as a safe stable version
+      const apiVersion = "2025-01"; 
       const cleanThemeId = String(themeId).trim();
 
       console.log(`Debug: Shop=${shop}, ThemeID=${cleanThemeId}, TokenLength=${accessToken?.length}`);
 
-      // URL for the PUT request
+      // DIAGNOSTIC 1: Check if Theme Exists via REST
+      const themeUrl = `https://${shop}/admin/api/${apiVersion}/themes/${cleanThemeId}.json`;
+      
+      const themeResp = await fetch(themeUrl, {
+          headers: { "X-Shopify-Access-Token": accessToken }
+      });
+
+      if (!themeResp.ok) {
+          const text = await themeResp.text();
+          throw new Error(`Theme Check Failed (${themeResp.status}): ${text} | URL: ${themeUrl}`);
+      }
+      console.log("Diagnostic 1 Success: Theme exists.");
+
+      // DIAGNOSTIC 2: Check Asset Access (GET)
+      const assetCheckUrl = `https://${shop}/admin/api/${apiVersion}/themes/${cleanThemeId}/assets.json?fields=key&limit=1`;
+      const assetCheckResp = await fetch(assetCheckUrl, {
+           headers: { "X-Shopify-Access-Token": accessToken }
+      });
+      if (!assetCheckResp.ok) {
+           const text = await assetCheckResp.text();
+           // If this fails, then we can't write either
+           throw new Error(`Asset Access Failed (${assetCheckResp.status}): ${text} | URL: ${assetCheckUrl}`);
+      }
+      console.log("Diagnostic 2 Success: Can list assets.");
+
+      // REAL UPDATE
       const url = `https://${shop}/admin/api/${apiVersion}/themes/${cleanThemeId}/assets.json`;
       console.log(`PUT URL: ${url}`);
 
