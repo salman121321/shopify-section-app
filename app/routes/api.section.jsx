@@ -320,21 +320,27 @@ export const action = async ({ request }) => {
                     if (gqlResp.ok) {
                         const gqlData = await gqlResp.json();
                         console.log("GraphQL Response:", JSON.stringify(gqlData));
-                        
-                        const userErrors = gqlData.data?.themeFilesUpsert?.userErrors || [];
-                        if (userErrors.length > 0) {
-                             gqlErrorDetails = JSON.stringify(userErrors);
-                             console.error("GraphQL User Errors:", gqlErrorDetails);
-                        } else {
-                            // SUCCESS via GraphQL
-                            // Mark as installed via Metafield
-                            await markSectionInstalled(shop, accessToken, apiVersion, sectionId);
 
-                            return json({ 
-                                success: true, 
-                                message: `Section added via GraphQL Fallback`,
-                                method: "graphql-fallback"
-                            });
+                        if (gqlData.errors) {
+                             gqlErrorDetails = JSON.stringify(gqlData.errors);
+                             console.error("GraphQL Top-Level Errors:", gqlErrorDetails);
+                        } else {
+                            const userErrors = gqlData.data?.themeFilesUpsert?.userErrors || [];
+                            if (userErrors.length > 0) {
+                                 gqlErrorDetails = JSON.stringify(userErrors);
+                                 console.error("GraphQL User Errors:", gqlErrorDetails);
+                            } else {
+                                // SUCCESS via GraphQL
+                                // Mark as installed via Metafield
+                                await markSectionInstalled(shop, accessToken, apiVersion, sectionId);
+    
+                                return json({ 
+                                    success: true, 
+                                    message: `Section successfully injected into theme ${cleanThemeId}`,
+                                    method: "graphql-fallback",
+                                    themeId: cleanThemeId
+                                });
+                            }
                         }
                     } else {
                         gqlErrorDetails = `HTTP ${gqlResp.status} ${await gqlResp.text()}`;
