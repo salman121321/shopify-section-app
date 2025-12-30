@@ -273,183 +273,177 @@ export const action = async ({ request }) => {
           }
       }
 
-      // PRIMARY METHOD: Use Admin REST API (Most Compatible)
-      console.log("=== ATTEMPTING ASSET UPLOAD VIA ADMIN API ===");
+      // PRIMARY METHOD: Direct REST API (Proven & Reliable)
+      console.log("=== ATTEMPTING ASSET UPLOAD ===");
       console.log(`Shop: ${shop}`);
       console.log(`Theme ID: ${cleanThemeId}`);
       console.log(`Filename: ${sectionData.filename}`);
       console.log(`Content Length: ${sectionData.content.length} characters`);
+      console.log(`Access Token Length: ${accessToken?.length || 0}`);
 
       let successResponse = null;
       let uploadMethod = null;
+      let lastError = "Unknown error";
+      let lastStatus = 0;
 
-      // Try with admin.rest.resources first (uses proper authentication)
+      // PRIMARY METHOD: Direct REST API
       try {
-          console.log("Method 1: Using admin.rest.resources.Asset...");
-
-          const Asset = admin.rest.resources.Asset;
-          const asset = new Asset({ session: session });
-          asset.theme_id = Number(cleanThemeId);
-          asset.key = sectionData.filename;
-          asset.value = sectionData.content;
-
-          await asset.save({ update: true });
-
-          console.log("✅ Asset Upload Success via admin.rest!");
-          successResponse = { ok: true };
-          uploadMethod = "admin-rest";
-      } catch (adminError) {
-          console.error("❌ admin.rest.resources.Asset failed:", adminError.message);
-          console.error("Error details:", adminError);
-      }
-
-      // FALLBACK METHOD 1: Direct REST API
-      if (!successResponse) {
-          console.log("=== FALLBACK: DIRECT REST API ===");
+          console.log("=== PRIMARY: DIRECT REST API ===");
 
           // Use the most stable API version
           const apiVer = "2024-04";
           const assetUrl = `https://${shop}/admin/api/${apiVer}/themes/${cleanThemeId}/assets.json`;
 
-          console.log(`Trying: ${assetUrl}`);
+          console.log(`Trying URL: ${assetUrl}`);
+          console.log(`Payload Preview: { asset: { key: "${sectionData.filename}", value: "[${sectionData.content.length} chars]" } }`);
 
-          try {
-              const response = await fetch(assetUrl, {
-                  method: "PUT",
-                  headers: {
-                      "X-Shopify-Access-Token": accessToken,
-                      "Content-Type": "application/json"
-                  },
-                  body: JSON.stringify({
-                      asset: {
-                          key: sectionData.filename,
-                          value: sectionData.content
-                      }
-                  })
-              });
-
-              console.log(`Response Status: ${response.status}`);
-
-              if (response.ok) {
-                  const data = await response.json();
-                  console.log("✅ Direct REST Success!");
-                  console.log("Asset saved:", data.asset);
-                  successResponse = response;
-                  uploadMethod = "direct-rest";
-              } else {
-                  const errorText = await response.text();
-                  console.error(`❌ Direct REST Failed (${response.status}):`, errorText);
-
-                  if (response.status === 401 || response.status === 403) {
-                      await prisma.session.deleteMany({ where: { shop } });
-                      return json({ reauth: true, error: "Authentication failed. Please reload the page." }, { status: 401 });
+          const response = await fetch(assetUrl, {
+              method: "PUT",
+              headers: {
+                  "X-Shopify-Access-Token": accessToken,
+                  "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                  asset: {
+                      key: sectionData.filename,
+                      value: sectionData.content
                   }
+              })
+          });
 
-                  // Try alternative API versions
-                  const altVersions = ["2024-10", "2024-07"];
-                  let lastError = errorText;
-                  let lastStatus = response.status;
+          console.log(`Response Status: ${response.status}`);
 
-                  for (const v of altVersions) {
-                      console.log(`Trying alternative version: ${v}`);
-                      const altUrl = `https://${shop}/admin/api/${v}/themes/${cleanThemeId}/assets.json`;
+          if (response.ok) {
+              const data = await response.json();
+              console.log("✅ Direct REST Success!");
+              console.log("Asset saved:", data.asset);
+              successResponse = response;
+              uploadMethod = "direct-rest";
+          } else {
+              const errorText = await response.text();
+              lastError = errorText;
+              lastStatus = response.status;
+              console.error(`❌ Direct REST Failed (${response.status}):`, errorText);
 
-                      try {
-                          const altResp = await fetch(altUrl, {
-                              method: "PUT",
-                              headers: {
-                                  "X-Shopify-Access-Token": accessToken,
-                                  "Content-Type": "application/json"
-                              },
-                              body: JSON.stringify({
-                                  asset: {
-                                      key: sectionData.filename,
-                                      value: sectionData.content
-                                  }
-                              })
-                          });
+              if (response.status === 401 || response.status === 403) {
+                  await prisma.session.deleteMany({ where: { shop } });
+                  return json({ reauth: true, error: "Authentication failed. Please reload the page." }, { status: 401 });
+              }
 
-                          if (altResp.ok) {
-                              console.log(`✅ Success with ${v}!`);
-                              successResponse = altResp;
-                              uploadMethod = `rest-${v}`;
-                              break;
-                          } else {
-                              lastStatus = altResp.status;
-                              lastError = await altResp.text();
-                              console.warn(`Version ${v} failed (${lastStatus})`);
-                          }
-                      } catch (e) {
-                          console.error(`Exception with ${v}:`, e.message);
-                      }
-                  }
+              // Try alternative API versions
+              console.log("Trying alternative API versions...");
+              const altVersions = ["2024-10", "2024-07"];
 
-                  // FALLBACK METHOD 2: Try simplified filename
-                  if (!successResponse && lastStatus === 404) {
-                      console.log("Trying simplified filename...");
+              for (const v of altVersions) {
+                  console.log(`Trying alternative version: ${v}`);
+                  const altUrl = `https://${shop}/admin/api/${v}/themes/${cleanThemeId}/assets.json`;
 
-                      const simplifiedFilename = sectionData.filename.replace('shopi-', '');
-                      const simpleUrl = `https://${shop}/admin/api/2024-04/themes/${cleanThemeId}/assets.json`;
+                  try {
+                      const altResp = await fetch(altUrl, {
+                          method: "PUT",
+                          headers: {
+                              "X-Shopify-Access-Token": accessToken,
+                              "Content-Type": "application/json"
+                          },
+                          body: JSON.stringify({
+                              asset: {
+                                  key: sectionData.filename,
+                                  value: sectionData.content
+                              }
+                          })
+                      });
 
-                      try {
-                          const simpleResp = await fetch(simpleUrl, {
-                              method: "PUT",
-                              headers: {
-                                  "X-Shopify-Access-Token": accessToken,
-                                  "Content-Type": "application/json"
-                              },
-                              body: JSON.stringify({
-                                  asset: {
-                                      key: simplifiedFilename,
-                                      value: sectionData.content
-                                  }
-                              })
-                          });
-
-                          if (simpleResp.ok) {
-                              console.log("✅ Simplified filename worked!");
-                              successResponse = simpleResp;
-                              uploadMethod = "rest-simplified";
-                              sectionData.filename = simplifiedFilename;
-                          }
-                      } catch (e) {
-                          console.error("Simplified filename failed:", e.message);
-                      }
-                  }
-
-                  // Final error if all methods failed
-                  if (!successResponse) {
-                      console.error("=== ALL UPLOAD METHODS FAILED ===");
-                      console.error(`Last Error: ${lastError}`);
-                      console.error(`Last Status: ${lastStatus}`);
-
-                      let helpfulMessage = "Failed to upload section to theme. ";
-
-                      if (lastStatus === 404) {
-                          helpfulMessage += "\n\n🔍 Troubleshooting Steps:\n";
-                          helpfulMessage += "1. This theme might be a protected/locked theme\n";
-                          helpfulMessage += "2. Try creating a DUPLICATE of this theme:\n";
-                          helpfulMessage += "   • Go to Online Store > Themes\n";
-                          helpfulMessage += "   • Click '...' menu on your theme\n";
-                          helpfulMessage += "   • Select 'Duplicate'\n";
-                          helpfulMessage += "   • Install section on the duplicate\n";
-                          helpfulMessage += "3. Or use a development/unpublished theme\n";
-                          helpfulMessage += "\n💡 Duplicated themes work 100% of the time!";
-                      } else if (lastStatus === 403 || lastStatus === 401) {
-                          helpfulMessage += "Permission denied. Please reinstall the app.";
+                      if (altResp.ok) {
+                          console.log(`✅ Success with ${v}!`);
+                          successResponse = altResp;
+                          uploadMethod = `rest-${v}`;
+                          break;
                       } else {
-                          helpfulMessage += `Error (Status ${lastStatus}). Check console for details.`;
+                          lastStatus = altResp.status;
+                          lastError = await altResp.text();
+                          console.warn(`Version ${v} failed (${lastStatus})`);
                       }
-
-                      throw new Error(helpfulMessage);
+                  } catch (e) {
+                      console.error(`Exception with ${v}:`, e.message);
+                      lastError = e.message;
                   }
               }
-          } catch (fetchError) {
-              console.error("❌ Fetch error:", fetchError.message);
+
+              // FALLBACK METHOD 2: Try simplified filename
+              if (!successResponse && lastStatus === 404) {
+                  console.log("Trying simplified filename...");
+
+                  const simplifiedFilename = sectionData.filename.replace('shopi-', '');
+                  const simpleUrl = `https://${shop}/admin/api/2024-04/themes/${cleanThemeId}/assets.json`;
+
+                  try {
+                      const simpleResp = await fetch(simpleUrl, {
+                          method: "PUT",
+                          headers: {
+                              "X-Shopify-Access-Token": accessToken,
+                              "Content-Type": "application/json"
+                          },
+                          body: JSON.stringify({
+                              asset: {
+                                  key: simplifiedFilename,
+                                  value: sectionData.content
+                              }
+                          })
+                      });
+
+                      if (simpleResp.ok) {
+                          console.log("✅ Simplified filename worked!");
+                          successResponse = simpleResp;
+                          uploadMethod = "rest-simplified";
+                          sectionData.filename = simplifiedFilename;
+                      }
+                  } catch (e) {
+                      console.error("Simplified filename failed:", e.message);
+                      lastError = e.message;
+                  }
+              }
+
+              // Final error if all methods failed
               if (!successResponse) {
-                  throw new Error("Network error during asset upload. Please try again.");
+                  console.error("=== ALL UPLOAD METHODS FAILED ===");
+                  console.error(`Last Error: ${lastError}`);
+                  console.error(`Last Status: ${lastStatus}`);
+
+                  let helpfulMessage = "Failed to upload section to theme. ";
+
+                  if (lastStatus === 404) {
+                      helpfulMessage += "\n\n🔍 Troubleshooting Steps:\n";
+                      helpfulMessage += "1. This theme might be a protected/locked theme\n";
+                      helpfulMessage += "2. Try creating a DUPLICATE of this theme:\n";
+                      helpfulMessage += "   • Go to Online Store > Themes\n";
+                      helpfulMessage += "   • Click '...' menu on your theme\n";
+                      helpfulMessage += "   • Select 'Duplicate'\n";
+                      helpfulMessage += "   • Install section on the duplicate\n";
+                      helpfulMessage += "3. Or use a development/unpublished theme\n";
+                      helpfulMessage += "\n💡 Duplicated themes work 100% of the time!";
+                  } else if (lastStatus === 403 || lastStatus === 401) {
+                      helpfulMessage += "Permission denied. Please reinstall the app.";
+                  } else {
+                      helpfulMessage += `Error (Status ${lastStatus}). Check console for details.`;
+                  }
+
+                  throw new Error(helpfulMessage);
               }
           }
+      } catch (mainError) {
+          console.error("=== MAIN ERROR CAUGHT ===");
+          console.error("Error Type:", mainError.name);
+          console.error("Error Message:", mainError.message);
+          console.error("Error Stack:", mainError.stack);
+
+          // Re-throw if it's our custom error message
+          if (mainError.message.includes("Troubleshooting Steps") ||
+              mainError.message.includes("Permission denied")) {
+              throw mainError;
+          }
+
+          // Otherwise, provide generic error
+          throw new Error(`Upload failed: ${mainError.message}. Please check server logs for details.`);
       }
       
       // If we are here, successResponse is valid.
