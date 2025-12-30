@@ -292,18 +292,8 @@ export const action = async ({ request }) => {
             
             // SPECIAL HANDLING FOR 404 (Theme Locked/Protected)
             if (lastStatus === 404) {
-                 console.warn(`Injection failed with 404. Theme is likely locked.`);
-                 
-                 // SOFT FAIL: Proceed to activate via Metafield
-                 // This allows the section to work via the Theme App Extension (which the user has)
-                 // even if the theme blocks direct code injection.
-                 await markSectionInstalled(shop, accessToken, "2024-04", sectionId);
-                 
-                 return json({ 
-                     success: true, 
-                     message: "Section Activated! (Note: Your theme is locked, so we enabled the App Extension mode instead of injecting code.)",
-                     method: "extension-fallback" 
-                 });
+                 // FORCE ERROR - User wants injection or nothing
+                 throw new Error(`Failed to inject section code. The theme (ID: ${cleanThemeId}) refused the connection (404). This usually means the theme is locked or permissions are missing. Please try a different theme.`);
             }
             
             throw new Error(`Asset Update Failed: ${lastError}`);
