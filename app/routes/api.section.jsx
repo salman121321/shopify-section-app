@@ -312,17 +312,58 @@ export const action = async ({ request }) => {
                   } catch (e) { console.error("Unstable API Exception", e); }
              }
              
+             // FORCE INJECTION: Try alternative approaches before falling back
              if (!successResponse) {
-                  // Fallback to Metafield Activation (Theme App Extension Mode)
-                  // This ensures the user isn't blocked even if injection is impossible.
-                  console.warn("Injection failed. Falling back to App Extension activation.");
-                  await markSectionInstalled(shop, accessToken, "2024-04", sectionId);
-                  
-                  return json({ 
-                      success: true, 
-                      message: "Section Activated! (Injection blocked by theme, enabled via App Extension instead)",
-                      method: "extension-fallback" 
-                  });
+                 console.log("Trying alternative injection methods...");
+                 
+                 // Method 1: Try different filename format
+                 try {
+                     const altFilename = sectionData.filename.replace('shopi-', 'custom-');
+                     console.log(`Trying alternative filename: ${altFilename}`);
+                     
+                     const altUrl = `https://${shop}/admin/api/2024-10/themes/${cleanThemeId}/assets.json`;
+                     const altResp = await fetch(altUrl, {
+                         method: "PUT",
+                         headers: { "X-Shopify-Access-Token": accessToken, "Content-Type": "application/json" },
+                         body: JSON.stringify({ asset: { key: altFilename, value: sectionData.content } })
+                     });
+                     
+                     if (altResp.ok) {
+                         console.log("Alternative filename injection successful!");
+                         successResponse = altResp;
+                         // Update section data to use the new filename
+                         sectionData.filename = altFilename;
+                     }
+                 } catch (e) {
+                     console.error("Alternative filename method failed:", e);
+                 }
+             }
+             
+             if (!successResponse) {
+                 // ULTIMATE FALLBACK: Use direct theme file creation with different approach
+                 console.warn("All injection methods failed. Forcing theme injection with final attempt...");
+                 
+                 // Try one more time with most stable API version and different parameters
+                 try {
+                     const finalUrl = `https://${shop}/admin/api/2024-04/themes/${cleanThemeId}/assets.json`;
+                     const finalResp = await fetch(finalUrl, {
+                         method: "POST", // Try POST instead of PUT
+                         headers: { "X-Shopify-Access-Token": accessToken, "Content-Type": "application/json" },
+                         body: JSON.stringify({ asset: { key: sectionData.filename, value: sectionData.content } })
+                     });
+                     
+                     if (finalResp.ok) {
+                         console.log("Final injection attempt successful with POST method!");
+                         successResponse = finalResp;
+                     }
+                 } catch (e) {
+                     console.error("Final injection attempt failed:", e);
+                 }
+             }
+             
+             if (!successResponse) {
+                 // If all injection attempts fail, throw error instead of falling back to extension
+                 throw new Error(`Theme injection completely failed. Status: ${lastStatus}, Error: ${lastError}. Please check theme permissions and try again.`);
              }
        }
       
