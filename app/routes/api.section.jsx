@@ -3,6 +3,95 @@ import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
 import { THREE_D_CAROUSEL_LIQUID } from "../templates/three-d-carousel";
 
+// Helper to mark section as installed in Shop Metafields
+// We use a Shop Metafield to store the list of installed sections per theme or globally.
+// Ideally, we attach this to the Theme, but Shop is easier to access consistently.
+// We will store: namespace: "shopi_installed", key: "sections", value: JSON array of section IDs
+async function markSectionInstalled(shop, accessToken, apiVersion, sectionId) {
+    try {
+        // 1. Fetch current installed sections
+        const getQuery = `
+          query {
+            currentAppInstallation {
+              id
+              metafield(namespace: "shopi_section", key: "installed_sections") {
+                value
+                id
+              }
+            }
+          }
+        `;
+        
+        const gqlUrl = `https://${shop}/admin/api/${apiVersion}/graphql.json`;
+        const getResp = await fetch(gqlUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-Shopify-Access-Token": accessToken },
+            body: JSON.stringify({ query: getQuery })
+        });
+        
+        const getData = await getResp.json();
+        const appInstallation = getData.data?.currentAppInstallation;
+        if (!appInstallation) {
+            console.error("Failed to get AppInstallation for Metafield update");
+            return;
+        }
+
+        let installedSections = [];
+        if (appInstallation.metafield?.value) {
+            try {
+                installedSections = JSON.parse(appInstallation.metafield.value);
+            } catch (e) {
+                console.warn("Failed to parse existing metafield value:", e);
+            }
+        }
+
+        if (!installedSections.includes(sectionId)) {
+            installedSections.push(sectionId);
+            
+            // 2. Update Metafield
+            const updateQuery = `
+              mutation MetafieldsSet($metafields: [MetafieldsSetInput!]!) {
+                metafieldsSet(metafields: $metafields) {
+                  metafields {
+                    key
+                    value
+                  }
+                  userErrors {
+                    field
+                    message
+                  }
+                }
+              }
+            `;
+            
+            const updateResp = await fetch(gqlUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "X-Shopify-Access-Token": accessToken },
+                body: JSON.stringify({
+                    query: updateQuery,
+                    variables: {
+                        metafields: [{
+                            ownerId: appInstallation.id,
+                            namespace: "shopi_section",
+                            key: "installed_sections",
+                            type: "json",
+                            value: JSON.stringify(installedSections)
+                        }]
+                    }
+                })
+            });
+            
+            const updateData = await updateResp.json();
+            console.log("Metafield Update Result:", JSON.stringify(updateData));
+        } else {
+            console.log("Section already in metafield list.");
+        }
+
+    } catch (err) {
+        console.error("Failed to update installed section metafield:", err);
+    }
+}
+
 export const action = async ({ request }) => {
   const { admin, session } = await authenticate.admin(request);
   const formData = await request.formData();
@@ -227,6 +316,9 @@ export const action = async ({ request }) => {
                              throw new Error(`GraphQL User Errors: ${JSON.stringify(userErrors)}`);
                         }
                         
+                        // Mark as installed via Metafield
+                        await markSectionInstalled(shop, accessToken, apiVersion, sectionId);
+
                         return json({ 
                             success: true, 
                             message: `Section added via GraphQL Fallback`,
@@ -285,11 +377,18 @@ export const action = async ({ request }) => {
                     if (gqlResp.ok) {
                          const gqlData = await gqlResp.json();
                          console.log("GraphQL Fallback Response:", JSON.stringify(gqlData));
+                         
+                         // Mark as installed via Metafield
+                         await markSectionInstalled(shop, accessToken, apiVersion, sectionId);
+
                          return json({ success: true, message: "Section added via GraphQL (Fallback)", method: "graphql-fallback" });
                     }
                 } catch (err) { console.error("GraphQL Fallback Error:", err); }
            }
       }
+      
+      // Mark as installed via Metafield (Success Case)
+      await markSectionInstalled(shop, accessToken, apiVersion, sectionId);
 
       return json({ 
           success: true, 
