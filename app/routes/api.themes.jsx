@@ -11,7 +11,7 @@ export const loader = async ({ request }) => {
     // FALLBACK: Use direct fetch for maximum stability (matches api.section.jsx)
     const shop = session.shop;
     const accessToken = session.accessToken;
-    const apiVersion = "2024-04"; // Sync with api.section.jsx
+    const apiVersion = "2024-10"; // Sync with api.section.jsx
     const url = `https://${shop}/admin/api/${apiVersion}/themes.json`;
 
     const response = await fetch(url, {

@@ -188,9 +188,10 @@ export const action = async ({ request }) => {
       // FALLBACK: Use direct fetch to bypass library issues
       const shop = session.shop;
       const accessToken = session.accessToken;
-      // Use 2024-04 for REST as it is stable for Asset API
-      const apiVersion = "2024-04"; 
-      const cleanThemeId = String(themeId).trim().replace(/gid:\/\/shopify\/Theme\//, "");
+      // Use 2024-10 for REST (Latest Stable)
+      const apiVersion = "2024-10"; 
+      // Ensure strictly numeric ID
+      const cleanThemeId = String(themeId).replace(/\D/g, "");
 
       console.log(`Debug: Shop=${shop}, ThemeID=${cleanThemeId}, TokenLength=${accessToken?.length}`);
 
@@ -205,7 +206,7 @@ export const action = async ({ request }) => {
           const text = await themeResp.text();
           // If theme check fails with 404, the theme ID is definitely wrong/gone
           if (themeResp.status === 404) {
-               return json({ error: "Theme not found. It might have been deleted." }, { status: 404 });
+               return json({ error: `Theme not found (ID: ${cleanThemeId}). It might have been deleted.` }, { status: 404 });
           }
           // If 403/401, handle reauth
           if (themeResp.status === 403 || themeResp.status === 401) {
@@ -221,10 +222,6 @@ export const action = async ({ request }) => {
       console.log("Attempting REST Asset Update...");
       const url = `https://${shop}/admin/api/${apiVersion}/themes/${cleanThemeId}/assets.json`;
       
-      // DIAGNOSTIC 2: Check Asset Access (List Assets)
-      // Removed - listing assets can be heavy and we already checked theme existence
-      // If we have write_themes, we should be able to write.
-
       // DIAGNOSTIC 3: Verify Actual Scopes from Shopify
       // Sometimes the session has scopes but the token doesn't (stale token)
       const scopeUrl = `https://${shop}/admin/oauth/access_scopes.json`;
@@ -268,93 +265,16 @@ export const action = async ({ request }) => {
            // If 404 or 403 or 401, it is likely a Permission/Scope issue or Auth issue
            if (response.status === 403 || response.status === 401) {
                console.log(`Triggering Re-Auth due to write failure (${response.status})...`);
-               // We delete the session to force a fresh token exchange next time
                await prisma.session.deleteMany({ where: { shop } });
                return json({ reauth: true, error: "Permissions synchronization failed. Reloading..." }, { status: 401 });
            }
 
             // 404 on PUT usually means the theme ID is wrong OR the endpoint is wrong.
-            // REST failed. Let's try GraphQL Fallback if scope allows
-            if (response.status === 404 || response.status === 422) {
-                console.log(`REST ${response.status} encountered. Attempting GraphQL fallback...`);
-                let gqlErrorDetails = "";
-                
-                try {
-                    // FORCE unstable for themeFilesUpsert as it is the most reliable version for this mutation
-                    const gqlApiVersion = "unstable";
-                    const gqlUrl = `https://${shop}/admin/api/${gqlApiVersion}/graphql.json`;
-                    
-                    const query = `
-                      mutation themeFilesUpsert($files: [ThemeFilesUpsertInput!]!, $themeId: ID!) {
-                        themeFilesUpsert(files: $files, themeId: $themeId) {
-                          upsertedThemeFiles {
-                            filename
-                          }
-                          userErrors {
-                            code
-                            field
-                            message
-                          }
-                        }
-                      }
-                    `;
-                    
-                    console.log(`Attempting GraphQL Injection via ${gqlApiVersion}...`);
-                    const gqlResp = await fetch(gqlUrl, {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "X-Shopify-Access-Token": accessToken
-                        },
-                        body: JSON.stringify({
-                            query: query,
-                            variables: {
-                                themeId: `gid://shopify/Theme/${cleanThemeId}`,
-                                files: [{
-                                    filename: sectionData.filename,
-                                    body: { value: sectionData.content }
-                                }]
-                            }
-                        })
-                    });
-
-                    const gqlData = await gqlResp.json();
-                    console.log("GraphQL Response:", JSON.stringify(gqlData));
-
-                    if (gqlData.data?.themeFilesUpsert?.upsertedThemeFiles?.length > 0) {
-                        console.log("GraphQL Injection SUCCESS!");
-                        await markSectionInstalled(shop, accessToken, apiVersion, sectionId);
-                        return json({ 
-                            success: true, 
-                            message: "Section enabled via GraphQL (Fallback).",
-                            themeId: cleanThemeId 
-                        });
-                    }
-
-                    if (gqlData.errors) {
-                         gqlErrorDetails = JSON.stringify(gqlData.errors);
-                         console.error("GraphQL Errors:", gqlErrorDetails);
-                    } else if (gqlData.data?.themeFilesUpsert?.userErrors?.length > 0) {
-                         gqlErrorDetails = JSON.stringify(gqlData.data.themeFilesUpsert.userErrors);
-                         console.error("GraphQL UserErrors:", gqlErrorDetails);
-                    }
-
-                } catch (err) {
-                    console.error("GraphQL Fallback Exception:", err);
-                    gqlErrorDetails = err.message;
-                }
-                
-                // If GraphQL also failed or didn't run, return the original REST 404 error but with scope info
-                // MODIFIED: Fail loudly if injection fails.
-                console.error("Injection failed via REST and GraphQL.");
-                
-                return json({ 
-                    error: `Failed to inject section. REST: ${response.status} ${text}. GraphQL: ${gqlErrorDetails || 'Not attempted/Failed'}`,
-                    status: response.status
-                }, { status: 400 });
+            if (response.status === 404) {
+                 throw new Error(`Failed to inject section. REST 404 at ${url}. Response: ${text}. Check if Theme ID ${cleanThemeId} allows edits.`);
             }
-
-            throw new Error(`Failed to save section: ${response.status} ${text}`);
+            
+            throw new Error(`Asset Update Failed (${response.status}): ${text}`);
       }
 
       // DIAGNOSTIC 4: VERIFY WRITE
@@ -366,42 +286,7 @@ export const action = async ({ request }) => {
       
       if (!verifyResp.ok) {
            console.error("Write verification failed. File not found immediately after write.");
-           // Fallback to GraphQL if verification fails
-           if (response.status === 200 || response.status === 201) {
-               console.log("Write said OK but Verify said 404. Attempting GraphQL fallback just in case...");
-               // Execute GraphQL Fallback Logic (copied from below)
-                try {
-                    const query = `
-                      mutation themeFilesUpsert($files: [ThemeFilesUpsertInput!]!, $themeId: ID!) {
-                        themeFilesUpsert(files: $files, themeId: $themeId) {
-                          upsertedThemeFiles { filename }
-                          userErrors { code field message }
-                        }
-                      }
-                    `;
-                    const gqlUrl = `https://${shop}/admin/api/unstable/graphql.json`;
-                    const gqlResp = await fetch(gqlUrl, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json", "X-Shopify-Access-Token": accessToken },
-                        body: JSON.stringify({
-                            query,
-                            variables: {
-                                themeId: `gid://shopify/Theme/${cleanThemeId}`,
-                                files: [{ filename: sectionData.filename, body: { value: sectionData.content } }]
-                            }
-                        })
-                    });
-                    if (gqlResp.ok) {
-                         const gqlData = await gqlResp.json();
-                         console.log("GraphQL Fallback Response:", JSON.stringify(gqlData));
-                         
-                         // Mark as installed via Metafield
-                         await markSectionInstalled(shop, accessToken, apiVersion, sectionId);
-
-                         return json({ success: true, message: "Section added via GraphQL (Fallback)", method: "graphql-fallback" });
-                    }
-                } catch (err) { console.error("GraphQL Fallback Error:", err); }
-           }
+           throw new Error(`Section injection verification failed. The file was sent but could not be read back from Theme ID ${cleanThemeId}. (Status: ${verifyResp.status})`);
       }
       
       // Mark as installed via Metafield (Success Case)
