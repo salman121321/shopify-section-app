@@ -126,18 +126,37 @@ export const action = async ({ request }) => {
            const text = await listResp.text();
            console.error(`Asset List Check Failed (${listResp.status}): ${text}`);
            // If we cannot list assets, we definitely cannot write them.
-           // This confirms a permission or scope issue for 'write_themes' or 'read_themes'.
            if (listResp.status === 403 || listResp.status === 401) {
                 console.log("Triggering Re-Auth due to Asset List failure...");
                 await prisma.session.deleteMany({ where: { shop } });
                 return json({ reauth: true, error: "Permissions need update. Reloading..." }, { status: 401 });
            }
-           // If 404, it implies the theme doesn't support assets endpoint?
            if (listResp.status === 404) {
                return json({ error: `Asset Endpoint Not Found for Theme ${cleanThemeId}. URL: ${listAssetsUrl}` }, { status: 404 });
            }
       }
       console.log("Diagnostic 2 Success: Can list assets.");
+
+      // DIAGNOSTIC 3: Verify Actual Scopes from Shopify
+      // Sometimes the session has scopes but the token doesn't (stale token)
+      const scopeUrl = `https://${shop}/admin/oauth/access_scopes.json`;
+      const scopeResp = await fetch(scopeUrl, {
+          headers: { "X-Shopify-Access-Token": accessToken }
+      });
+      
+      if (scopeResp.ok) {
+          const scopeData = await scopeResp.json();
+          const activeScopes = scopeData.access_scopes.map(s => s.handle);
+          console.log("Verified Active Scopes from Shopify:", activeScopes);
+          
+          if (!activeScopes.includes("write_themes")) {
+              console.log("CRITICAL: Token missing write_themes despite session record. Forcing Re-Auth.");
+              await prisma.session.deleteMany({ where: { shop } });
+              return json({ reauth: true, error: "Critical: Missing write permissions. Reloading to fix..." }, { status: 401 });
+          }
+      } else {
+          console.warn("Could not verify scopes from API:", await scopeResp.text());
+      }
 
       const response = await fetch(url, {
           method: "PUT",
@@ -158,17 +177,11 @@ export const action = async ({ request }) => {
            console.error(`Asset Update Failed (${response.status}): ${text}`);
            
            // If 404 or 403 or 401, it is likely a Permission/Scope issue or Auth issue
-           if (response.status === 403 || response.status === 401) {
-               console.log("Triggering Re-Auth due to write failure...");
+           if (response.status === 403 || response.status === 401 || response.status === 404) {
+               console.log(`Triggering Re-Auth due to write failure (${response.status})...`);
+               // We delete the session to force a fresh token exchange next time
                await prisma.session.deleteMany({ where: { shop } });
-               return json({ reauth: true, error: "Permissions need update. Reloading..." }, { status: 401 }); // Use 401 to trigger frontend re-auth
-           }
-           
-           if (response.status === 404) {
-               // DO NOT REAUTH automatically for 404 on PUT if we passed Diagnostic 2.
-               // It means the URL is wrong or the Key is invalid, or something else.
-               // We want to show this error to the user.
-               return json({ error: `Asset Update 404. URL: ${url} | Response: ${text}` }, { status: 404 });
+               return json({ reauth: true, error: "Permissions synchronization failed. Reloading..." }, { status: 401 });
            }
 
            throw new Error(`Failed to save section: ${response.status} ${text}`);
