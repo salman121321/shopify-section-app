@@ -83,10 +83,25 @@ export const action = async ({ request }) => {
       // FALLBACK: Use direct fetch to bypass library issues
       const shop = session.shop;
       const accessToken = session.accessToken;
-      const apiVersion = "2024-01"; // Or use the one from context if available
+      // UPDATED: Use a newer API version (2024-01 is likely deprecated)
+      const apiVersion = "2025-01"; 
       const url = `https://${shop}/admin/api/${apiVersion}/themes/${themeId}/assets.json`;
       
       console.log(`Direct Fetch URL: ${url}`);
+
+      // Verify access first by trying to list one asset
+      try {
+          const checkUrl = `https://${shop}/admin/api/${apiVersion}/themes/${themeId}/assets.json?fields=key&limit=1`;
+          const checkResp = await fetch(checkUrl, {
+              headers: { "X-Shopify-Access-Token": accessToken }
+          });
+          console.log(`Asset Check Status: ${checkResp.status}`);
+          if (!checkResp.ok) {
+             console.error(`Asset Check Failed: ${await checkResp.text()}`);
+          }
+      } catch (e) {
+          console.error("Asset check exception:", e);
+      }
 
       const response = await fetch(url, {
           method: "PUT",
@@ -117,7 +132,7 @@ export const action = async ({ request }) => {
       // Remove the Liquid file from the theme
       const shop = session.shop;
       const accessToken = session.accessToken;
-      const apiVersion = "2024-01";
+      const apiVersion = "2025-01";
       const url = `https://${shop}/admin/api/${apiVersion}/themes/${themeId}/assets.json?asset[key]=${sectionData.filename}`;
 
       const response = await fetch(url, {
