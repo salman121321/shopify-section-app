@@ -44,38 +44,37 @@ export const loader = async ({ request }) => {
         return 0;
     });
 
-    // Check for installed sections in the main theme
-    const mainTheme = sortedThemes.find(t => t.role === 'main');
-    const installedSections = [];
+    // Check for installed sections in ALL themes (to ensure status shows "Activated" regardless of which theme was used)
+    // We limit to checking the specific known sections to avoid fetching full asset lists
+    const installedSections = new Set();
+    const knownSections = [
+        "sections/3d-carousel-pro.liquid", 
+        "sections/my-custom-section.liquid"
+    ];
 
-    if (mainTheme) {
+    // Use Promise.all to check themes in parallel for performance
+    await Promise.all(sortedThemes.map(async (theme) => {
         try {
-            // We check for specific known section files
-            const knownSections = [
-                "sections/3d-carousel-pro.liquid", 
-                "sections/my-custom-section.liquid"
-            ];
-            
-            // We can check them one by one or list all assets. Listing is often safer for permissions if we just read keys.
-            // But let's try checking specific assets to be precise.
             for (const assetKey of knownSections) {
-                const assetUrl = `https://${shop}/admin/api/${apiVersion}/themes/${mainTheme.id}/assets.json?asset[key]=${assetKey}`;
+                // If we already found this section in another theme, we might technically skip checking it again 
+                // if we only care about "is it installed anywhere". 
+                // But for now, let's just check to be thorough.
+                
+                const assetUrl = `https://${shop}/admin/api/${apiVersion}/themes/${theme.id}/assets.json?asset[key]=${assetKey}`;
                 const assetResp = await fetch(assetUrl, {
                     headers: { "X-Shopify-Access-Token": accessToken }
                 });
                 
                 if (assetResp.ok) {
-                    // If we get a 200 OK, the asset exists
-                    // Map filename back to section ID
-                    if (assetKey.includes("3d-carousel-pro")) installedSections.push("3d-carousel-pro");
-                    if (assetKey.includes("my-custom-section")) installedSections.push("my-custom-section");
+                    // Asset exists in this theme
+                    if (assetKey.includes("3d-carousel-pro")) installedSections.add("3d-carousel-pro");
+                    if (assetKey.includes("my-custom-section")) installedSections.add("my-custom-section");
                 }
             }
-        } catch (assetErr) {
-            console.warn("Failed to check installed assets:", assetErr);
-            // Don't fail the whole request just because asset check failed
+        } catch (err) {
+            console.warn(`Failed to check assets for theme ${theme.id}:`, err);
         }
-    }
+    }));
     
     // Normalize and ensure ID is string for frontend
     const normalizedThemes = sortedThemes.map(t => ({
@@ -84,7 +83,7 @@ export const loader = async ({ request }) => {
         role: t.role
     }));
 
-    return json({ themes: normalizedThemes, installedSections });
+    return json({ themes: normalizedThemes, installedSections: Array.from(installedSections) });
   } catch (error) {
     console.error("Failed to fetch themes:", error);
     return json({ 
