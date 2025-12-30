@@ -71,7 +71,8 @@ export const THREE_D_CAROUSEL_LIQUID = `{% schema %}
   ],
   "presets": [
     {
-      "name": "3D Carousel Pro"
+      "name": "3D Carousel Pro",
+      "category": "Shopi Section"
     }
   ]
 }
