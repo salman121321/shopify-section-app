@@ -510,10 +510,9 @@ export default function Index() {
                                             fullWidth
                                             variant={isInstalled ? "secondary" : "primary"}
                                             icon={isInstalled ? CheckIcon : PlusIcon}
-                                            disabled={isInstalled}
                                             onClick={() => handleInstallClick(section)}
                                         >
-                                            {isInstalled ? "Activated" : "Activate"}
+                                            {isInstalled ? "Update" : "Activate"}
                                         </Button>
                                     );
                                 })()}
