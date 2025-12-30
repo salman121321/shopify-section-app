@@ -443,11 +443,11 @@ export const action = async ({ request }) => {
 
                       throw new Error(helpfulMessage);
                   }
-              } catch (fetchError) {
-                  console.error("❌ Fetch error:", fetchError.message);
-                  if (!successResponse) {
-                      throw new Error("Network error during asset upload. Please try again.");
-                  }
+              }
+          } catch (fetchError) {
+              console.error("❌ Fetch error:", fetchError.message);
+              if (!successResponse) {
+                  throw new Error("Network error during asset upload. Please try again.");
               }
           }
       }
