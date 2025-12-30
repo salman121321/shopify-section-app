@@ -102,7 +102,7 @@ export const action = async ({ request }) => {
   const { admin, session } = await authenticate.admin(request);
   const formData = await request.formData();
 
-  console.log("\n=== NEW SECTION INSTALL REQUEST ===");
+  console.log("\n=== NEW SECTION INSTALL REQUEST (V2_FIXED) ===");
   console.log("Session Shop:", session.shop);
   console.log("Session Scopes:", session.scope);
   console.log("Session Access Token Length:", session.accessToken?.length || 0);
