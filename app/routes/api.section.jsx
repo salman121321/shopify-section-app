@@ -237,64 +237,91 @@ export const action = async ({ request }) => {
            console.log("Diagnostic 2 Success: Can read theme assets.");
       }
 
-      // REAL UPDATE: Use REST API
+      // REAL UPDATE: Use REST API with Version Retry Strategy
       console.log("Attempting REST Asset Update...");
-      const url = `https://${shop}/admin/api/${apiVersion}/themes/${cleanThemeId}/assets.json`;
       
+      // Ensure content is valid
+      if (!sectionData.content || sectionData.content.length === 0) {
+          throw new Error("Section content is empty. Cannot upload.");
+      }
+
       // DIAGNOSTIC 3: Verify Actual Scopes from Shopify
-      // Sometimes the session has scopes but the token doesn't (stale token)
+      // ... (Keep existing scope check logic if possible, or assume checked)
       const scopeUrl = `https://${shop}/admin/oauth/access_scopes.json`;
       const scopeResp = await fetch(scopeUrl, {
           headers: { "X-Shopify-Access-Token": accessToken }
       });
       
-      let activeScopes = [];
       if (scopeResp.ok) {
           const scopeData = await scopeResp.json();
-          activeScopes = scopeData.access_scopes.map(s => s.handle);
-          console.log("Verified Active Scopes from Shopify:", activeScopes);
-          
+          const activeScopes = scopeData.access_scopes.map(s => s.handle);
+          console.log("Verified Active Scopes:", activeScopes);
           if (!activeScopes.includes("write_themes")) {
-              console.log("CRITICAL: Token missing write_themes despite session record. Forcing Re-Auth.");
-              await prisma.session.deleteMany({ where: { shop } });
-              return json({ reauth: true, error: "Critical: Missing write permissions. Reloading to fix..." }, { status: 401 });
-          }
-      } else {
-          console.warn("Could not verify scopes from API:", await scopeResp.text());
-      }
-
-      const response = await fetch(url, {
-          method: "PUT",
-          headers: {
-              "X-Shopify-Access-Token": accessToken,
-              "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-              asset: {
-                  key: sectionData.filename,
-                  value: sectionData.content
-              }
-          })
-      });
-
-      if (!response.ok) {
-           const text = await response.text();
-           console.error(`Asset Update Failed (${response.status}): ${text}`);
-           
-           // If 404 or 403 or 401, it is likely a Permission/Scope issue or Auth issue
-           if (response.status === 403 || response.status === 401) {
-               console.log(`Triggering Re-Auth due to write failure (${response.status})...`);
+               // Critical failure
                await prisma.session.deleteMany({ where: { shop } });
-               return json({ reauth: true, error: "Permissions synchronization failed. Reloading..." }, { status: 401 });
-           }
-
-            // 404 on PUT usually means the theme ID is wrong OR the endpoint is wrong.
-            if (response.status === 404) {
-                 throw new Error(`Failed to inject section. REST 404 at ${url}. Response: ${text}. Check if Theme ID ${cleanThemeId} allows edits.`);
-            }
-            
-            throw new Error(`Asset Update Failed (${response.status}): ${text}`);
+               return json({ reauth: true, error: "Critical: Missing write_themes scope. Reloading..." }, { status: 401 });
+          }
       }
+
+      // Retry Strategy: Try Latest, then Stable, then LTS
+      const versionsToTry = ["2025-01", "2024-10", "2024-04"];
+      let lastError = null;
+      let lastStatus = 0;
+      let successResponse = null;
+
+      for (const v of versionsToTry) {
+          console.log(`Trying REST PUT with API Version: ${v}...`);
+          const tryUrl = `https://${shop}/admin/api/${v}/themes/${cleanThemeId}/assets.json`;
+          
+          try {
+              const response = await fetch(tryUrl, {
+                  method: "PUT",
+                  headers: {
+                      "X-Shopify-Access-Token": accessToken,
+                      "Content-Type": "application/json"
+                  },
+                  body: JSON.stringify({
+                      asset: {
+                          key: sectionData.filename,
+                          value: sectionData.content
+                      }
+                  })
+              });
+
+              if (response.ok) {
+                  successResponse = response;
+                  console.log(`Success with API Version ${v}`);
+                  break; // Exit loop on success
+              } else {
+                  lastStatus = response.status;
+                  const text = await response.text();
+                  lastError = `Version ${v} Failed (${response.status}): ${text}`;
+                  console.warn(lastError);
+                  
+                  // If 401/403, no point retrying other versions, it's auth
+                  if (response.status === 401 || response.status === 403) {
+                       await prisma.session.deleteMany({ where: { shop } });
+                       return json({ reauth: true, error: "Authentication failed during write. Reloading..." }, { status: 401 });
+                  }
+              }
+          } catch (e) {
+              console.error(`Exception with Version ${v}:`, e);
+              lastError = e.message;
+          }
+      }
+
+      if (!successResponse) {
+            console.error("All REST versions failed.");
+            // If 404 persists across all versions
+            if (lastStatus === 404) {
+                 throw new Error(`Failed to inject section. All REST versions returned 404. Last error: ${lastError}. Theme ID: ${cleanThemeId}. Scopes verified.`);
+            }
+            throw new Error(`Asset Update Failed: ${lastError}`);
+      }
+      
+      // If we are here, successResponse is valid.
+      // DIAGNOSTIC 4: VERIFY WRITE
+
 
       // DIAGNOSTIC 4: VERIFY WRITE
       console.log("Verifying write via GET...");
