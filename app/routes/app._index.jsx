@@ -516,7 +516,7 @@ export default function Index() {
                                             icon={isInstalled ? CheckIcon : PlusIcon}
                                             onClick={() => handleInstallClick(section)}
                                         >
-                                            {isInstalled ? "Update" : "Activate"}
+                                            {isInstalled ? "Activated" : "Activate"}
                                         </Button>
                                     );
                                 })()}
