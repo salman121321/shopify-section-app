@@ -113,6 +113,7 @@ export const action = async ({ request }) => {
 {% endschema %}
 <div>✅ Test from Shopi Section - Uploaded via GraphQL!</div>`;
 
+    // Explicitly defining query to avoid requesting unsupported fields like 'size'
     const graphqlQuery = `
       mutation themeFilesUpsert($themeId: ID!, $files: [OnlineStoreThemeFilesUpsertFileInput!]!) {
         themeFilesUpsert(themeId: $themeId, files: $files) {
