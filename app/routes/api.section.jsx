@@ -290,7 +290,7 @@ export const action = async ({ request }) => {
       let lastError = "Unknown error";
       let lastStatus = 0;
 
-      // METHOD 1: Use GraphQL themeFilesUpsert (Best for OS 2.0 themes)
+      // METHOD 1: Use GraphQL themeFilesUpsert (Correct for OS 2.0)
       try {
           console.log("\n=== METHOD 1: GraphQL themeFilesUpsert ===");
 
@@ -307,13 +307,17 @@ export const action = async ({ request }) => {
                   filename
                   code
                   message
+                  field
                 }
               }
             }
           `;
 
+          // Correct GID format for themes
+          const themeGid = `gid://shopify/Theme/${cleanThemeId}`;
+
           const variables = {
-              themeId: `gid://shopify/OnlineStoreTheme/${cleanThemeId}`,
+              themeId: themeGid,
               files: [{
                   filename: sectionData.filename,
                   body: {
@@ -323,37 +327,40 @@ export const action = async ({ request }) => {
               }]
           };
 
-          console.log("Theme GID:", variables.themeId);
+          console.log("Theme GID:", themeGid);
           console.log("Filename:", sectionData.filename);
+          console.log("Content length:", sectionData.content.length);
 
           const response = await admin.graphql(graphqlQuery, { variables });
           const responseData = await response.json();
 
+          console.log("GraphQL Response Status:", response.status);
           console.log("GraphQL Response:", JSON.stringify(responseData, null, 2));
 
           if (responseData.data?.themeFilesUpsert?.upsertedThemeFiles?.length > 0) {
-              console.log("✅ GraphQL Upload Success!");
-              console.log("Uploaded:", responseData.data.themeFilesUpsert.upsertedThemeFiles[0]);
+              console.log("✅ ✅ ✅ GraphQL Upload SUCCESS! ✅ ✅ ✅");
+              console.log("Uploaded File:", responseData.data.themeFilesUpsert.upsertedThemeFiles[0]);
               successResponse = { ok: true };
               uploadMethod = "graphql";
           } else if (responseData.data?.themeFilesUpsert?.userErrors?.length > 0) {
               const errors = responseData.data.themeFilesUpsert.userErrors;
               console.error("❌ GraphQL User Errors:", errors);
-              lastError = errors.map(e => `${e.code}: ${e.message}`).join(", ");
+              lastError = errors.map(e => `[${e.code}] ${e.message} (field: ${e.field || 'unknown'})`).join("; ");
               lastStatus = 400;
           } else if (responseData.errors) {
-              console.error("❌ GraphQL Errors:", responseData.errors);
-              lastError = responseData.errors.map(e => e.message).join(", ");
+              console.error("❌ GraphQL API Errors:", responseData.errors);
+              lastError = responseData.errors.map(e => e.message).join("; ");
               lastStatus = 400;
           } else {
-              console.warn("❌ Unexpected GraphQL response");
-              lastError = "Unexpected response format";
+              console.warn("❌ Unexpected GraphQL response structure");
+              console.log("Full response:", responseData);
+              lastError = "Unexpected response - no files uploaded and no errors";
               lastStatus = 500;
           }
       } catch (graphqlError) {
           console.error("❌ GraphQL Exception:", graphqlError.message);
-          console.error("Error Details:", graphqlError);
-          lastError = graphqlError.message;
+          console.error("Error Stack:", graphqlError.stack);
+          lastError = `GraphQL Exception: ${graphqlError.message}`;
       }
 
       // METHOD 2: Direct REST API (Fallback)
