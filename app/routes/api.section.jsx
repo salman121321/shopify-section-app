@@ -77,29 +77,64 @@ export const action = async ({ request }) => {
   try {
     if (action === "activate") {
       // 1. Upload the Liquid file to the theme
-      // Direct REST PUT to avoid Resource model quirks
       console.log(`Uploading asset ${sectionData.filename} to theme ${themeId}`);
-      await admin.rest.put({
-        path: `themes/${themeId}/assets.json`,
-        data: {
-          asset: {
-            key: sectionData.filename,
-            value: sectionData.content
-          }
-        }
+      console.log(`Content length: ${sectionData.content.length}`);
+
+      // FALLBACK: Use direct fetch to bypass library issues
+      const shop = session.shop;
+      const accessToken = session.accessToken;
+      const apiVersion = "2024-01"; // Or use the one from context if available
+      const url = `https://${shop}/admin/api/${apiVersion}/themes/${themeId}/assets.json`;
+      
+      console.log(`Direct Fetch URL: ${url}`);
+
+      const response = await fetch(url, {
+          method: "PUT",
+          headers: {
+              "X-Shopify-Access-Token": accessToken,
+              "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+              asset: {
+                  key: sectionData.filename,
+                  value: sectionData.content
+              }
+          })
       });
+
+      if (!response.ok) {
+          const text = await response.text();
+          console.error(`Direct Fetch Failed: ${response.status} ${text}`);
+          throw new Error(`Shopify API ${response.status}: ${text}`);
+      }
+
+      const data = await response.json();
+      console.log("Direct Fetch Success:", data);
       
       return json({ success: true, message: "Section installed successfully" });
 
     } else if (action === "deactivate") {
       // Remove the Liquid file from the theme
-      // Direct REST DELETE
-      await admin.rest.delete({
-        path: `themes/${themeId}/assets.json`,
-        query: {
-           "asset[key]": sectionData.filename
-        }
+      const shop = session.shop;
+      const accessToken = session.accessToken;
+      const apiVersion = "2024-01";
+      const url = `https://${shop}/admin/api/${apiVersion}/themes/${themeId}/assets.json?asset[key]=${sectionData.filename}`;
+
+      const response = await fetch(url, {
+          method: "DELETE",
+          headers: {
+              "X-Shopify-Access-Token": accessToken
+          }
       });
+
+      if (!response.ok) {
+          const text = await response.text();
+          // If 404 on delete, it's already gone, consider success
+          if (response.status === 404) {
+             return json({ success: true, message: "Section already removed" });
+          }
+          throw new Error(`Shopify API ${response.status}: ${text}`);
+      }
 
       return json({ success: true, message: "Section removed successfully" });
     }
