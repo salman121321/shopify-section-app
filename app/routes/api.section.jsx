@@ -277,6 +277,7 @@ export const action = async ({ request }) => {
             // REST failed. Let's try GraphQL Fallback if scope allows
             if (response.status === 404) {
                 console.log("REST 404 encountered. Attempting GraphQL fallback...");
+                let gqlErrorDetails = "";
                 
                 try {
                     // GraphQL mutation for themeFilesUpsert
@@ -322,28 +323,33 @@ export const action = async ({ request }) => {
                         
                         const userErrors = gqlData.data?.themeFilesUpsert?.userErrors || [];
                         if (userErrors.length > 0) {
-                             throw new Error(`GraphQL User Errors: ${JSON.stringify(userErrors)}`);
-                        }
-                        
-                        // Mark as installed via Metafield
-                        await markSectionInstalled(shop, accessToken, apiVersion, sectionId);
+                             gqlErrorDetails = JSON.stringify(userErrors);
+                             console.error("GraphQL User Errors:", gqlErrorDetails);
+                        } else {
+                            // SUCCESS via GraphQL
+                            // Mark as installed via Metafield
+                            await markSectionInstalled(shop, accessToken, apiVersion, sectionId);
 
-                        return json({ 
-                            success: true, 
-                            message: `Section added via GraphQL Fallback`,
-                            method: "graphql-fallback"
-                        });
+                            return json({ 
+                                success: true, 
+                                message: `Section added via GraphQL Fallback`,
+                                method: "graphql-fallback"
+                            });
+                        }
                     } else {
-                        console.error("GraphQL Fallback Failed:", await gqlResp.text());
+                        gqlErrorDetails = `HTTP ${gqlResp.status} ${await gqlResp.text()}`;
+                        console.error("GraphQL Fallback Failed:", gqlErrorDetails);
                     }
                 } catch (gqlErr) {
+                    gqlErrorDetails = gqlErr.message;
                     console.error("GraphQL Fallback Exception:", gqlErr);
                 }
 
                 // If GraphQL also failed or didn't run, return the original REST 404 error but with scope info
+                // CRITICAL: Do NOT fall through to success
                 return json({ 
-                    error: `Shopify API returned 404 Not Found for Asset PUT. URL: ${url}. Scopes: ${activeScopes.join(',')}. Response: ${text}` 
-                }, { status: 404 });
+                    error: `Failed to create section. REST 404. GraphQL Error: ${gqlErrorDetails || "Unknown"}. Please check write_themes permission.` 
+                }, { status: 500 });
             }
 
             throw new Error(`Failed to save section: ${response.status} ${text}`);
