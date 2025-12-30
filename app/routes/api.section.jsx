@@ -90,8 +90,8 @@ export const action = async ({ request }) => {
       // FALLBACK: Use direct fetch to bypass library issues
       const shop = session.shop;
       const accessToken = session.accessToken;
-      // Try 2025-01 as a safe stable version
-      const apiVersion = "2025-01"; 
+      // Use 2024-04 (Stable) to ensure compatibility
+      const apiVersion = "2024-04"; 
       const cleanThemeId = String(themeId).trim();
 
       console.log(`Debug: Shop=${shop}, ThemeID=${cleanThemeId}, TokenLength=${accessToken?.length}`);
@@ -105,66 +105,50 @@ export const action = async ({ request }) => {
 
       if (!themeResp.ok) {
           const text = await themeResp.text();
+          // If theme check fails with 404, the theme ID is definitely wrong/gone
+          if (themeResp.status === 404) {
+               return json({ error: "Theme not found. It might have been deleted." }, { status: 404 });
+          }
           throw new Error(`Theme Check Failed (${themeResp.status}): ${text} | URL: ${themeUrl}`);
       }
       console.log("Diagnostic 1 Success: Theme exists.");
 
-      // DIAGNOSTIC 2: Check Asset Access (GET)
-      const assetCheckUrl = `https://${shop}/admin/api/${apiVersion}/themes/${cleanThemeId}/assets.json?fields=key&limit=1`;
-      const assetCheckResp = await fetch(assetCheckUrl, {
-           headers: { "X-Shopify-Access-Token": accessToken }
-      });
-      if (!assetCheckResp.ok) {
-           const text = await assetCheckResp.text();
-           // If this fails, then we can't write either
-           throw new Error(`Asset Access Failed (${assetCheckResp.status}): ${text} | URL: ${assetCheckUrl}`);
-      }
-      console.log("Diagnostic 2 Success: Can list assets.");
-
-      // REAL UPDATE: Use REST API (GraphQL requires exemption)
-      console.log("Attempting REST Asset Update via Library...");
+      // REAL UPDATE: Use REST API with Force Re-Auth on Failure
+      console.log("Attempting REST Asset Update...");
+      const url = `https://${shop}/admin/api/${apiVersion}/themes/${cleanThemeId}/assets.json`;
       
-      try {
-          const Asset = admin.rest.resources.Asset;
-          const asset = new Asset({ session: session });
-          asset.theme_id = Number(cleanThemeId);
-          asset.key = sectionData.filename;
-          asset.value = sectionData.content;
-          
-          // Use update: true to force a PUT
-          await asset.save({
-              update: true,
-          });
-          console.log("Library Asset Update Success");
-      } catch (libError) {
-          console.error("Library Asset Update Failed:", libError);
-          console.log("Falling back to direct Fetch for REST...");
+      const response = await fetch(url, {
+          method: "PUT",
+          headers: {
+              "X-Shopify-Access-Token": accessToken,
+              "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+              asset: {
+                  key: sectionData.filename,
+                  value: sectionData.content
+              }
+          })
+      });
 
-          // Fallback: Direct Fetch
-          const url = `https://${shop}/admin/api/${apiVersion}/themes/${cleanThemeId}/assets.json`;
-          const response = await fetch(url, {
-              method: "PUT",
-              headers: {
-                  "X-Shopify-Access-Token": accessToken,
-                  "Content-Type": "application/json"
-              },
-              body: JSON.stringify({
-                  asset: {
-                      key: sectionData.filename,
-                      value: sectionData.content
-                  }
-              })
-          });
+      if (!response.ok) {
+           const text = await response.text();
+           console.error(`Asset Update Failed (${response.status}): ${text}`);
+           
+           // If 404 or 403 or 401, it is likely a Permission/Scope issue or Auth issue
+           // We know the theme exists (Diagnostic 1 passed), so 404 on PUT means "Can't write to this resource"
+           if (response.status === 404 || response.status === 403 || response.status === 401) {
+               console.log("Triggering Re-Auth due to write failure...");
+               await prisma.session.deleteMany({ where: { shop } });
+               return json({ reauth: true, error: "Permissions need update. Reloading..." }, { status: 401 }); // Use 401 to trigger frontend re-auth
+           }
 
-          if (!response.ok) {
-              const text = await response.text();
-              throw new Error(`REST Fallback Failed (${response.status}): ${text}`);
-          }
+           throw new Error(`Failed to save section: ${response.status} ${text}`);
       }
 
       return json({ 
           success: true, 
-          message: `Section added to ${themeId} via REST`,
+          message: `Section added to ${themeId} via REST (2024-04)`,
           method: "rest"
       });
 
