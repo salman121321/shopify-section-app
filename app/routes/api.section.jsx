@@ -77,23 +77,29 @@ export const action = async ({ request }) => {
   try {
     if (action === "activate") {
       // 1. Upload the Liquid file to the theme
-      // Reverting to Asset resource but ensuring session is passed correctly
-      const asset = new admin.rest.resources.Asset({session: session});
-      asset.theme_id = Number(themeId);
-      asset.key = sectionData.filename;
-      asset.value = sectionData.content;
-      await asset.save({
-        update: true,
+      // Direct REST PUT to avoid Resource model quirks
+      console.log(`Uploading asset ${sectionData.filename} to theme ${themeId}`);
+      await admin.rest.put({
+        path: `themes/${themeId}/assets.json`,
+        data: {
+          asset: {
+            key: sectionData.filename,
+            value: sectionData.content
+          }
+        }
       });
       
       return json({ success: true, message: "Section installed successfully" });
 
     } else if (action === "deactivate") {
       // Remove the Liquid file from the theme
-      const asset = new admin.rest.resources.Asset({session: session});
-      asset.theme_id = Number(themeId);
-      asset.key = sectionData.filename;
-      await asset.delete();
+      // Direct REST DELETE
+      await admin.rest.delete({
+        path: `themes/${themeId}/assets.json`,
+        query: {
+           "asset[key]": sectionData.filename
+        }
+      });
 
       return json({ success: true, message: "Section removed successfully" });
     }
