@@ -101,17 +101,22 @@ async function markSectionInstalled(shop, accessToken, apiVersion, sectionId) {
 export const action = async ({ request }) => {
   const { admin, session } = await authenticate.admin(request);
   const formData = await request.formData();
-  
-  console.log("Current Session Scopes:", session.scope);
+
+  console.log("\n=== NEW SECTION INSTALL REQUEST ===");
+  console.log("Session Shop:", session.shop);
+  console.log("Session Scopes:", session.scope);
+  console.log("Session Access Token Length:", session.accessToken?.length || 0);
+
   if (!session.scope?.includes("write_themes")) {
+      console.error("❌ Missing write_themes scope!");
       return json({ error: "Missing 'write_themes' permission. Please reinstall the app or update permissions." }, { status: 403 });
   }
 
   const action = formData.get("action");
   const themeId = formData.get("themeId");
 
-  console.log("Received Action:", action);
-  console.log("Received ThemeID:", themeId);
+  console.log("Action:", action);
+  console.log("Theme ID:", themeId);
 
   if (!themeId) {
     return json({ error: "Theme ID is required" }, { status: 400 });
@@ -273,177 +278,194 @@ export const action = async ({ request }) => {
           }
       }
 
-      // PRIMARY METHOD: Direct REST API (Proven & Reliable)
-      console.log("=== ATTEMPTING ASSET UPLOAD ===");
+      // PRIMARY METHOD: Using Shopify Admin REST Client (Official Way)
+      console.log("\n=== ATTEMPTING ASSET UPLOAD ===");
       console.log(`Shop: ${shop}`);
       console.log(`Theme ID: ${cleanThemeId}`);
       console.log(`Filename: ${sectionData.filename}`);
       console.log(`Content Length: ${sectionData.content.length} characters`);
-      console.log(`Access Token Length: ${accessToken?.length || 0}`);
 
       let successResponse = null;
       let uploadMethod = null;
       let lastError = "Unknown error";
       let lastStatus = 0;
 
-      // PRIMARY METHOD: Direct REST API
+      // METHOD 1: Use admin.rest client (Official Shopify SDK)
       try {
-          console.log("=== PRIMARY: DIRECT REST API ===");
+          console.log("\n=== METHOD 1: Shopify Admin REST Client ===");
 
-          // Use the most stable API version
-          const apiVer = "2024-04";
-          const assetUrl = `https://${shop}/admin/api/${apiVer}/themes/${cleanThemeId}/assets.json`;
-
-          console.log(`Trying URL: ${assetUrl}`);
-          console.log(`Payload Preview: { asset: { key: "${sectionData.filename}", value: "[${sectionData.content.length} chars]" } }`);
-
-          const response = await fetch(assetUrl, {
-              method: "PUT",
-              headers: {
-                  "X-Shopify-Access-Token": accessToken,
-                  "Content-Type": "application/json"
-              },
-              body: JSON.stringify({
+          const response = await admin.rest.put({
+              path: `themes/${cleanThemeId}/assets`,
+              data: {
                   asset: {
                       key: sectionData.filename,
                       value: sectionData.content
                   }
-              })
+              }
           });
 
-          console.log(`Response Status: ${response.status}`);
+          console.log("Response Status:", response.status);
 
-          if (response.ok) {
-              const data = await response.json();
-              console.log("✅ Direct REST Success!");
-              console.log("Asset saved:", data.asset);
-              successResponse = response;
-              uploadMethod = "direct-rest";
+          if (response.status === 200) {
+              console.log("✅ Admin REST Client Success!");
+              console.log("Response Body:", JSON.stringify(response.body));
+              successResponse = { ok: true };
+              uploadMethod = "admin-rest-client";
           } else {
-              const errorText = await response.text();
-              lastError = errorText;
               lastStatus = response.status;
-              console.error(`❌ Direct REST Failed (${response.status}):`, errorText);
-
-              if (response.status === 401 || response.status === 403) {
-                  await prisma.session.deleteMany({ where: { shop } });
-                  return json({ reauth: true, error: "Authentication failed. Please reload the page." }, { status: 401 });
-              }
-
-              // Try alternative API versions
-              console.log("Trying alternative API versions...");
-              const altVersions = ["2024-10", "2024-07"];
-
-              for (const v of altVersions) {
-                  console.log(`Trying alternative version: ${v}`);
-                  const altUrl = `https://${shop}/admin/api/${v}/themes/${cleanThemeId}/assets.json`;
-
-                  try {
-                      const altResp = await fetch(altUrl, {
-                          method: "PUT",
-                          headers: {
-                              "X-Shopify-Access-Token": accessToken,
-                              "Content-Type": "application/json"
-                          },
-                          body: JSON.stringify({
-                              asset: {
-                                  key: sectionData.filename,
-                                  value: sectionData.content
-                              }
-                          })
-                      });
-
-                      if (altResp.ok) {
-                          console.log(`✅ Success with ${v}!`);
-                          successResponse = altResp;
-                          uploadMethod = `rest-${v}`;
-                          break;
-                      } else {
-                          lastStatus = altResp.status;
-                          lastError = await altResp.text();
-                          console.warn(`Version ${v} failed (${lastStatus})`);
-                      }
-                  } catch (e) {
-                      console.error(`Exception with ${v}:`, e.message);
-                      lastError = e.message;
-                  }
-              }
-
-              // FALLBACK METHOD 2: Try simplified filename
-              if (!successResponse && lastStatus === 404) {
-                  console.log("Trying simplified filename...");
-
-                  const simplifiedFilename = sectionData.filename.replace('shopi-', '');
-                  const simpleUrl = `https://${shop}/admin/api/2024-04/themes/${cleanThemeId}/assets.json`;
-
-                  try {
-                      const simpleResp = await fetch(simpleUrl, {
-                          method: "PUT",
-                          headers: {
-                              "X-Shopify-Access-Token": accessToken,
-                              "Content-Type": "application/json"
-                          },
-                          body: JSON.stringify({
-                              asset: {
-                                  key: simplifiedFilename,
-                                  value: sectionData.content
-                              }
-                          })
-                      });
-
-                      if (simpleResp.ok) {
-                          console.log("✅ Simplified filename worked!");
-                          successResponse = simpleResp;
-                          uploadMethod = "rest-simplified";
-                          sectionData.filename = simplifiedFilename;
-                      }
-                  } catch (e) {
-                      console.error("Simplified filename failed:", e.message);
-                      lastError = e.message;
-                  }
-              }
-
-              // Final error if all methods failed
-              if (!successResponse) {
-                  console.error("=== ALL UPLOAD METHODS FAILED ===");
-                  console.error(`Last Error: ${lastError}`);
-                  console.error(`Last Status: ${lastStatus}`);
-
-                  let helpfulMessage = "Failed to upload section to theme. ";
-
-                  if (lastStatus === 404) {
-                      helpfulMessage += "\n\n🔍 Troubleshooting Steps:\n";
-                      helpfulMessage += "1. This theme might be a protected/locked theme\n";
-                      helpfulMessage += "2. Try creating a DUPLICATE of this theme:\n";
-                      helpfulMessage += "   • Go to Online Store > Themes\n";
-                      helpfulMessage += "   • Click '...' menu on your theme\n";
-                      helpfulMessage += "   • Select 'Duplicate'\n";
-                      helpfulMessage += "   • Install section on the duplicate\n";
-                      helpfulMessage += "3. Or use a development/unpublished theme\n";
-                      helpfulMessage += "\n💡 Duplicated themes work 100% of the time!";
-                  } else if (lastStatus === 403 || lastStatus === 401) {
-                      helpfulMessage += "Permission denied. Please reinstall the app.";
-                  } else {
-                      helpfulMessage += `Error (Status ${lastStatus}). Check console for details.`;
-                  }
-
-                  throw new Error(helpfulMessage);
-              }
+              lastError = JSON.stringify(response.body);
+              console.error(`❌ Admin REST Client Failed (${response.status}):`, response.body);
           }
-      } catch (mainError) {
-          console.error("=== MAIN ERROR CAUGHT ===");
-          console.error("Error Type:", mainError.name);
-          console.error("Error Message:", mainError.message);
-          console.error("Error Stack:", mainError.stack);
+      } catch (adminClientError) {
+          console.error("❌ Admin REST Client Exception:", adminClientError.message);
+          console.error("Error Details:", adminClientError);
+          lastError = adminClientError.message;
+      }
 
-          // Re-throw if it's our custom error message
-          if (mainError.message.includes("Troubleshooting Steps") ||
-              mainError.message.includes("Permission denied")) {
-              throw mainError;
+      // METHOD 2: Direct REST API (Fallback)
+      if (!successResponse) {
+          try {
+              console.log("\n=== METHOD 2: Direct REST API ===");
+
+              const apiVer = "2024-04";
+              const assetUrl = `https://${shop}/admin/api/${apiVer}/themes/${cleanThemeId}/assets.json`;
+
+              console.log(`Trying URL: ${assetUrl}`);
+
+              const response = await fetch(assetUrl, {
+                  method: "PUT",
+                  headers: {
+                      "X-Shopify-Access-Token": accessToken,
+                      "Content-Type": "application/json"
+                  },
+                  body: JSON.stringify({
+                      asset: {
+                          key: sectionData.filename,
+                          value: sectionData.content
+                      }
+                  })
+              });
+
+              console.log(`Response Status: ${response.status}`);
+
+              if (response.ok) {
+                  const data = await response.json();
+                  console.log("✅ Direct REST Success!");
+                  console.log("Asset saved:", data.asset);
+                  successResponse = response;
+                  uploadMethod = "direct-rest";
+              } else {
+                  const errorText = await response.text();
+                  lastError = errorText;
+                  lastStatus = response.status;
+                  console.error(`❌ Direct REST Failed (${response.status}):`, errorText);
+
+                  if (response.status === 401 || response.status === 403) {
+                      await prisma.session.deleteMany({ where: { shop } });
+                      return json({ reauth: true, error: "Authentication failed. Please reload the page." }, { status: 401 });
+                  }
+
+                  // Try alternative API versions
+                  console.log("Trying alternative API versions...");
+                  const altVersions = ["2024-10", "2024-07"];
+
+                  for (const v of altVersions) {
+                      console.log(`Trying alternative version: ${v}`);
+                      const altUrl = `https://${shop}/admin/api/${v}/themes/${cleanThemeId}/assets.json`;
+
+                      try {
+                          const altResp = await fetch(altUrl, {
+                              method: "PUT",
+                              headers: {
+                                  "X-Shopify-Access-Token": accessToken,
+                                  "Content-Type": "application/json"
+                              },
+                              body: JSON.stringify({
+                                  asset: {
+                                      key: sectionData.filename,
+                                      value: sectionData.content
+                                  }
+                              })
+                          });
+
+                          if (altResp.ok) {
+                              console.log(`✅ Success with ${v}!`);
+                              successResponse = altResp;
+                              uploadMethod = `rest-${v}`;
+                              break;
+                          } else {
+                              lastStatus = altResp.status;
+                              lastError = await altResp.text();
+                              console.warn(`Version ${v} failed (${lastStatus})`);
+                          }
+                      } catch (e) {
+                          console.error(`Exception with ${v}:`, e.message);
+                          lastError = e.message;
+                      }
+                  }
+
+                  // FALLBACK METHOD 3: Try simplified filename
+                  if (!successResponse && lastStatus === 404) {
+                      console.log("Trying simplified filename...");
+
+                      const simplifiedFilename = sectionData.filename.replace('shopi-', '');
+                      const simpleUrl = `https://${shop}/admin/api/2024-04/themes/${cleanThemeId}/assets.json`;
+
+                      try {
+                          const simpleResp = await fetch(simpleUrl, {
+                              method: "PUT",
+                              headers: {
+                                  "X-Shopify-Access-Token": accessToken,
+                                  "Content-Type": "application/json"
+                              },
+                              body: JSON.stringify({
+                                  asset: {
+                                      key: simplifiedFilename,
+                                      value: sectionData.content
+                                  }
+                              })
+                          });
+
+                          if (simpleResp.ok) {
+                              console.log("✅ Simplified filename worked!");
+                              successResponse = simpleResp;
+                              uploadMethod = "rest-simplified";
+                              sectionData.filename = simplifiedFilename;
+                          }
+                      } catch (e) {
+                          console.error("Simplified filename failed:", e.message);
+                          lastError = e.message;
+                      }
+                  }
+              }
+          } catch (methodTwoError) {
+              console.error("❌ METHOD 2 Exception:", methodTwoError.message);
+              lastError = methodTwoError.message;
+          }
+      }
+
+      // Final error if all methods failed
+      if (!successResponse) {
+          console.error("\n=== ALL UPLOAD METHODS FAILED ===");
+          console.error(`Last Error: ${lastError}`);
+          console.error(`Last Status: ${lastStatus}`);
+
+          let helpfulMessage = `Failed to upload section. Error: ${lastError}`;
+
+          if (lastStatus === 404) {
+              helpfulMessage = "Theme not accessible. Please check:\n";
+              helpfulMessage += "1. Theme ID is correct\n";
+              helpfulMessage += "2. Try a different theme (duplicate or development theme)\n";
+              helpfulMessage += "3. Check terminal logs for detailed error";
+          } else if (lastStatus === 403 || lastStatus === 401) {
+              helpfulMessage = "Permission denied. Please reinstall the app with write_themes permission.";
           }
 
-          // Otherwise, provide generic error
-          throw new Error(`Upload failed: ${mainError.message}. Please check server logs for details.`);
+          return json({
+              error: helpfulMessage,
+              technicalDetails: `Status ${lastStatus}: ${lastError}`,
+              debug: { lastStatus, lastError, shop, themeId: cleanThemeId }
+          }, { status: 500 });
       }
       
       // If we are here, successResponse is valid.
