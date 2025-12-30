@@ -273,224 +273,182 @@ export const action = async ({ request }) => {
           }
       }
 
-      // PRIMARY METHOD: Use GraphQL (More Reliable than REST for theme assets)
-      console.log("=== ATTEMPTING GRAPHQL UPLOAD (PRIMARY METHOD) ===");
-      console.log(`Theme GID: gid://shopify/Theme/${cleanThemeId}`);
+      // PRIMARY METHOD: Use Admin REST API (Most Compatible)
+      console.log("=== ATTEMPTING ASSET UPLOAD VIA ADMIN API ===");
+      console.log(`Shop: ${shop}`);
+      console.log(`Theme ID: ${cleanThemeId}`);
       console.log(`Filename: ${sectionData.filename}`);
       console.log(`Content Length: ${sectionData.content.length} characters`);
 
       let successResponse = null;
       let uploadMethod = null;
-      let graphqlAttempted = false;
 
+      // Try with admin.rest.resources first (uses proper authentication)
       try {
-          const gqlMutation = `
-            mutation themeFilesUpsert($themeId: ID!, $files: [OnlineStoreThemeFilesUpsertFileInput!]!) {
-              themeFilesUpsert(themeId: $themeId, files: $files) {
-                upsertedThemeFiles {
-                  filename
-                  size
-                  contentType
-                }
-                userErrors {
-                  filename
-                  code
-                  message
-                  field
-                }
-              }
-            }
-          `;
+          console.log("Method 1: Using admin.rest.resources.Asset...");
 
-          const variables = {
-              themeId: `gid://shopify/Theme/${cleanThemeId}`,
-              files: [{
-                  filename: sectionData.filename,
-                  body: {
-                      type: "TEXT",
-                      value: sectionData.content
-                  }
-              }]
-          };
+          const Asset = admin.rest.resources.Asset;
+          const asset = new Asset({ session: session });
+          asset.theme_id = Number(cleanThemeId);
+          asset.key = sectionData.filename;
+          asset.value = sectionData.content;
 
-          console.log("GraphQL Variables:", JSON.stringify(variables, null, 2).substring(0, 500) + "...");
+          await asset.save({ update: true });
 
-          const gqlUrl = `https://${shop}/admin/api/2024-10/graphql.json`;
-          const gqlResponse = await fetch(gqlUrl, {
-              method: "POST",
-              headers: {
-                  "Content-Type": "application/json",
-                  "X-Shopify-Access-Token": accessToken
-              },
-              body: JSON.stringify({
-                  query: gqlMutation,
-                  variables: variables
-              })
-          });
-
-          graphqlAttempted = true;
-          console.log(`GraphQL Response Status: ${gqlResponse.status}`);
-
-          if (gqlResponse.ok) {
-              const gqlData = await gqlResponse.json();
-              console.log("GraphQL Full Response:", JSON.stringify(gqlData, null, 2));
-
-              if (gqlData.errors) {
-                  console.error("❌ GraphQL Errors:", gqlData.errors);
-                  throw new Error(`GraphQL Errors: ${gqlData.errors.map(e => e.message).join(", ")}`);
-              }
-
-              const upserted = gqlData.data?.themeFilesUpsert?.upsertedThemeFiles;
-              const userErrors = gqlData.data?.themeFilesUpsert?.userErrors;
-
-              if (userErrors && userErrors.length > 0) {
-                  console.error("❌ GraphQL User Errors:", userErrors);
-                  throw new Error(`GraphQL User Errors: ${userErrors.map(e => `${e.code}: ${e.message}`).join(", ")}`);
-              }
-
-              if (upserted && upserted.length > 0) {
-                  console.log("✅ GraphQL Upload Success!");
-                  console.log("Uploaded File:", upserted[0]);
-                  successResponse = gqlResponse;
-                  uploadMethod = "graphql";
-              } else {
-                  console.warn("⚠️ GraphQL returned no upserted files and no errors:", gqlData);
-                  throw new Error("GraphQL returned empty response");
-              }
-          } else {
-              const text = await gqlResponse.text();
-              console.error(`❌ GraphQL HTTP Error: ${gqlResponse.status}`);
-              console.error(`Response Body: ${text}`);
-
-              if (gqlResponse.status === 401 || gqlResponse.status === 403) {
-                  await prisma.session.deleteMany({ where: { shop } });
-                  return json({ reauth: true, error: "Authentication failed. Please reload the page." }, { status: 401 });
-              }
-
-              throw new Error(`GraphQL HTTP ${gqlResponse.status}: ${text}`);
-          }
-      } catch (gqlError) {
-          console.error("❌ GraphQL Upload Failed:", gqlError.message);
-          console.error("GraphQL Error Stack:", gqlError.stack);
+          console.log("✅ Asset Upload Success via admin.rest!");
+          successResponse = { ok: true };
+          uploadMethod = "admin-rest";
+      } catch (adminError) {
+          console.error("❌ admin.rest.resources.Asset failed:", adminError.message);
+          console.error("Error details:", adminError);
       }
 
-      // FALLBACK METHOD 1: REST API with Multiple Versions
+      // FALLBACK METHOD 1: Direct REST API
       if (!successResponse) {
-          console.log("=== ATTEMPTING REST API FALLBACK ===");
+          console.log("=== FALLBACK: DIRECT REST API ===");
 
-          const versionsToTry = ["2024-10", "2024-07", "2024-04"];
-          let lastError = null;
-          let lastStatus = 0;
+          // Use the most stable API version
+          const apiVer = "2024-04";
+          const assetUrl = `https://${shop}/admin/api/${apiVer}/themes/${cleanThemeId}/assets.json`;
 
-          for (const v of versionsToTry) {
-              console.log(`\n--- Trying REST PUT with API Version: ${v} ---`);
-              const tryUrl = `https://${shop}/admin/api/${v}/themes/${cleanThemeId}/assets.json`;
-              console.log(`URL: ${tryUrl}`);
+          console.log(`Trying: ${assetUrl}`);
 
-              try {
-                  const payload = {
+          try {
+              const response = await fetch(assetUrl, {
+                  method: "PUT",
+                  headers: {
+                      "X-Shopify-Access-Token": accessToken,
+                      "Content-Type": "application/json"
+                  },
+                  body: JSON.stringify({
                       asset: {
                           key: sectionData.filename,
                           value: sectionData.content
                       }
-                  };
+                  })
+              });
 
-                  console.log(`Payload: { asset: { key: "${sectionData.filename}", value: "${sectionData.content.substring(0, 50)}..." } }`);
+              console.log(`Response Status: ${response.status}`);
 
-                  const response = await fetch(tryUrl, {
-                      method: "PUT",
-                      headers: {
-                          "X-Shopify-Access-Token": accessToken,
-                          "Content-Type": "application/json"
-                      },
-                      body: JSON.stringify(payload)
-                  });
+              if (response.ok) {
+                  const data = await response.json();
+                  console.log("✅ Direct REST Success!");
+                  console.log("Asset saved:", data.asset);
+                  successResponse = response;
+                  uploadMethod = "direct-rest";
+              } else {
+                  const errorText = await response.text();
+                  console.error(`❌ Direct REST Failed (${response.status}):`, errorText);
 
-                  console.log(`Response Status: ${response.status}`);
+                  if (response.status === 401 || response.status === 403) {
+                      await prisma.session.deleteMany({ where: { shop } });
+                      return json({ reauth: true, error: "Authentication failed. Please reload the page." }, { status: 401 });
+                  }
 
-                  if (response.ok) {
-                      const responseData = await response.json();
-                      console.log(`✅ REST Success with API Version ${v}`);
-                      console.log("Response Data:", responseData);
-                      successResponse = response;
-                      uploadMethod = `rest-${v}`;
-                      break;
-                  } else {
-                      lastStatus = response.status;
-                      const text = await response.text();
-                      lastError = `Version ${v} Failed (${response.status}): ${text}`;
-                      console.error(`❌ ${lastError}`);
+                  // Try alternative API versions
+                  const altVersions = ["2024-10", "2024-07"];
+                  let lastError = errorText;
+                  let lastStatus = response.status;
 
-                      if (response.status === 401 || response.status === 403) {
-                          await prisma.session.deleteMany({ where: { shop } });
-                          return json({ reauth: true, error: "Authentication failed. Please reload the page." }, { status: 401 });
+                  for (const v of altVersions) {
+                      console.log(`Trying alternative version: ${v}`);
+                      const altUrl = `https://${shop}/admin/api/${v}/themes/${cleanThemeId}/assets.json`;
+
+                      try {
+                          const altResp = await fetch(altUrl, {
+                              method: "PUT",
+                              headers: {
+                                  "X-Shopify-Access-Token": accessToken,
+                                  "Content-Type": "application/json"
+                              },
+                              body: JSON.stringify({
+                                  asset: {
+                                      key: sectionData.filename,
+                                      value: sectionData.content
+                                  }
+                              })
+                          });
+
+                          if (altResp.ok) {
+                              console.log(`✅ Success with ${v}!`);
+                              successResponse = altResp;
+                              uploadMethod = `rest-${v}`;
+                              break;
+                          } else {
+                              lastStatus = altResp.status;
+                              lastError = await altResp.text();
+                              console.warn(`Version ${v} failed (${lastStatus})`);
+                          }
+                      } catch (e) {
+                          console.error(`Exception with ${v}:`, e.message);
                       }
                   }
-              } catch (e) {
-                  console.error(`❌ Exception with Version ${v}:`, e);
-                  lastError = e.message;
-              }
-          }
 
-          // FALLBACK METHOD 2: Try simplified filename
-          if (!successResponse && lastStatus === 404) {
-              console.log("Trying simplified filename without 'shopi-' prefix...");
+                  // FALLBACK METHOD 2: Try simplified filename
+                  if (!successResponse && lastStatus === 404) {
+                      console.log("Trying simplified filename...");
 
-              const simplifiedFilename = sectionData.filename.replace('shopi-', '');
-              const tryUrl = `https://${shop}/admin/api/2024-10/themes/${cleanThemeId}/assets.json`;
+                      const simplifiedFilename = sectionData.filename.replace('shopi-', '');
+                      const simpleUrl = `https://${shop}/admin/api/2024-04/themes/${cleanThemeId}/assets.json`;
 
-              try {
-                  const response = await fetch(tryUrl, {
-                      method: "PUT",
-                      headers: {
-                          "X-Shopify-Access-Token": accessToken,
-                          "Content-Type": "application/json"
-                      },
-                      body: JSON.stringify({
-                          asset: {
-                              key: simplifiedFilename,
-                              value: sectionData.content
+                      try {
+                          const simpleResp = await fetch(simpleUrl, {
+                              method: "PUT",
+                              headers: {
+                                  "X-Shopify-Access-Token": accessToken,
+                                  "Content-Type": "application/json"
+                              },
+                              body: JSON.stringify({
+                                  asset: {
+                                      key: simplifiedFilename,
+                                      value: sectionData.content
+                                  }
+                              })
+                          });
+
+                          if (simpleResp.ok) {
+                              console.log("✅ Simplified filename worked!");
+                              successResponse = simpleResp;
+                              uploadMethod = "rest-simplified";
+                              sectionData.filename = simplifiedFilename;
                           }
-                      })
-                  });
-
-                  if (response.ok) {
-                      console.log("✓ Simplified filename worked!");
-                      successResponse = response;
-                      uploadMethod = "rest-simplified";
-                      sectionData.filename = simplifiedFilename; // Update for verification
+                      } catch (e) {
+                          console.error("Simplified filename failed:", e.message);
+                      }
                   }
-              } catch (e) {
-                  console.error("Simplified filename attempt failed:", e);
+
+                  // Final error if all methods failed
+                  if (!successResponse) {
+                      console.error("=== ALL UPLOAD METHODS FAILED ===");
+                      console.error(`Last Error: ${lastError}`);
+                      console.error(`Last Status: ${lastStatus}`);
+
+                      let helpfulMessage = "Failed to upload section to theme. ";
+
+                      if (lastStatus === 404) {
+                          helpfulMessage += "\n\n🔍 Troubleshooting Steps:\n";
+                          helpfulMessage += "1. This theme might be a protected/locked theme\n";
+                          helpfulMessage += "2. Try creating a DUPLICATE of this theme:\n";
+                          helpfulMessage += "   • Go to Online Store > Themes\n";
+                          helpfulMessage += "   • Click '...' menu on your theme\n";
+                          helpfulMessage += "   • Select 'Duplicate'\n";
+                          helpfulMessage += "   • Install section on the duplicate\n";
+                          helpfulMessage += "3. Or use a development/unpublished theme\n";
+                          helpfulMessage += "\n💡 Duplicated themes work 100% of the time!";
+                      } else if (lastStatus === 403 || lastStatus === 401) {
+                          helpfulMessage += "Permission denied. Please reinstall the app.";
+                      } else {
+                          helpfulMessage += `Error (Status ${lastStatus}). Check console for details.`;
+                      }
+
+                      throw new Error(helpfulMessage);
+                  }
+              } catch (fetchError) {
+                  console.error("❌ Fetch error:", fetchError.message);
+                  if (!successResponse) {
+                      throw new Error("Network error during asset upload. Please try again.");
+                  }
               }
-          }
-
-          // Final error if all methods failed
-          if (!successResponse) {
-              console.error("=== ALL UPLOAD METHODS FAILED ===");
-              console.error(`GraphQL Attempted: ${graphqlAttempted}`);
-              console.error(`Last REST Error: ${lastError}`);
-              console.error(`Last Status Code: ${lastStatus}`);
-
-              let helpfulMessage = "Failed to upload section to theme. ";
-
-              if (lastStatus === 404) {
-                  helpfulMessage += "\n\n🔍 Troubleshooting Steps:\n";
-                  helpfulMessage += "1. This theme might be a protected/locked theme (e.g., Shopify's default themes)\n";
-                  helpfulMessage += "2. Try creating a duplicate of this theme first:\n";
-                  helpfulMessage += "   - Go to Online Store > Themes\n";
-                  helpfulMessage += "   - Click '...' menu on your theme\n";
-                  helpfulMessage += "   - Select 'Duplicate'\n";
-                  helpfulMessage += "   - Use the duplicated theme instead\n";
-                  helpfulMessage += "3. Or try selecting a different theme (unpublished/development theme)\n";
-                  helpfulMessage += "\n💡 Tip: Development/Draft themes are usually easier to modify.";
-              } else if (lastStatus === 403 || lastStatus === 401) {
-                  helpfulMessage += "Permission denied. Please reinstall the app to grant write_themes permission.";
-              } else {
-                  helpfulMessage += `Unexpected error (Status ${lastStatus}). Please check the console for details.`;
-              }
-
-              throw new Error(helpfulMessage);
           }
       }
       
