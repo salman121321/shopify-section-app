@@ -134,9 +134,10 @@ export const action = async ({ request }) => {
           headers: { "X-Shopify-Access-Token": accessToken }
       });
       
+      let activeScopes = [];
       if (scopeResp.ok) {
           const scopeData = await scopeResp.json();
-          const activeScopes = scopeData.access_scopes.map(s => s.handle);
+          activeScopes = scopeData.access_scopes.map(s => s.handle);
           console.log("Verified Active Scopes from Shopify:", activeScopes);
           
           if (!activeScopes.includes("write_themes")) {
@@ -175,13 +176,76 @@ export const action = async ({ request }) => {
            }
 
             // 404 on PUT usually means the theme ID is wrong OR the endpoint is wrong.
-            // Since we verified the theme exists (Diag 1), it might be the API version or URL format.
-            // But for now, if it's 404, we return error instead of re-auth loops, as we verified scopes.
-           if (response.status === 404) {
-               return json({ error: `Shopify API returned 404 Not Found for Asset PUT. URL: ${url}. Response: ${text}` }, { status: 404 });
-           }
+            // REST failed. Let's try GraphQL Fallback if scope allows
+            if (response.status === 404) {
+                console.log("REST 404 encountered. Attempting GraphQL fallback...");
+                
+                try {
+                    // GraphQL mutation for themeFilesUpsert
+                    const query = `
+                      mutation themeFilesUpsert($files: [ThemeFilesUpsertInput!]!, $themeId: ID!) {
+                        themeFilesUpsert(files: $files, themeId: $themeId) {
+                          upsertedThemeFiles {
+                            filename
+                          }
+                          userErrors {
+                            code
+                            field
+                            message
+                          }
+                        }
+                      }
+                    `;
+                    
+                    const gqlUrl = `https://${shop}/admin/api/${apiVersion}/graphql.json`;
+                    const gqlResp = await fetch(gqlUrl, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-Shopify-Access-Token": accessToken
+                        },
+                        body: JSON.stringify({
+                            query,
+                            variables: {
+                                themeId: `gid://shopify/Theme/${cleanThemeId}`,
+                                files: [
+                                    {
+                                        filename: sectionData.filename,
+                                        body: { value: sectionData.content }
+                                    }
+                                ]
+                            }
+                        })
+                    });
+                    
+                    if (gqlResp.ok) {
+                        const gqlData = await gqlResp.json();
+                        console.log("GraphQL Response:", JSON.stringify(gqlData));
+                        
+                        const userErrors = gqlData.data?.themeFilesUpsert?.userErrors || [];
+                        if (userErrors.length > 0) {
+                             throw new Error(`GraphQL User Errors: ${JSON.stringify(userErrors)}`);
+                        }
+                        
+                        return json({ 
+                            success: true, 
+                            message: `Section added via GraphQL Fallback`,
+                            method: "graphql-fallback"
+                        });
+                    } else {
+                        console.error("GraphQL Fallback Failed:", await gqlResp.text());
+                    }
+                } catch (gqlErr) {
+                    console.error("GraphQL Fallback Exception:", gqlErr);
+                }
 
-           throw new Error(`Failed to save section: ${response.status} ${text}`);
+                // If GraphQL also failed or didn't run, return the original REST 404 error but with scope info
+                return json({ 
+                    error: `Shopify API returned 404 Not Found for Asset PUT. URL: ${url}. Scopes: ${activeScopes.join(',')}. Response: ${text}` 
+                }, { status: 404 });
+            }
+
+            throw new Error(`Failed to save section: ${response.status} ${text}`);
       }
 
       return json({ 
