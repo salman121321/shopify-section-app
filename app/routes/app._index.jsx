@@ -229,7 +229,11 @@ export default function Index() {
         }
 
         if (sectionFetcher.data.success) {
-            setToastMessage(sectionFetcher.data.message);
+            if (sectionFetcher.data.warning) {
+                setToastMessage("Warning: " + sectionFetcher.data.message);
+            } else {
+                setToastMessage(sectionFetcher.data.message);
+            }
             setThemeModalOpen(false);
             // Optimistically update installed status
             if (selectedSectionForInstall) {

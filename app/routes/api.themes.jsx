@@ -46,8 +46,6 @@ export const loader = async ({ request }) => {
 
     // Check for installed sections in ALL themes
     const installedSections = new Set();
-    
-    console.log(`Checking installed sections for shop: ${shop} across ${sortedThemes.length} themes.`);
 
     // STRATEGY 1: Check App Metafields (Source of Truth)
     try {
@@ -74,7 +72,6 @@ export const loader = async ({ request }) => {
                     const list = JSON.parse(val);
                     if (Array.isArray(list)) {
                         list.forEach(id => installedSections.add(id));
-                        console.log("Loaded installed sections from Metafield:", list);
                     }
                 } catch (e) { console.warn("Invalid metafield JSON:", e); }
             }
