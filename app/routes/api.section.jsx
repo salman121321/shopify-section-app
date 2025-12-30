@@ -113,10 +113,32 @@ export const action = async ({ request }) => {
       }
       console.log("Diagnostic 1 Success: Theme exists.");
 
-      // REAL UPDATE: Use REST API with Force Re-Auth on Failure
+      // REAL UPDATE: Use REST API
       console.log("Attempting REST Asset Update...");
       const url = `https://${shop}/admin/api/${apiVersion}/themes/${cleanThemeId}/assets.json`;
       
+      // DIAGNOSTIC 2: Check Asset Access (List Assets)
+      const listAssetsUrl = `https://${shop}/admin/api/${apiVersion}/themes/${cleanThemeId}/assets.json?limit=1`;
+      const listResp = await fetch(listAssetsUrl, {
+          headers: { "X-Shopify-Access-Token": accessToken }
+      });
+      if (!listResp.ok) {
+           const text = await listResp.text();
+           console.error(`Asset List Check Failed (${listResp.status}): ${text}`);
+           // If we cannot list assets, we definitely cannot write them.
+           // This confirms a permission or scope issue for 'write_themes' or 'read_themes'.
+           if (listResp.status === 403 || listResp.status === 401) {
+                console.log("Triggering Re-Auth due to Asset List failure...");
+                await prisma.session.deleteMany({ where: { shop } });
+                return json({ reauth: true, error: "Permissions need update. Reloading..." }, { status: 401 });
+           }
+           // If 404, it implies the theme doesn't support assets endpoint?
+           if (listResp.status === 404) {
+               return json({ error: `Asset Endpoint Not Found for Theme ${cleanThemeId}. URL: ${listAssetsUrl}` }, { status: 404 });
+           }
+      }
+      console.log("Diagnostic 2 Success: Can list assets.");
+
       const response = await fetch(url, {
           method: "PUT",
           headers: {
@@ -136,11 +158,17 @@ export const action = async ({ request }) => {
            console.error(`Asset Update Failed (${response.status}): ${text}`);
            
            // If 404 or 403 or 401, it is likely a Permission/Scope issue or Auth issue
-           // We know the theme exists (Diagnostic 1 passed), so 404 on PUT means "Can't write to this resource"
-           if (response.status === 404 || response.status === 403 || response.status === 401) {
+           if (response.status === 403 || response.status === 401) {
                console.log("Triggering Re-Auth due to write failure...");
                await prisma.session.deleteMany({ where: { shop } });
                return json({ reauth: true, error: "Permissions need update. Reloading..." }, { status: 401 }); // Use 401 to trigger frontend re-auth
+           }
+           
+           if (response.status === 404) {
+               // DO NOT REAUTH automatically for 404 on PUT if we passed Diagnostic 2.
+               // It means the URL is wrong or the Key is invalid, or something else.
+               // We want to show this error to the user.
+               return json({ error: `Asset Update 404. URL: ${url} | Response: ${text}` }, { status: 404 });
            }
 
            throw new Error(`Failed to save section: ${response.status} ${text}`);
