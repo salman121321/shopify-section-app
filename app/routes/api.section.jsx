@@ -131,7 +131,7 @@ export const action = async ({ request }) => {
         },
         body: JSON.stringify({
             query: `
-            mutation themeFilesUpsert($files: [ThemeFilesUpsertFileInput!]!, $themeId: ID!) {
+            mutation themeFilesUpsert($files: [OnlineStoreThemeFilesUpsertFileInput!]!, $themeId: ID!) {
                 themeFilesUpsert(files: $files, themeId: $themeId) {
                     upsertedThemeFiles {
                         filename
