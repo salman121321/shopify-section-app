@@ -121,7 +121,63 @@ export const action = async ({ request }) => {
       }
       console.log("Diagnostic 2 Success: Can list assets.");
 
-      // REAL UPDATE
+      // REAL UPDATE: Try GraphQL to avoid REST 404 issues
+      console.log("Attempting GraphQL themeFilesUpsert...");
+      const graphqlResponse = await fetch(`https://${shop}/admin/api/${apiVersion}/graphql.json`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-Shopify-Access-Token": accessToken
+        },
+        body: JSON.stringify({
+            query: `
+            mutation themeFilesUpsert($files: [ThemeFilesUpsertFileInput!]!, $themeId: ID!) {
+                themeFilesUpsert(files: $files, themeId: $themeId) {
+                    upsertedThemeFiles {
+                        filename
+                    }
+                    userErrors {
+                        code
+                        field
+                        message
+                    }
+                }
+            }`,
+            variables: {
+                themeId: `gid://shopify/Theme/${cleanThemeId}`,
+                files: [
+                    {
+                        filename: sectionData.filename,
+                        body: {
+                          value: sectionData.content
+                        }
+                    }
+                ]
+            }
+        })
+      });
+
+      const gqlJson = await graphqlResponse.json();
+      console.log("GraphQL Response:", JSON.stringify(gqlJson));
+
+      if (gqlJson.errors) {
+         // Top level GraphQL errors
+         throw new Error(`GraphQL Error: ${JSON.stringify(gqlJson.errors)}`);
+      }
+
+      const userErrors = gqlJson.data?.themeFilesUpsert?.userErrors || [];
+      if (userErrors.length > 0) {
+          throw new Error(`GraphQL User Errors: ${JSON.stringify(userErrors)}`);
+      }
+      
+      // If we are here, GraphQL succeeded!
+      return json({ 
+          success: true, 
+          message: `Section added to ${themeId} via GraphQL`,
+          method: "graphql"
+      });
+
+      /* REST FALLBACK REMOVED FOR NOW TO TEST GRAPHQL
       const url = `https://${shop}/admin/api/${apiVersion}/themes/${cleanThemeId}/assets.json`;
       console.log(`PUT URL: ${url}`);
 
@@ -140,15 +196,9 @@ export const action = async ({ request }) => {
       });
 
       if (!response.ok) {
-          if (response.status === 401) {
-             console.log("Details: 401 Unauthorized detected. Deleting invalid session to force re-auth.");
-             await prisma.session.deleteMany({ where: { shop } });
-             return json({ reauth: true, error: "Authentication expired. Please reload the page." }, { status: 401 });
-          }
-          const text = await response.text();
-          // Include URL in error for debugging
-          throw new Error(`Shopify API ${response.status}: ${text} | URL: ${url}`);
+           // ...
       }
+      */
 
       const data = await response.json();
       console.log("Direct Fetch Success:", data);
