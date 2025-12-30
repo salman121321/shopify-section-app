@@ -188,8 +188,8 @@ export const action = async ({ request }) => {
       // FALLBACK: Use direct fetch to bypass library issues
       const shop = session.shop;
       const accessToken = session.accessToken;
-      // Use 2024-04 (Stable) to ensure compatibility
-      const apiVersion = "2024-04"; 
+      // Use 2024-10 to ensure compatibility with themeFilesUpsert
+      const apiVersion = "2024-10"; 
       const cleanThemeId = String(themeId).trim();
 
       console.log(`Debug: Shop=${shop}, ThemeID=${cleanThemeId}, TokenLength=${accessToken?.length}`);
@@ -421,7 +421,7 @@ export const action = async ({ request }) => {
       // Remove the Liquid file from the theme
       const shop = session.shop;
       const accessToken = session.accessToken;
-      const apiVersion = "2024-04"; // Sync with activate action
+      const apiVersion = "2024-10"; // Sync with activate action
       const cleanThemeId = String(themeId).trim();
       const url = `https://${shop}/admin/api/${apiVersion}/themes/${cleanThemeId}/assets.json?asset[key]=${sectionData.filename}`;
 
