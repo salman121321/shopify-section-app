@@ -11,7 +11,7 @@ export const loader = async ({ request }) => {
     // FALLBACK: Use direct fetch for maximum stability (matches api.section.jsx)
     const shop = session.shop;
     const accessToken = session.accessToken;
-    const apiVersion = "2024-10";
+    const apiVersion = "2024-04"; // Sync with api.section.jsx
     const url = `https://${shop}/admin/api/${apiVersion}/themes.json`;
 
     const response = await fetch(url, {
@@ -47,6 +47,8 @@ export const loader = async ({ request }) => {
     // Check for installed sections in ALL themes
     const installedSections = new Set();
     
+    console.log(`Checking installed sections for shop: ${shop} across ${sortedThemes.length} themes.`);
+
     // Use Promise.all to check themes in parallel
     // We use the "List Assets" endpoint which is efficient and returns all asset keys
     await Promise.all(sortedThemes.map(async (theme) => {
@@ -60,17 +62,36 @@ export const loader = async ({ request }) => {
                 const assetsData = await assetsResp.json();
                 const assets = assetsData.assets || [];
                 
+                // Debug log to see what we found (summary)
+                // console.log(`Theme ${theme.id} (${theme.role}) has ${assets.length} assets.`);
+
                 // Check if our sections exist in this theme's assets
-                const has3DCarousel = assets.some(a => a.key === "sections/3d-carousel-pro.liquid");
-                const hasCustomSection = assets.some(a => a.key === "sections/my-custom-section.liquid");
+                // We check both new and old filenames to be safe
+                const has3DCarousel = assets.some(a => 
+                    a.key === "sections/3d-carousel-pro.liquid" || 
+                    a.key === "sections/three-d-carousel.liquid"
+                );
                 
-                if (has3DCarousel) installedSections.add("3d-carousel-pro");
-                if (hasCustomSection) installedSections.add("my-custom-section");
+                const hasCustomSection = assets.some(a => 
+                    a.key === "sections/my-custom-section.liquid"
+                );
+                
+                if (has3DCarousel) {
+                    console.log(`FOUND 3d-carousel-pro in theme ${theme.id} (${theme.role})`);
+                    installedSections.add("3d-carousel-pro");
+                }
+                if (hasCustomSection) {
+                    installedSections.add("my-custom-section");
+                }
+            } else {
+                console.warn(`Failed to fetch assets for theme ${theme.id}: ${assetsResp.status}`);
             }
         } catch (err) {
             console.warn(`Failed to check assets for theme ${theme.id}:`, err);
         }
     }));
+    
+    console.log("Final Installed Sections List:", Array.from(installedSections));
     
     // Normalize and ensure ID is string for frontend
     const normalizedThemes = sortedThemes.map(t => ({

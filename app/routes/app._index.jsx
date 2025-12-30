@@ -235,6 +235,8 @@ export default function Index() {
             if (selectedSectionForInstall) {
                  setInstalledSectionIds(prev => [...prev, selectedSectionForInstall.id]);
             }
+            // Force re-fetch themes to verify persistence immediately
+            themesFetcher.load("/api/themes");
         } else if (sectionFetcher.data.error) {
             setToastMessage("Error: " + sectionFetcher.data.error);
         }
