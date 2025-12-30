@@ -145,7 +145,7 @@ export const action = async ({ request }) => {
   // Map section IDs to their Liquid templates
   const sectionTemplates = {
     "3d-carousel-pro": {
-        filename: "sections/3d-carousel-pro.liquid",
+        filename: "sections/shopi-3d-carousel-pro.liquid",
         content: THREE_D_CAROUSEL_LIQUID
     },
     "my-custom-section": {

@@ -92,10 +92,10 @@ export const loader = async ({ request }) => {
                 const gqlQuery = `
                   query checkAssets($themeId: ID!) {
                     newCarousel: theme(id: $themeId) {
-                      files(first: 1, query: "filename:sections/3d-carousel-pro.liquid") { nodes { filename } }
+                      files(first: 1, query: "filename:sections/shopi-3d-carousel-pro.liquid") { nodes { filename } }
                     }
                     oldCarousel: theme(id: $themeId) {
-                      files(first: 1, query: "filename:sections/three-d-carousel.liquid") { nodes { filename } }
+                      files(first: 1, query: "filename:sections/3d-carousel-pro.liquid") { nodes { filename } }
                     }
                     customSection: theme(id: $themeId) {
                       files(first: 1, query: "filename:sections/my-custom-section.liquid") { nodes { filename } }
