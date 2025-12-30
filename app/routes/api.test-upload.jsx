@@ -158,6 +158,23 @@ export const action = async ({ request }) => {
         variables: variables
       })
     });
+    
+    console.log("Test 3 Status:", response.status);
+    
+    if (!response.ok) {
+       console.error("❌ Test 3 Fetch Failed with status:", response.status);
+       const text = await response.text();
+       console.error("Response body:", text);
+       results.test3 = {
+         method: "graphql",
+         success: false,
+         status: response.status,
+         error: `Fetch failed: ${response.status} ${response.statusText}`,
+         body: text
+       };
+       results.summary = `Test 3 failed: Fetch error ${response.status}`;
+       return json({ success: false, message: `Test 3 Fetch Failed: ${response.status}`, results }, { status: 500 });
+    }
 
     const data = await response.json();
 
