@@ -13,7 +13,7 @@ const shopify = shopifyApp({
   apiSecretKey: process.env.SHOPIFY_API_SECRET || "",
   apiVersion: ApiVersion.January25,
   // Load scopes from Environment Variable (SCOPES) with fallback and trimming
-  scopes: (process.env.SCOPES || "write_products,read_themes,write_themes").split(",").map(s => s.trim()),
+  scopes: (process.env.SCOPES || "write_products,write_themes").split(",").map(s => s.trim()),
   appUrl: process.env.SHOPIFY_APP_URL || "",
   authPathPrefix: "/auth",
   sessionStorage: new PrismaSessionStorage(prisma),

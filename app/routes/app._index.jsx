@@ -36,7 +36,7 @@ export const loader = async ({ request }) => {
   
   // Check scopes (Soft Check - do not block)
   const currentScopes = new Set(session.scope ? session.scope.split(",").map(s => s.trim()) : []);
-  const envScopes = (process.env.SCOPES || "write_products,read_themes,write_themes").split(",").map(s => s.trim());
+  const envScopes = (process.env.SCOPES || "write_products,write_themes").split(",").map(s => s.trim());
   
   const hasAllScopes = envScopes.every(scope => {
       if (currentScopes.has(scope)) return true;
