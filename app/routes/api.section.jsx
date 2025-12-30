@@ -237,96 +237,85 @@ export const action = async ({ request }) => {
            console.log("Diagnostic 2 Success: Can read theme assets.");
       }
 
-      // REAL UPDATE: Use REST API with Version Retry Strategy
-      console.log("Attempting REST Asset Update...");
+      // REAL UPDATE: Use Shopify API Library (Resource) instead of raw fetch
+      // This handles session rotation and headers more reliably
+      console.log("Attempting REST Asset Update via Shopify Library...");
       
-      // Ensure content is valid
-      if (!sectionData.content || sectionData.content.length === 0) {
-          throw new Error("Section content is empty. Cannot upload.");
-      }
-
-      // DIAGNOSTIC 3: Verify Actual Scopes from Shopify
-      // ... (Keep existing scope check logic if possible, or assume checked)
-      const scopeUrl = `https://${shop}/admin/oauth/access_scopes.json`;
-      const scopeResp = await fetch(scopeUrl, {
-          headers: { "X-Shopify-Access-Token": accessToken }
-      });
-      
-      if (scopeResp.ok) {
-          const scopeData = await scopeResp.json();
-          const activeScopes = scopeData.access_scopes.map(s => s.handle);
-          console.log("Verified Active Scopes:", activeScopes);
-          if (!activeScopes.includes("write_themes")) {
-               // Critical failure
-               await prisma.session.deleteMany({ where: { shop } });
-               return json({ reauth: true, error: "Critical: Missing write_themes scope. Reloading..." }, { status: 401 });
-          }
-      }
-
-      // Retry Strategy: Try Latest, then Stable, then LTS
-      const versionsToTry = ["2025-01", "2024-10", "2024-04"];
-      let lastError = null;
-      let lastStatus = 0;
-      let successResponse = null;
-
-      for (const v of versionsToTry) {
-          console.log(`Trying REST PUT with API Version: ${v}...`);
-          const tryUrl = `https://${shop}/admin/api/${v}/themes/${cleanThemeId}/assets.json`;
+      try {
+          const Asset = admin.rest.resources.Asset;
+          const asset = new Asset({ session: session });
+          asset.theme_id = cleanThemeId;
+          asset.key = sectionData.filename;
+          asset.value = sectionData.content;
           
-          try {
-              const response = await fetch(tryUrl, {
-                  method: "PUT",
-                  headers: {
-                      "X-Shopify-Access-Token": accessToken,
-                      "Content-Type": "application/json"
-                  },
-                  body: JSON.stringify({
-                      asset: {
-                          key: sectionData.filename,
-                          value: sectionData.content
-                      }
-                  })
-              });
-
-              if (response.ok) {
-                  successResponse = response;
-                  console.log(`Success with API Version ${v}`);
-                  break; // Exit loop on success
-              } else {
-                  lastStatus = response.status;
-                  const text = await response.text();
-                  lastError = `Version ${v} Failed (${response.status}): ${text}`;
-                  console.warn(lastError);
-                  
-                  // If 401/403, no point retrying other versions, it's auth
-                  if (response.status === 401 || response.status === 403) {
-                       await prisma.session.deleteMany({ where: { shop } });
-                       return json({ reauth: true, error: "Authentication failed during write. Reloading..." }, { status: 401 });
-                  }
-              }
-          } catch (e) {
-              console.error(`Exception with Version ${v}:`, e);
-              lastError = e.message;
-          }
-      }
-
-      if (!successResponse) {
-            console.error("All REST versions failed.");
-            // If 404 persists across all versions
-            if (lastStatus === 404) {
-                 console.warn(`Injection failed with 404. Assuming Theme App Extension mode. Proceeding to activation.`);
-                 // SOFT FAIL: Do NOT throw.
-                 // We assume the user has the Theme App Extension installed, so the file doesn't need to be injected.
-                 // We just need to mark it as installed in the Metafield so the dashboard shows "Activated".
-                 await markSectionInstalled(shop, accessToken, apiVersion, sectionId);
-                 
-                 return json({ 
-                     success: true, 
-                     message: "Section activated! (Note: Injection skipped due to theme restriction. Ensure Theme App Extension is enabled in Theme Editor.)",
-                     method: "extension-fallback" 
-                 });
-            }
-            throw new Error(`Asset Update Failed: ${lastError}`);
+          await asset.save({
+              update: true,
+          });
+          
+          console.log("Library Asset Save Success!");
+          
+      } catch (libErr) {
+          console.error("Library Asset Save Failed:", libErr);
+          
+          // Fallback to Raw Fetch if library fails (original robust logic)
+          console.log("Falling back to Raw Fetch Retry Strategy...");
+          
+           // Retry Strategy: Try Latest, then Stable, then LTS
+           const versionsToTry = ["2025-01", "2024-10", "2024-04"];
+           let lastError = null;
+           let lastStatus = 0;
+           let successResponse = null;
+     
+           for (const v of versionsToTry) {
+               console.log(`Trying REST PUT with API Version: ${v}...`);
+               const tryUrl = `https://${shop}/admin/api/${v}/themes/${cleanThemeId}/assets.json`;
+               
+               try {
+                   const response = await fetch(tryUrl, {
+                       method: "PUT",
+                       headers: {
+                           "X-Shopify-Access-Token": accessToken,
+                           "Content-Type": "application/json"
+                       },
+                       body: JSON.stringify({
+                           asset: {
+                               key: sectionData.filename,
+                               value: sectionData.content
+                           }
+                       })
+                   });
+     
+                   if (response.ok) {
+                       successResponse = response;
+                       console.log(`Success with API Version ${v}`);
+                       break; // Exit loop on success
+                   } else {
+                       lastStatus = response.status;
+                       const text = await response.text();
+                       lastError = `Version ${v} Failed (${response.status}): ${text}`;
+                       console.warn(lastError);
+                       
+                       // If 401/403, no point retrying other versions, it's auth
+                       if (response.status === 401 || response.status === 403) {
+                            await prisma.session.deleteMany({ where: { shop } });
+                            return json({ reauth: true, error: "Authentication failed during write. Reloading..." }, { status: 401 });
+                       }
+                   }
+               } catch (e) {
+                   console.error(`Exception with Version ${v}:`, e);
+                   lastError = e.message;
+               }
+           }
+     
+           if (!successResponse) {
+                 console.error("All REST versions failed.");
+                 // If 404 persists across all versions
+                 if (lastStatus === 404) {
+                      // FORCE ERROR - User wants injection or nothing
+                      throw new Error(`Failed to inject section code. The theme (ID: ${cleanThemeId}) refused the connection (404). This usually means the theme is locked or permissions are missing. Please try a different theme.`);
+                 }
+                 throw new Error(`Asset Update Failed: ${lastError}`);
+           }
       }
       
       // If we are here, successResponse is valid.
