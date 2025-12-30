@@ -3,6 +3,7 @@
 // stop passing in HOST, so we can remove this workaround after the next major release.
 if (
   process.env.HOST &&
+  process.env.HOST !== "0.0.0.0" &&
   (!process.env.SHOPIFY_APP_URL ||
     process.env.SHOPIFY_APP_URL === process.env.HOST)
 ) {
