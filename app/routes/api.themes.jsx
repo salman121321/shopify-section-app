@@ -51,24 +51,31 @@ export const loader = async ({ request }) => {
 
     // Use Promise.all to check themes in parallel
     // We use SPECIFIC ASSET GET because "List Assets" might be paginated and miss the file
+    // Add timestamp to prevent caching
+    const timestamp = Date.now();
+    
     await Promise.all(sortedThemes.map(async (theme) => {
         try {
             // Check for 3D Carousel (New Key)
-            const checkCarouselNew = fetch(`https://${shop}/admin/api/${apiVersion}/themes/${theme.id}/assets.json?asset[key]=sections/3d-carousel-pro.liquid`, {
+            const checkCarouselNew = fetch(`https://${shop}/admin/api/${apiVersion}/themes/${theme.id}/assets.json?asset[key]=sections/3d-carousel-pro.liquid&t=${timestamp}`, {
                 headers: { "X-Shopify-Access-Token": accessToken }
             });
             
             // Check for 3D Carousel (Old Key - just in case)
-            const checkCarouselOld = fetch(`https://${shop}/admin/api/${apiVersion}/themes/${theme.id}/assets.json?asset[key]=sections/three-d-carousel.liquid`, {
+            const checkCarouselOld = fetch(`https://${shop}/admin/api/${apiVersion}/themes/${theme.id}/assets.json?asset[key]=sections/three-d-carousel.liquid&t=${timestamp}`, {
                 headers: { "X-Shopify-Access-Token": accessToken }
             });
 
             // Check for Custom Section
-            const checkCustom = fetch(`https://${shop}/admin/api/${apiVersion}/themes/${theme.id}/assets.json?asset[key]=sections/my-custom-section.liquid`, {
+            const checkCustom = fetch(`https://${shop}/admin/api/${apiVersion}/themes/${theme.id}/assets.json?asset[key]=sections/my-custom-section.liquid&t=${timestamp}`, {
                 headers: { "X-Shopify-Access-Token": accessToken }
             });
 
             const [respNew, respOld, respCustom] = await Promise.all([checkCarouselNew, checkCarouselOld, checkCustom]);
+
+            // Debug logs for status
+            if (respNew.ok) console.log(`[Theme ${theme.id}] 3d-carousel-pro FOUND (200)`);
+            else console.log(`[Theme ${theme.id}] 3d-carousel-pro NOT FOUND (${respNew.status})`);
 
             if (respNew.ok || respOld.ok) {
                 console.log(`FOUND 3d-carousel-pro in theme ${theme.id} (${theme.role})`);

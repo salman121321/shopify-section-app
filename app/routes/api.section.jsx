@@ -301,7 +301,7 @@ export const action = async ({ request }) => {
       // Remove the Liquid file from the theme
       const shop = session.shop;
       const accessToken = session.accessToken;
-      const apiVersion = "2024-10";
+      const apiVersion = "2024-04"; // Sync with activate action
       const cleanThemeId = String(themeId).trim();
       const url = `https://${shop}/admin/api/${apiVersion}/themes/${cleanThemeId}/assets.json?asset[key]=${sectionData.filename}`;
 
