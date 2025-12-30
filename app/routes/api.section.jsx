@@ -290,36 +290,70 @@ export const action = async ({ request }) => {
       let lastError = "Unknown error";
       let lastStatus = 0;
 
-      // METHOD 1: Use admin.rest client (Official Shopify SDK)
+      // METHOD 1: Use GraphQL themeFilesUpsert (Best for OS 2.0 themes)
       try {
-          console.log("\n=== METHOD 1: Shopify Admin REST Client ===");
+          console.log("\n=== METHOD 1: GraphQL themeFilesUpsert ===");
 
-          const response = await admin.rest.put({
-              path: `themes/${cleanThemeId}/assets`,
-              data: {
-                  asset: {
-                      key: sectionData.filename,
+          const graphqlQuery = `
+            mutation themeFilesUpsert($themeId: ID!, $files: [OnlineStoreThemeFilesUpsertFileInput!]!) {
+              themeFilesUpsert(themeId: $themeId, files: $files) {
+                upsertedThemeFiles {
+                  filename
+                  size
+                  contentType
+                  checksum
+                }
+                userErrors {
+                  filename
+                  code
+                  message
+                }
+              }
+            }
+          `;
+
+          const variables = {
+              themeId: `gid://shopify/OnlineStoreTheme/${cleanThemeId}`,
+              files: [{
+                  filename: sectionData.filename,
+                  body: {
+                      type: "TEXT",
                       value: sectionData.content
                   }
-              }
-          });
+              }]
+          };
 
-          console.log("Response Status:", response.status);
+          console.log("Theme GID:", variables.themeId);
+          console.log("Filename:", sectionData.filename);
 
-          if (response.status === 200) {
-              console.log("✅ Admin REST Client Success!");
-              console.log("Response Body:", JSON.stringify(response.body));
+          const response = await admin.graphql(graphqlQuery, { variables });
+          const responseData = await response.json();
+
+          console.log("GraphQL Response:", JSON.stringify(responseData, null, 2));
+
+          if (responseData.data?.themeFilesUpsert?.upsertedThemeFiles?.length > 0) {
+              console.log("✅ GraphQL Upload Success!");
+              console.log("Uploaded:", responseData.data.themeFilesUpsert.upsertedThemeFiles[0]);
               successResponse = { ok: true };
-              uploadMethod = "admin-rest-client";
+              uploadMethod = "graphql";
+          } else if (responseData.data?.themeFilesUpsert?.userErrors?.length > 0) {
+              const errors = responseData.data.themeFilesUpsert.userErrors;
+              console.error("❌ GraphQL User Errors:", errors);
+              lastError = errors.map(e => `${e.code}: ${e.message}`).join(", ");
+              lastStatus = 400;
+          } else if (responseData.errors) {
+              console.error("❌ GraphQL Errors:", responseData.errors);
+              lastError = responseData.errors.map(e => e.message).join(", ");
+              lastStatus = 400;
           } else {
-              lastStatus = response.status;
-              lastError = JSON.stringify(response.body);
-              console.error(`❌ Admin REST Client Failed (${response.status}):`, response.body);
+              console.warn("❌ Unexpected GraphQL response");
+              lastError = "Unexpected response format";
+              lastStatus = 500;
           }
-      } catch (adminClientError) {
-          console.error("❌ Admin REST Client Exception:", adminClientError.message);
-          console.error("Error Details:", adminClientError);
-          lastError = adminClientError.message;
+      } catch (graphqlError) {
+          console.error("❌ GraphQL Exception:", graphqlError.message);
+          console.error("Error Details:", graphqlError);
+          lastError = graphqlError.message;
       }
 
       // METHOD 2: Direct REST API (Fallback)
