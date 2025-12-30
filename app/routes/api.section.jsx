@@ -172,8 +172,8 @@ export const action = async ({ request }) => {
       // FALLBACK: Use direct fetch to bypass library issues
       const shop = session.shop;
       const accessToken = session.accessToken;
-      // Use 2024-04 for REST (LTS - Most Stable)
-      const apiVersion = "2024-04"; 
+      // Use 2024-10 for REST (Stable)
+      const apiVersion = "2024-10"; 
       // Ensure strictly numeric ID
       const cleanThemeId = String(themeId).replace(/\D/g, "");
 
