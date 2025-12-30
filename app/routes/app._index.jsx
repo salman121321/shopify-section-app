@@ -320,11 +320,21 @@ export default function Index() {
   // Handle test upload response
   useEffect(() => {
     if (testFetcher.state === "idle" && testFetcher.data) {
-      console.log("Test Upload Result:", testFetcher.data);
+      console.log("=== TEST RESULTS ===");
+      console.log("Full Response:", testFetcher.data);
+
+      if (testFetcher.data.results) {
+        console.log("\nTest 1 (Fetch Theme):", testFetcher.data.results.test1);
+        console.log("Test 2 (Read Asset):", testFetcher.data.results.test2);
+        console.log("Test 3 (Upload):", testFetcher.data.results.test3);
+        console.log("\nSummary:", testFetcher.data.results.summary);
+      }
+
       if (testFetcher.data.success) {
-        setToastMessage("✅ Test upload successful! Check terminal logs.");
+        setToastMessage("✅ All tests passed! Upload works!");
       } else {
-        setToastMessage(`❌ Test failed: ${testFetcher.data.message}`);
+        const summary = testFetcher.data.results?.summary || testFetcher.data.message;
+        setToastMessage(`${summary} (Check console for details)`);
       }
     }
   }, [testFetcher.state, testFetcher.data]);

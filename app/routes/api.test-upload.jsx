@@ -18,6 +18,13 @@ export const action = async ({ request }) => {
   const accessToken = session.accessToken;
   const apiVersion = "2024-04";
 
+  const results = {
+    test1: null,
+    test2: null,
+    test3: null,
+    summary: ""
+  };
+
   // Test 1: Direct REST API - Fetch Theme
   try {
     console.log("\n--- Test 1: Fetch Theme (Direct REST) ---");
@@ -32,18 +39,28 @@ export const action = async ({ request }) => {
     const data = await response.json();
     console.log("Response:", JSON.stringify(data, null, 2));
 
+    results.test1 = {
+      status: response.status,
+      success: response.ok,
+      url: url,
+      response: data
+    };
+
     if (!response.ok) {
       console.error("❌ Test 1 Failed!");
+      results.summary = "Test 1 (Fetch Theme) failed - Theme not found or not accessible";
       return json({
         success: false,
-        message: "Theme fetch failed",
-        status: response.status,
-        details: data
+        message: "Test 1 Failed: Theme not accessible",
+        results: results
       }, { status: 500 });
     }
+    console.log("✅ Test 1 Passed!");
   } catch (e) {
     console.error("❌ Test 1 Exception:", e.message);
-    return json({ success: false, message: `Test 1 failed: ${e.message}` }, { status: 500 });
+    results.test1 = { error: e.message };
+    results.summary = "Test 1 crashed";
+    return json({ success: false, message: `Test 1 failed: ${e.message}`, results }, { status: 500 });
   }
 
   // Test 2: Direct REST API - Read Asset
@@ -60,18 +77,28 @@ export const action = async ({ request }) => {
     const data = await response.json();
     console.log("Response:", JSON.stringify(data, null, 2));
 
+    results.test2 = {
+      status: response.status,
+      success: response.ok,
+      url: url,
+      response: data
+    };
+
     if (!response.ok) {
       console.error("❌ Test 2 Failed!");
+      results.summary = "Test 2 (Read Asset) failed - Cannot read theme assets";
       return json({
         success: false,
-        message: "Asset read failed",
-        status: response.status,
-        details: data
+        message: "Test 2 Failed: Cannot read theme assets",
+        results: results
       }, { status: 500 });
     }
+    console.log("✅ Test 2 Passed!");
   } catch (e) {
     console.error("❌ Test 2 Exception:", e.message);
-    return json({ success: false, message: `Test 2 failed: ${e.message}` }, { status: 500 });
+    results.test2 = { error: e.message };
+    results.summary = "Test 2 crashed";
+    return json({ success: false, message: `Test 2 failed: ${e.message}`, results }, { status: 500 });
   }
 
   // Test 3: Direct REST API - Upload Asset
@@ -108,30 +135,41 @@ export const action = async ({ request }) => {
     const data = await response.json();
     console.log("Response:", JSON.stringify(data, null, 2));
 
+    results.test3 = {
+      status: response.status,
+      success: response.ok,
+      url: url,
+      filename: "sections/shopi-test.liquid",
+      response: data
+    };
+
     if (response.ok) {
       console.log("✅ All Tests Passed!");
+      results.summary = "✅ ALL TESTS PASSED! Theme is accessible and upload works!";
       return json({
         success: true,
-        message: "All tests passed! Upload works!",
-        details: data
+        message: "✅ All tests passed! Upload works perfectly!",
+        results: results
       });
     } else {
       console.error("❌ Test 3 Failed!");
+      results.summary = `❌ Test 3 (Upload) failed - Status ${response.status}: ${data.errors || 'Unknown error'}`;
       return json({
         success: false,
-        message: "Upload failed",
-        status: response.status,
-        details: data
+        message: `Test 3 Failed: Upload returned ${response.status}`,
+        results: results
       }, { status: 500 });
     }
 
   } catch (e) {
     console.error("❌ Test 3 Exception:", e.message);
     console.error("Stack:", e.stack);
+    results.test3 = { error: e.message, stack: e.stack };
+    results.summary = "Test 3 crashed with exception";
     return json({
       success: false,
-      message: `Upload failed: ${e.message}`,
-      error: String(e)
+      message: `Test 3 crashed: ${e.message}`,
+      results: results
     }, { status: 500 });
   }
 };
