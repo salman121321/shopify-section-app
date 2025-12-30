@@ -83,38 +83,40 @@ export const action = async ({ request }) => {
       // FALLBACK: Use direct fetch to bypass library issues
       const shop = session.shop;
       const accessToken = session.accessToken;
-      // Use the API version from the import if possible, or hardcode a known good one for Dec 2025
-      const apiVersion = "2025-10"; 
-      
-      console.log(`Debug: Shop=${shop}, ThemeID=${themeId}, TokenLength=${accessToken?.length}`);
+      // Try 2025-01 as a safe stable version
+      const apiVersion = "2025-01"; 
+      const cleanThemeId = String(themeId).trim();
+
+      console.log(`Debug: Shop=${shop}, ThemeID=${cleanThemeId}, TokenLength=${accessToken?.length}`);
 
       // DIAGNOSTIC 1: Check if Theme Exists via REST
-      const themeUrl = `https://${shop}/admin/api/${apiVersion}/themes/${themeId}.json`;
-      console.log(`Diagnostic 1 URL: ${themeUrl}`);
+      const themeUrl = `https://${shop}/admin/api/${apiVersion}/themes/${cleanThemeId}.json`;
       
       const themeResp = await fetch(themeUrl, {
           headers: { "X-Shopify-Access-Token": accessToken }
       });
 
       if (!themeResp.ok) {
-          console.error(`Diagnostic 1 Failed: ${themeResp.status} ${await themeResp.text()}`);
-          
-          // DIAGNOSTIC 2: List all themes to see what IS available
-          const allThemesUrl = `https://${shop}/admin/api/${apiVersion}/themes.json`;
-          const allThemesResp = await fetch(allThemesUrl, {
-              headers: { "X-Shopify-Access-Token": accessToken }
-          });
-          const allThemesData = await allThemesResp.json();
-          const availableIds = allThemesData.themes ? allThemesData.themes.map(t => `${t.id} (${t.name})`).join(", ") : "None";
-          
-          throw new Error(`Theme ${themeId} not found. Available themes: ${availableIds}`);
-      } else {
-          console.log("Diagnostic 1 Success: Theme exists.");
+          const text = await themeResp.text();
+          throw new Error(`Theme Check Failed (${themeResp.status}): ${text} | URL: ${themeUrl}`);
       }
+      console.log("Diagnostic 1 Success: Theme exists.");
 
-      const url = `https://${shop}/admin/api/${apiVersion}/themes/${themeId}/assets.json`;
-      
-      console.log(`Direct Fetch URL: ${url}`);
+      // DIAGNOSTIC 2: Check Asset Access (GET)
+      const assetCheckUrl = `https://${shop}/admin/api/${apiVersion}/themes/${cleanThemeId}/assets.json?fields=key&limit=1`;
+      const assetCheckResp = await fetch(assetCheckUrl, {
+           headers: { "X-Shopify-Access-Token": accessToken }
+      });
+      if (!assetCheckResp.ok) {
+           const text = await assetCheckResp.text();
+           // If this fails, then we can't write either
+           throw new Error(`Asset Access Failed (${assetCheckResp.status}): ${text} | URL: ${assetCheckUrl}`);
+      }
+      console.log("Diagnostic 2 Success: Can list assets.");
+
+      // REAL UPDATE
+      const url = `https://${shop}/admin/api/${apiVersion}/themes/${cleanThemeId}/assets.json`;
+      console.log(`PUT URL: ${url}`);
 
       const response = await fetch(url, {
           method: "PUT",
@@ -145,8 +147,9 @@ export const action = async ({ request }) => {
       // Remove the Liquid file from the theme
       const shop = session.shop;
       const accessToken = session.accessToken;
-      const apiVersion = "2025-10";
-      const url = `https://${shop}/admin/api/${apiVersion}/themes/${themeId}/assets.json?asset[key]=${sectionData.filename}`;
+      const apiVersion = "2025-01";
+      const cleanThemeId = String(themeId).trim();
+      const url = `https://${shop}/admin/api/${apiVersion}/themes/${cleanThemeId}/assets.json?asset[key]=${sectionData.filename}`;
 
       const response = await fetch(url, {
           method: "DELETE",
