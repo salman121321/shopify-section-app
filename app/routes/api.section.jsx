@@ -144,7 +144,7 @@ export const action = async ({ request }) => {
                 }
             }`,
             variables: {
-                themeId: `gid://shopify/Theme/${cleanThemeId}`,
+                themeId: `gid://shopify/OnlineStoreTheme/${cleanThemeId}`,
                 files: [
                     {
                         filename: sectionData.filename,
