@@ -190,7 +190,7 @@ export const action = async ({ request }) => {
       const accessToken = session.accessToken;
       // Use 2024-04 for REST as it is stable for Asset API
       const apiVersion = "2024-04"; 
-      const cleanThemeId = String(themeId).trim();
+      const cleanThemeId = String(themeId).trim().replace(/gid:\/\/shopify\/Theme\//, "");
 
       console.log(`Debug: Shop=${shop}, ThemeID=${cleanThemeId}, TokenLength=${accessToken?.length}`);
 
@@ -275,12 +275,15 @@ export const action = async ({ request }) => {
 
             // 404 on PUT usually means the theme ID is wrong OR the endpoint is wrong.
             // REST failed. Let's try GraphQL Fallback if scope allows
-            if (response.status === 404) {
-                console.log("REST 404 encountered. Attempting GraphQL fallback...");
+            if (response.status === 404 || response.status === 422) {
+                console.log(`REST ${response.status} encountered. Attempting GraphQL fallback...`);
                 let gqlErrorDetails = "";
                 
                 try {
-                    // GraphQL mutation for themeFilesUpsert
+                    // Try 2025-01 first (Stable)
+                    let gqlApiVersion = "2025-01";
+                    let gqlUrl = `https://${shop}/admin/api/${gqlApiVersion}/graphql.json`;
+                    
                     const query = `
                       mutation themeFilesUpsert($files: [ThemeFilesUpsertInput!]!, $themeId: ID!) {
                         themeFilesUpsert(files: $files, themeId: $themeId) {
@@ -296,61 +299,76 @@ export const action = async ({ request }) => {
                       }
                     `;
                     
-                    const gqlUrl = `https://${shop}/admin/api/unstable/graphql.json`;
-                    const gqlResp = await fetch(gqlUrl, {
+                    console.log(`Attempting GraphQL Injection via ${gqlApiVersion}...`);
+                    let gqlResp = await fetch(gqlUrl, {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
                             "X-Shopify-Access-Token": accessToken
                         },
                         body: JSON.stringify({
-                            query,
+                            query: query,
                             variables: {
                                 themeId: `gid://shopify/Theme/${cleanThemeId}`,
-                                files: [
-                                    {
-                                        filename: sectionData.filename,
-                                        body: { value: sectionData.content }
-                                    }
-                                ]
+                                files: [{
+                                    filename: sectionData.filename,
+                                    body: { value: sectionData.content }
+                                }]
                             }
                         })
                     });
-                    
-                    if (gqlResp.ok) {
-                        const gqlData = await gqlResp.json();
-                        console.log("GraphQL Response:", JSON.stringify(gqlData));
 
-                        if (gqlData.errors) {
-                             gqlErrorDetails = JSON.stringify(gqlData.errors);
-                             console.error("GraphQL Top-Level Errors:", gqlErrorDetails);
-                        } else {
-                            const userErrors = gqlData.data?.themeFilesUpsert?.userErrors || [];
-                            if (userErrors.length > 0) {
-                                 gqlErrorDetails = JSON.stringify(userErrors);
-                                 console.error("GraphQL User Errors:", gqlErrorDetails);
-                            } else {
-                                // SUCCESS via GraphQL
-                                // Mark as installed via Metafield
-                                await markSectionInstalled(shop, accessToken, apiVersion, sectionId);
-    
-                                return json({ 
-                                    success: true, 
-                                    message: `Section successfully injected into theme ${cleanThemeId}`,
-                                    method: "graphql-fallback",
-                                    themeId: cleanThemeId
-                                });
-                            }
-                        }
-                    } else {
-                        gqlErrorDetails = `HTTP ${gqlResp.status} ${await gqlResp.text()}`;
-                        console.error("GraphQL Fallback Failed:", gqlErrorDetails);
+                    let gqlData = await gqlResp.json();
+
+                    // Check for "ThemeFilesUpsertInput isn't a defined input type" error specifically
+                    if (gqlData.errors && JSON.stringify(gqlData.errors).includes("ThemeFilesUpsertInput")) {
+                        console.warn("GraphQL 2025-01 failed with Input Type error. Retrying with 'unstable'...");
+                        gqlApiVersion = "unstable";
+                        gqlUrl = `https://${shop}/admin/api/${gqlApiVersion}/graphql.json`;
+                        
+                        gqlResp = await fetch(gqlUrl, {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "X-Shopify-Access-Token": accessToken
+                            },
+                            body: JSON.stringify({
+                                query: query,
+                                variables: {
+                                    themeId: `gid://shopify/Theme/${cleanThemeId}`,
+                                    files: [{
+                                        filename: sectionData.filename,
+                                        body: { value: sectionData.content }
+                                    }]
+                                }
+                            })
+                        });
+                        gqlData = await gqlResp.json();
                     }
-                } catch (gqlErr) {
-                    gqlErrorDetails = gqlErr.message;
-                    console.error("GraphQL Fallback Exception:", gqlErr);
-                }
 
+                    if (gqlData.data?.themeFilesUpsert?.upsertedThemeFiles?.length > 0) {
+                        console.log("GraphQL Injection SUCCESS!");
+                        await markSectionInstalled(shop, accessToken, apiVersion, sectionId);
+                        return json({ 
+                            success: true, 
+                            message: "Section enabled via GraphQL (Fallback).",
+                            themeId: cleanThemeId 
+                        });
+                    }
+
+                    if (gqlData.errors) {
+                         gqlErrorDetails = JSON.stringify(gqlData.errors);
+                         console.error("GraphQL Errors:", gqlErrorDetails);
+                    } else if (gqlData.data?.themeFilesUpsert?.userErrors?.length > 0) {
+                         gqlErrorDetails = JSON.stringify(gqlData.data.themeFilesUpsert.userErrors);
+                         console.error("GraphQL UserErrors:", gqlErrorDetails);
+                    }
+
+                } catch (err) {
+                    console.error("GraphQL Fallback Exception:", err);
+                    gqlErrorDetails = err.message;
+                }
+                
                 // If GraphQL also failed or didn't run, return the original REST 404 error but with scope info
                 // MODIFIED: Fail loudly if injection fails.
                 console.error("Injection failed via REST and GraphQL.");
