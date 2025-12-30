@@ -278,15 +278,11 @@ export const action = async ({ request }) => {
               themeFilesUpsert(themeId: $themeId, files: $files) {
                 upsertedThemeFiles {
                   filename
-                  size
-                  contentType
-                  checksum
                 }
                 userErrors {
                   filename
                   code
                   message
-                  field
                 }
               }
             }
