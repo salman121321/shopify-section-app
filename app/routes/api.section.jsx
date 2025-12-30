@@ -83,25 +83,38 @@ export const action = async ({ request }) => {
       // FALLBACK: Use direct fetch to bypass library issues
       const shop = session.shop;
       const accessToken = session.accessToken;
-      // UPDATED: Use a newer API version (2024-01 is likely deprecated)
-      const apiVersion = "2025-01"; 
+      // Use the API version from the import if possible, or hardcode a known good one for Dec 2025
+      const apiVersion = "2025-10"; 
+      
+      console.log(`Debug: Shop=${shop}, ThemeID=${themeId}, TokenLength=${accessToken?.length}`);
+
+      // DIAGNOSTIC 1: Check if Theme Exists via REST
+      const themeUrl = `https://${shop}/admin/api/${apiVersion}/themes/${themeId}.json`;
+      console.log(`Diagnostic 1 URL: ${themeUrl}`);
+      
+      const themeResp = await fetch(themeUrl, {
+          headers: { "X-Shopify-Access-Token": accessToken }
+      });
+
+      if (!themeResp.ok) {
+          console.error(`Diagnostic 1 Failed: ${themeResp.status} ${await themeResp.text()}`);
+          
+          // DIAGNOSTIC 2: List all themes to see what IS available
+          const allThemesUrl = `https://${shop}/admin/api/${apiVersion}/themes.json`;
+          const allThemesResp = await fetch(allThemesUrl, {
+              headers: { "X-Shopify-Access-Token": accessToken }
+          });
+          const allThemesData = await allThemesResp.json();
+          const availableIds = allThemesData.themes ? allThemesData.themes.map(t => `${t.id} (${t.name})`).join(", ") : "None";
+          
+          throw new Error(`Theme ${themeId} not found. Available themes: ${availableIds}`);
+      } else {
+          console.log("Diagnostic 1 Success: Theme exists.");
+      }
+
       const url = `https://${shop}/admin/api/${apiVersion}/themes/${themeId}/assets.json`;
       
       console.log(`Direct Fetch URL: ${url}`);
-
-      // Verify access first by trying to list one asset
-      try {
-          const checkUrl = `https://${shop}/admin/api/${apiVersion}/themes/${themeId}/assets.json?fields=key&limit=1`;
-          const checkResp = await fetch(checkUrl, {
-              headers: { "X-Shopify-Access-Token": accessToken }
-          });
-          console.log(`Asset Check Status: ${checkResp.status}`);
-          if (!checkResp.ok) {
-             console.error(`Asset Check Failed: ${await checkResp.text()}`);
-          }
-      } catch (e) {
-          console.error("Asset check exception:", e);
-      }
 
       const response = await fetch(url, {
           method: "PUT",
@@ -132,7 +145,7 @@ export const action = async ({ request }) => {
       // Remove the Liquid file from the theme
       const shop = session.shop;
       const accessToken = session.accessToken;
-      const apiVersion = "2025-01";
+      const apiVersion = "2025-10";
       const url = `https://${shop}/admin/api/${apiVersion}/themes/${themeId}/assets.json?asset[key]=${sectionData.filename}`;
 
       const response = await fetch(url, {
