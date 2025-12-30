@@ -248,6 +248,49 @@ export const action = async ({ request }) => {
             throw new Error(`Failed to save section: ${response.status} ${text}`);
       }
 
+      // DIAGNOSTIC 4: VERIFY WRITE
+      console.log("Verifying write via GET...");
+      const verifyUrl = `https://${shop}/admin/api/${apiVersion}/themes/${cleanThemeId}/assets.json?asset[key]=${sectionData.filename}`;
+      const verifyResp = await fetch(verifyUrl, {
+           headers: { "X-Shopify-Access-Token": accessToken }
+      });
+      
+      if (!verifyResp.ok) {
+           console.error("Write verification failed. File not found immediately after write.");
+           // Fallback to GraphQL if verification fails
+           if (response.status === 200 || response.status === 201) {
+               console.log("Write said OK but Verify said 404. Attempting GraphQL fallback just in case...");
+               // Execute GraphQL Fallback Logic (copied from below)
+                try {
+                    const query = `
+                      mutation themeFilesUpsert($files: [ThemeFilesUpsertInput!]!, $themeId: ID!) {
+                        themeFilesUpsert(files: $files, themeId: $themeId) {
+                          upsertedThemeFiles { filename }
+                          userErrors { code field message }
+                        }
+                      }
+                    `;
+                    const gqlUrl = `https://${shop}/admin/api/${apiVersion}/graphql.json`;
+                    const gqlResp = await fetch(gqlUrl, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json", "X-Shopify-Access-Token": accessToken },
+                        body: JSON.stringify({
+                            query,
+                            variables: {
+                                themeId: `gid://shopify/Theme/${cleanThemeId}`,
+                                files: [{ filename: sectionData.filename, body: { value: sectionData.content } }]
+                            }
+                        })
+                    });
+                    if (gqlResp.ok) {
+                         const gqlData = await gqlResp.json();
+                         console.log("GraphQL Fallback Response:", JSON.stringify(gqlData));
+                         return json({ success: true, message: "Section added via GraphQL (Fallback)", method: "graphql-fallback" });
+                    }
+                } catch (err) { console.error("GraphQL Fallback Error:", err); }
+           }
+      }
+
       return json({ 
           success: true, 
           message: `Section added to ${themeId} via REST (2024-04)`,
