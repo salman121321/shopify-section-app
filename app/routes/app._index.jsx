@@ -178,6 +178,7 @@ export default function Index() {
   const [themes, setThemes] = useState([]);
   const [installedSectionIds, setInstalledSectionIds] = useState([]);
   const [toastMessage, setToastMessage] = useState(null);
+  const [showReauthModal, setShowReauthModal] = useState(false);
 
   // Load themes on mount
   useEffect(() => {
@@ -186,14 +187,18 @@ export default function Index() {
     }
   }, []); // Run once on mount
 
+  // Check initial reauth status
+  useEffect(() => {
+      if (reauthRequired) {
+          setShowReauthModal(true);
+      }
+  }, [reauthRequired]);
+
   useEffect(() => {
     if (themesFetcher.data) {
       if (themesFetcher.data.reauth) {
-        // Force re-authentication if token is invalid
-        console.log("Re-auth required from themes API. Reloading...");
-        // Use Shopify App Bridge to break out or just reload the current frame to trigger loader
-        // Since window.top access is blocked, we use standard reload which Shopify App Bridge might intercept or simply reload the iframe
-        window.location.reload(); 
+        console.log("Re-auth required from themes API.");
+        setShowReauthModal(true);
         return;
       }
       
@@ -214,10 +219,8 @@ export default function Index() {
   useEffect(() => {
     if (sectionFetcher.state === "idle" && sectionFetcher.data) {
         if (sectionFetcher.data.reauth) {
-            // Force re-authentication if token is invalid
-            console.log("Re-auth required from section API. Reloading...");
-            // Use standard reload, App Bridge will handle the rest
-            window.location.reload(); 
+            console.log("Re-auth required from section API.");
+            setShowReauthModal(true);
             return;
         }
 
@@ -233,6 +236,14 @@ export default function Index() {
         }
     }
   }, [sectionFetcher.state, sectionFetcher.data]);
+
+  const handleReauth = () => {
+      // Redirect to auth endpoint to trigger scope update
+      const authUrl = `/auth/login?shop=${shop}.myshopify.com`; // Assuming standard auth path
+      // Or simply reload which should trigger loader -> authenticate -> redirect
+      // But let's try a hard redirect to the app root which triggers loader
+      window.open(`https://admin.shopify.com/store/${shop.replace(".myshopify.com", "")}/apps/${process.env.SHOPIFY_API_KEY || "shopi-section"}`, "_top");
+  };
 
   // Handle Banner Dismiss
   const handleBannerDismiss = useCallback(() => setIsBannerVisible(false), []);
@@ -740,7 +751,40 @@ export default function Index() {
         <Toast content={toastMessage} onDismiss={() => setToastMessage(null)} />
       )}
 
-      </Page>
+        {/* Re-Auth Modal */}
+      <Modal
+        open={showReauthModal}
+        onClose={() => {}} // Force user to act
+        title="Permissions Update Required"
+        primaryAction={{
+            content: "Update Permissions",
+            onAction: () => {
+                // Trigger a full reload to restart OAuth
+                window.open(window.location.href, "_top");
+            }
+        }}
+      >
+        <Modal.Section>
+            <BlockStack gap="400">
+                <Banner tone="critical">
+                    <p>The app is missing required permissions to modify your theme.</p>
+                </Banner>
+                <Text as="p">
+                    To install sections, Shopi Section needs the <b>write_themes</b> permission.
+                    Please click the button below to grant these permissions.
+                </Text>
+                <Box padding="400" background="bg-surface-secondary" borderRadius="200">
+                    <BlockStack gap="200">
+                        <Text variant="headingSm" as="h4">Diagnostic Info:</Text>
+                        <Text variant="bodyXs" as="p">Required: {requiredScopes.join(", ")}</Text>
+                        <Text variant="bodyXs" as="p">Current: {currentScopesRaw}</Text>
+                    </BlockStack>
+                </Box>
+            </BlockStack>
+        </Modal.Section>
+      </Modal>
+
+    </Page>
     </Frame>
   );
 }
