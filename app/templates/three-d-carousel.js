@@ -1,6 +1,8 @@
 export const THREE_D_CAROUSEL_LIQUID = `{% schema %}
 {
-  "name": "3D Carousel Pro",
+  "name": "Shopi: 3D Carousel Pro",
+  "class": "shopi-section-carousel",
+  "description": "A stunning 3D product carousel with interactive physics and glassmorphism effects.",
   "settings": [
     {
       "type": "text",
@@ -72,7 +74,7 @@ export const THREE_D_CAROUSEL_LIQUID = `{% schema %}
   "presets": [
     {
       "name": "3D Carousel Pro",
-      "category": "Shopi Section"
+      "category": "Shopi Sections"
     }
   ]
 }
