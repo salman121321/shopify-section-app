@@ -50,44 +50,72 @@ export const loader = async ({ request }) => {
     console.log(`Checking installed sections for shop: ${shop} across ${sortedThemes.length} themes.`);
 
     // Use Promise.all to check themes in parallel
-    // We use SPECIFIC ASSET GET because "List Assets" might be paginated and miss the file
-    // Add timestamp to prevent caching
-    const timestamp = Date.now();
-    
+    // We use GraphQL to check for assets because REST API is returning false 404s for some stores
     await Promise.all(sortedThemes.map(async (theme) => {
         try {
-            // Check for 3D Carousel (New Key)
-            const checkCarouselNew = fetch(`https://${shop}/admin/api/${apiVersion}/themes/${theme.id}/assets.json?asset[key]=sections/3d-carousel-pro.liquid&t=${timestamp}`, {
-                headers: { "X-Shopify-Access-Token": accessToken }
+            const gqlQuery = `
+              query checkAssets($themeId: ID!) {
+                newCarousel: theme(id: $themeId) {
+                  files(first: 1, query: "filename:sections/3d-carousel-pro.liquid") { nodes { filename } }
+                }
+                oldCarousel: theme(id: $themeId) {
+                  files(first: 1, query: "filename:sections/three-d-carousel.liquid") { nodes { filename } }
+                }
+                customSection: theme(id: $themeId) {
+                  files(first: 1, query: "filename:sections/my-custom-section.liquid") { nodes { filename } }
+                }
+              }
+            `;
+
+            const gqlUrl = `https://${shop}/admin/api/${apiVersion}/graphql.json`;
+            const gqlResp = await fetch(gqlUrl, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-Shopify-Access-Token": accessToken
+                },
+                body: JSON.stringify({
+                    query: gqlQuery,
+                    variables: {
+                        themeId: `gid://shopify/Theme/${theme.id}`
+                    }
+                })
             });
-            
-            // Check for 3D Carousel (Old Key - just in case)
-            const checkCarouselOld = fetch(`https://${shop}/admin/api/${apiVersion}/themes/${theme.id}/assets.json?asset[key]=sections/three-d-carousel.liquid&t=${timestamp}`, {
-                headers: { "X-Shopify-Access-Token": accessToken }
-            });
 
-            // Check for Custom Section
-            const checkCustom = fetch(`https://${shop}/admin/api/${apiVersion}/themes/${theme.id}/assets.json?asset[key]=sections/my-custom-section.liquid&t=${timestamp}`, {
-                headers: { "X-Shopify-Access-Token": accessToken }
-            });
-
-            const [respNew, respOld, respCustom] = await Promise.all([checkCarouselNew, checkCarouselOld, checkCustom]);
-
-            // Debug logs for status
-            if (respNew.ok) console.log(`[Theme ${theme.id}] 3d-carousel-pro FOUND (200)`);
-            else console.log(`[Theme ${theme.id}] 3d-carousel-pro NOT FOUND (${respNew.status})`);
-
-            if (respNew.ok || respOld.ok) {
-                console.log(`FOUND 3d-carousel-pro in theme ${theme.id} (${theme.role})`);
-                installedSections.add("3d-carousel-pro");
+            if (!gqlResp.ok) {
+                console.warn(`GraphQL Check Failed for theme ${theme.id}: ${gqlResp.status}`);
+                return;
             }
+
+            const gqlData = await gqlResp.json();
             
-            if (respCustom.ok) {
-                installedSections.add("my-custom-section");
+            if (gqlData.errors) {
+                console.warn(`GraphQL Errors for theme ${theme.id}:`, gqlData.errors);
+                return;
+            }
+
+            const data = gqlData.data;
+            if (!data) return;
+
+            // Check 3D Carousel
+            const hasNew = data.newCarousel?.files?.nodes?.length > 0;
+            const hasOld = data.oldCarousel?.files?.nodes?.length > 0;
+            
+            if (hasNew || hasOld) {
+                console.log(`[GraphQL] FOUND 3d-carousel-pro in theme ${theme.id} (${theme.role})`);
+                installedSections.add("3d-carousel-pro");
+            } else {
+                console.log(`[GraphQL] NOT FOUND 3d-carousel-pro in theme ${theme.id}`);
+            }
+
+            // Check Custom Section
+            if (data.customSection?.files?.nodes?.length > 0) {
+                 console.log(`[GraphQL] FOUND my-custom-section in theme ${theme.id}`);
+                 installedSections.add("my-custom-section");
             }
 
         } catch (err) {
-            console.warn(`Failed to check specific assets for theme ${theme.id}:`, err);
+            console.warn(`Failed to check assets (GraphQL) for theme ${theme.id}:`, err);
         }
     }));
     
