@@ -37,7 +37,15 @@ export const loader = async ({ request }) => {
   // Check scopes (Soft Check - do not block)
   const currentScopes = new Set(session.scope ? session.scope.split(",").map(s => s.trim()) : []);
   const envScopes = (process.env.SCOPES || "write_products,read_themes,write_themes").split(",").map(s => s.trim());
-  const hasAllScopes = envScopes.every(scope => currentScopes.has(scope));
+  
+  const hasAllScopes = envScopes.every(scope => {
+      if (currentScopes.has(scope)) return true;
+      // write_themes implies read_themes
+      if (scope === 'read_themes' && currentScopes.has('write_themes')) return true;
+      // write_products implies read_products
+      if (scope === 'read_products' && currentScopes.has('write_products')) return true;
+      return false;
+  });
 
   const shop = session.shop.replace(".myshopify.com", "");
   
@@ -759,8 +767,9 @@ export default function Index() {
         primaryAction={{
             content: "Update Permissions",
             onAction: () => {
-                // Trigger a full reload to restart OAuth
-                window.open(window.location.href, "_top");
+                // Force redirect to auth login to ensure fresh scopes
+                const shopDomain = shop.includes(".myshopify.com") ? shop : `${shop}.myshopify.com`;
+                window.open(`/auth/login?shop=${shopDomain}`, "_top");
             }
         }}
       >
