@@ -705,11 +705,13 @@ export default function Index() {
             {sectionFetcher.data?.error && (
                 <Box paddingBlockEnd="400">
                     <Banner tone="critical">
-                        <p>{sectionFetcher.data.error}</p>
-                        {sectionFetcher.data.technicalDetails && (
-                            <details style={{ marginTop: '8px' }}>
-                                <summary style={{ cursor: 'pointer', fontSize: '12px' }}>Technical Details</summary>
-                                <pre style={{ fontSize: '11px', marginTop: '4px', padding: '8px', background: '#f6f6f7', borderRadius: '4px', overflow: 'auto' }}>
+                        <div style={{ whiteSpace: 'pre-wrap', fontFamily: 'monospace', fontSize: '13px' }}>
+                            {sectionFetcher.data.error}
+                        </div>
+                        {sectionFetcher.data.technicalDetails && sectionFetcher.data.technicalDetails !== sectionFetcher.data.error && (
+                            <details style={{ marginTop: '12px' }}>
+                                <summary style={{ cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>🔧 Technical Details (for debugging)</summary>
+                                <pre style={{ fontSize: '11px', marginTop: '8px', padding: '12px', background: '#f6f6f7', borderRadius: '4px', overflow: 'auto', maxHeight: '200px' }}>
                                     {sectionFetcher.data.technicalDetails}
                                 </pre>
                             </details>

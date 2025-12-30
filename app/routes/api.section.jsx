@@ -222,50 +222,98 @@ export const action = async ({ request }) => {
       const assetCheckResp = await fetch(assetCheckUrl, {
           headers: { "X-Shopify-Access-Token": accessToken }
       });
-      
+
       if (!assetCheckResp.ok) {
            const text = await assetCheckResp.text();
            console.error(`Diagnostic 2 Failed: Cannot read assets. Status: ${assetCheckResp.status}`);
-           
+           console.error(`Response: ${text}`);
+
            if (assetCheckResp.status === 404) {
-                // This is the Smoking Gun: If we can't read assets, we definitely can't write.
-                // It means the Theme ID is valid (Diag 1) but the Assets endpoint is 404ing.
-                // This usually implies a permissions mismatch or the theme is "locked".
-                return json({ error: `Cannot access assets for Theme ${cleanThemeId}. Please ensure you have granted all permissions.` }, { status: 403 });
+                // Theme might be using Online Store 2.0 - try GraphQL instead
+                console.log("REST Asset read failed, theme might be OS 2.0. Continuing with GraphQL...");
            }
       } else {
            console.log("Diagnostic 2 Success: Can read theme assets.");
+           const assetData = await assetCheckResp.json();
+           console.log("Asset read successful, theme is accessible");
+      }
+
+      // DIAGNOSTIC 3: Verify scopes using GraphQL
+      console.log("Verifying app has correct scopes...");
+      const scopeCheckQuery = `
+        query {
+          currentAppInstallation {
+            accessScopes {
+              handle
+            }
+          }
+        }
+      `;
+
+      const scopeCheckUrl = `https://${shop}/admin/api/${apiVersion}/graphql.json`;
+      const scopeCheckResp = await fetch(scopeCheckUrl, {
+          method: "POST",
+          headers: {
+              "Content-Type": "application/json",
+              "X-Shopify-Access-Token": accessToken
+          },
+          body: JSON.stringify({ query: scopeCheckQuery })
+      });
+
+      if (scopeCheckResp.ok) {
+          const scopeData = await scopeCheckResp.json();
+          const scopes = scopeData.data?.currentAppInstallation?.accessScopes?.map(s => s.handle) || [];
+          console.log("Current App Scopes:", scopes.join(", "));
+
+          if (!scopes.includes("write_themes")) {
+              return json({
+                  error: "App does not have write_themes permission. Please reinstall the app.",
+                  reauth: true
+              }, { status: 403 });
+          }
       }
 
       // PRIMARY METHOD: Use GraphQL (More Reliable than REST for theme assets)
-      console.log("Attempting GraphQL Asset Upload (Primary Method)...");
+      console.log("=== ATTEMPTING GRAPHQL UPLOAD (PRIMARY METHOD) ===");
+      console.log(`Theme GID: gid://shopify/Theme/${cleanThemeId}`);
+      console.log(`Filename: ${sectionData.filename}`);
+      console.log(`Content Length: ${sectionData.content.length} characters`);
 
       let successResponse = null;
       let uploadMethod = null;
+      let graphqlAttempted = false;
 
       try {
           const gqlMutation = `
-            mutation CreateAsset($themeId: ID!, $key: String!, $value: String!) {
-              themeFilesUpsert(
-                themeId: $themeId
-                files: [{
-                  filename: $key
-                  body: {
-                    type: TEXT
-                    value: $value
-                  }
-                }]
-              ) {
+            mutation themeFilesUpsert($themeId: ID!, $files: [OnlineStoreThemeFilesUpsertFileInput!]!) {
+              themeFilesUpsert(themeId: $themeId, files: $files) {
                 upsertedThemeFiles {
                   filename
+                  size
+                  contentType
                 }
                 userErrors {
-                  field
+                  filename
+                  code
                   message
+                  field
                 }
               }
             }
           `;
+
+          const variables = {
+              themeId: `gid://shopify/Theme/${cleanThemeId}`,
+              files: [{
+                  filename: sectionData.filename,
+                  body: {
+                      type: "TEXT",
+                      value: sectionData.content
+                  }
+              }]
+          };
+
+          console.log("GraphQL Variables:", JSON.stringify(variables, null, 2).substring(0, 500) + "...");
 
           const gqlUrl = `https://${shop}/admin/api/2024-10/graphql.json`;
           const gqlResponse = await fetch(gqlUrl, {
@@ -276,79 +324,102 @@ export const action = async ({ request }) => {
               },
               body: JSON.stringify({
                   query: gqlMutation,
-                  variables: {
-                      themeId: `gid://shopify/Theme/${cleanThemeId}`,
-                      key: sectionData.filename,
-                      value: sectionData.content
-                  }
+                  variables: variables
               })
           });
 
+          graphqlAttempted = true;
+          console.log(`GraphQL Response Status: ${gqlResponse.status}`);
+
           if (gqlResponse.ok) {
               const gqlData = await gqlResponse.json();
-              console.log("GraphQL Response:", JSON.stringify(gqlData, null, 2));
+              console.log("GraphQL Full Response:", JSON.stringify(gqlData, null, 2));
 
-              if (gqlData.data?.themeFilesUpsert?.upsertedThemeFiles?.length > 0) {
-                  console.log("✓ GraphQL Upload Success!");
+              if (gqlData.errors) {
+                  console.error("❌ GraphQL Errors:", gqlData.errors);
+                  throw new Error(`GraphQL Errors: ${gqlData.errors.map(e => e.message).join(", ")}`);
+              }
+
+              const upserted = gqlData.data?.themeFilesUpsert?.upsertedThemeFiles;
+              const userErrors = gqlData.data?.themeFilesUpsert?.userErrors;
+
+              if (userErrors && userErrors.length > 0) {
+                  console.error("❌ GraphQL User Errors:", userErrors);
+                  throw new Error(`GraphQL User Errors: ${userErrors.map(e => `${e.code}: ${e.message}`).join(", ")}`);
+              }
+
+              if (upserted && upserted.length > 0) {
+                  console.log("✅ GraphQL Upload Success!");
+                  console.log("Uploaded File:", upserted[0]);
                   successResponse = gqlResponse;
                   uploadMethod = "graphql";
-              } else if (gqlData.data?.themeFilesUpsert?.userErrors?.length > 0) {
-                  const errors = gqlData.data.themeFilesUpsert.userErrors;
-                  console.warn("GraphQL User Errors:", errors);
-                  throw new Error(`GraphQL Error: ${errors.map(e => e.message).join(", ")}`);
               } else {
-                  console.warn("GraphQL returned unexpected response:", gqlData);
+                  console.warn("⚠️ GraphQL returned no upserted files and no errors:", gqlData);
+                  throw new Error("GraphQL returned empty response");
               }
           } else {
               const text = await gqlResponse.text();
-              console.warn(`GraphQL request failed: ${gqlResponse.status} - ${text}`);
+              console.error(`❌ GraphQL HTTP Error: ${gqlResponse.status}`);
+              console.error(`Response Body: ${text}`);
 
               if (gqlResponse.status === 401 || gqlResponse.status === 403) {
                   await prisma.session.deleteMany({ where: { shop } });
                   return json({ reauth: true, error: "Authentication failed. Please reload the page." }, { status: 401 });
               }
+
+              throw new Error(`GraphQL HTTP ${gqlResponse.status}: ${text}`);
           }
       } catch (gqlError) {
-          console.error("GraphQL Upload Failed:", gqlError);
+          console.error("❌ GraphQL Upload Failed:", gqlError.message);
+          console.error("GraphQL Error Stack:", gqlError.stack);
       }
 
       // FALLBACK METHOD 1: REST API with Multiple Versions
       if (!successResponse) {
-          console.log("GraphQL failed, trying REST API fallback...");
+          console.log("=== ATTEMPTING REST API FALLBACK ===");
 
           const versionsToTry = ["2024-10", "2024-07", "2024-04"];
           let lastError = null;
           let lastStatus = 0;
 
           for (const v of versionsToTry) {
-              console.log(`Trying REST PUT with API Version: ${v}...`);
+              console.log(`\n--- Trying REST PUT with API Version: ${v} ---`);
               const tryUrl = `https://${shop}/admin/api/${v}/themes/${cleanThemeId}/assets.json`;
+              console.log(`URL: ${tryUrl}`);
 
               try {
+                  const payload = {
+                      asset: {
+                          key: sectionData.filename,
+                          value: sectionData.content
+                      }
+                  };
+
+                  console.log(`Payload: { asset: { key: "${sectionData.filename}", value: "${sectionData.content.substring(0, 50)}..." } }`);
+
                   const response = await fetch(tryUrl, {
                       method: "PUT",
                       headers: {
                           "X-Shopify-Access-Token": accessToken,
                           "Content-Type": "application/json"
                       },
-                      body: JSON.stringify({
-                          asset: {
-                              key: sectionData.filename,
-                              value: sectionData.content
-                          }
-                      })
+                      body: JSON.stringify(payload)
                   });
 
+                  console.log(`Response Status: ${response.status}`);
+
                   if (response.ok) {
+                      const responseData = await response.json();
+                      console.log(`✅ REST Success with API Version ${v}`);
+                      console.log("Response Data:", responseData);
                       successResponse = response;
                       uploadMethod = `rest-${v}`;
-                      console.log(`✓ REST Success with API Version ${v}`);
                       break;
                   } else {
                       lastStatus = response.status;
                       const text = await response.text();
                       lastError = `Version ${v} Failed (${response.status}): ${text}`;
-                      console.warn(lastError);
+                      console.error(`❌ ${lastError}`);
 
                       if (response.status === 401 || response.status === 403) {
                           await prisma.session.deleteMany({ where: { shop } });
@@ -356,7 +427,7 @@ export const action = async ({ request }) => {
                       }
                   }
               } catch (e) {
-                  console.error(`Exception with Version ${v}:`, e);
+                  console.error(`❌ Exception with Version ${v}:`, e);
                   lastError = e.message;
               }
           }
@@ -396,7 +467,30 @@ export const action = async ({ request }) => {
 
           // Final error if all methods failed
           if (!successResponse) {
-              throw new Error(`All upload methods failed. Last error: ${lastError}. Status: ${lastStatus}. Please ensure the theme exists and you have write_themes permission.`);
+              console.error("=== ALL UPLOAD METHODS FAILED ===");
+              console.error(`GraphQL Attempted: ${graphqlAttempted}`);
+              console.error(`Last REST Error: ${lastError}`);
+              console.error(`Last Status Code: ${lastStatus}`);
+
+              let helpfulMessage = "Failed to upload section to theme. ";
+
+              if (lastStatus === 404) {
+                  helpfulMessage += "\n\n🔍 Troubleshooting Steps:\n";
+                  helpfulMessage += "1. This theme might be a protected/locked theme (e.g., Shopify's default themes)\n";
+                  helpfulMessage += "2. Try creating a duplicate of this theme first:\n";
+                  helpfulMessage += "   - Go to Online Store > Themes\n";
+                  helpfulMessage += "   - Click '...' menu on your theme\n";
+                  helpfulMessage += "   - Select 'Duplicate'\n";
+                  helpfulMessage += "   - Use the duplicated theme instead\n";
+                  helpfulMessage += "3. Or try selecting a different theme (unpublished/development theme)\n";
+                  helpfulMessage += "\n💡 Tip: Development/Draft themes are usually easier to modify.";
+              } else if (lastStatus === 403 || lastStatus === 401) {
+                  helpfulMessage += "Permission denied. Please reinstall the app to grant write_themes permission.";
+              } else {
+                  helpfulMessage += `Unexpected error (Status ${lastStatus}). Please check the console for details.`;
+              }
+
+              throw new Error(helpfulMessage);
           }
       }
       
