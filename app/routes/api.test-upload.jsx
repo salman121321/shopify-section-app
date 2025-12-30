@@ -130,7 +130,51 @@ export const action = async ({ request }) => {
     `;
 
     const cleanThemeId = String(themeId).replace(/\D/g, "");
-    const themeGid = `gid://shopify/Theme/${cleanThemeId}`;
+    let themeGid = `gid://shopify/Theme/${cleanThemeId}`;
+
+    // --- TEST 2.5: Get Correct GID via GraphQL (To ensure validity) ---
+    console.log("👉 Test 2.5: Verifying Theme ID via GraphQL...");
+    const themesQuery = `
+      query {
+        themes(first: 20) {
+          edges {
+            node {
+              id
+              name
+            }
+          }
+        }
+      }
+    `;
+
+    const themesResponse = await fetch(`https://${shop}/admin/api/2024-10/graphql.json`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Shopify-Access-Token": session.accessToken,
+      },
+      body: JSON.stringify({ query: themesQuery })
+    });
+
+    if (!themesResponse.ok) {
+       console.error("❌ Test 2.5 Failed: Could not fetch themes via GraphQL");
+       // Fallback to manual GID if this fails, but log it
+    } else {
+       const themesData = await themesResponse.json();
+       const nodes = themesData.data?.themes?.edges?.map(e => e.node) || [];
+       console.log("🔎 Found Themes via GraphQL:", JSON.stringify(nodes, null, 2));
+       
+       // Try to find the matching theme
+       const matchedTheme = nodes.find(t => t.id.endsWith(cleanThemeId));
+       if (matchedTheme) {
+         console.log(`✅ Found matching theme in GraphQL: ${matchedTheme.name} (${matchedTheme.id})`);
+         // Use the authoritative GID from Shopify
+         themeGid = matchedTheme.id; 
+       } else {
+         console.warn(`⚠️ Could not find theme ${cleanThemeId} in GraphQL list. Using manual GID: ${themeGid}`);
+         // We continue with the manual GID, but this is a red flag.
+       }
+    }
 
     const variables = {
       themeId: themeGid,
