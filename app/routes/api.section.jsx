@@ -188,8 +188,8 @@ export const action = async ({ request }) => {
       // FALLBACK: Use direct fetch to bypass library issues
       const shop = session.shop;
       const accessToken = session.accessToken;
-      // Use 2024-10 for REST (Latest Stable)
-      const apiVersion = "2024-10"; 
+      // Use 2024-04 for REST (LTS - Most Stable)
+      const apiVersion = "2024-04"; 
       // Ensure strictly numeric ID
       const cleanThemeId = String(themeId).replace(/\D/g, "");
 
@@ -203,20 +203,39 @@ export const action = async ({ request }) => {
       });
 
       if (!themeResp.ok) {
+          // ... (Existing error handling)
           const text = await themeResp.text();
-          // If theme check fails with 404, the theme ID is definitely wrong/gone
           if (themeResp.status === 404) {
                return json({ error: `Theme not found (ID: ${cleanThemeId}). It might have been deleted.` }, { status: 404 });
           }
-          // If 403/401, handle reauth
           if (themeResp.status === 403 || themeResp.status === 401) {
-              console.log("Triggering Re-Auth due to Theme Check failure...");
               await prisma.session.deleteMany({ where: { shop } });
               return json({ reauth: true, error: "Permissions need update. Reloading..." }, { status: 401 });
           }
-          throw new Error(`Theme Check Failed (${themeResp.status}): ${text} | URL: ${themeUrl}`);
+          throw new Error(`Theme Check Failed (${themeResp.status}): ${text}`);
       }
       console.log("Diagnostic 1 Success: Theme exists.");
+
+      // DIAGNOSTIC 2: Check Asset Access (Read layout/theme.liquid)
+      // This confirms we have 'read_themes' AND access to this specific theme's assets
+      const assetCheckUrl = `https://${shop}/admin/api/${apiVersion}/themes/${cleanThemeId}/assets.json?asset[key]=layout/theme.liquid`;
+      const assetCheckResp = await fetch(assetCheckUrl, {
+          headers: { "X-Shopify-Access-Token": accessToken }
+      });
+      
+      if (!assetCheckResp.ok) {
+           const text = await assetCheckResp.text();
+           console.error(`Diagnostic 2 Failed: Cannot read assets. Status: ${assetCheckResp.status}`);
+           
+           if (assetCheckResp.status === 404) {
+                // This is the Smoking Gun: If we can't read assets, we definitely can't write.
+                // It means the Theme ID is valid (Diag 1) but the Assets endpoint is 404ing.
+                // This usually implies a permissions mismatch or the theme is "locked".
+                return json({ error: `Cannot access assets for Theme ${cleanThemeId}. Please ensure you have granted all permissions.` }, { status: 403 });
+           }
+      } else {
+           console.log("Diagnostic 2 Success: Can read theme assets.");
+      }
 
       // REAL UPDATE: Use REST API
       console.log("Attempting REST Asset Update...");
@@ -303,7 +322,8 @@ export const action = async ({ request }) => {
       const shop = session.shop;
       const accessToken = session.accessToken;
       const apiVersion = "2024-04"; // Sync with activate action
-      const cleanThemeId = String(themeId).trim();
+      // Ensure strictly numeric ID
+      const cleanThemeId = String(themeId).replace(/\D/g, "");
       const url = `https://${shop}/admin/api/${apiVersion}/themes/${cleanThemeId}/assets.json?asset[key]=${sectionData.filename}`;
 
       const response = await fetch(url, {
