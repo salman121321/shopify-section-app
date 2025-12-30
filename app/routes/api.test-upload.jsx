@@ -226,14 +226,6 @@ export const action = async ({ request }) => {
         results: results
       }, { status: 500 });
     }
-      results.summary = "❌ Unexpected GraphQL response";
-
-      return json({
-        success: false,
-        message: "Unexpected GraphQL response",
-        results: results
-      }, { status: 500 });
-    }
 
   } catch (e) {
     console.error("❌ Test 3 Exception:", e.message);
