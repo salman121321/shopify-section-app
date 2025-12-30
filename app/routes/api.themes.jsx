@@ -7,13 +7,28 @@ export const loader = async ({ request }) => {
   console.log("DEBUG: Session Scopes:", session.scope);
 
   try {
-    // Switch to REST for consistent IDs with api.section.jsx
-    const themes = await admin.rest.resources.Theme.all({
-      session: session,
+    // FALLBACK: Use direct fetch for maximum stability (matches api.section.jsx)
+    const shop = session.shop;
+    const accessToken = session.accessToken;
+    const apiVersion = "2025-01";
+    const url = `https://${shop}/admin/api/${apiVersion}/themes.json`;
+
+    const response = await fetch(url, {
+        headers: {
+            "X-Shopify-Access-Token": accessToken
+        }
     });
 
-    if (!themes) {
-       throw new Error("No themes found");
+    if (!response.ok) {
+        throw new Error(`Failed to fetch themes: ${response.status} ${await response.text()}`);
+    }
+
+    const data = await response.json();
+    const themes = data.themes;
+
+    if (!Array.isArray(themes)) {
+       console.error("Invalid themes format:", data);
+       throw new Error("Shopify API returned invalid themes format");
     }
 
     // Sort themes: Live theme first, then others
