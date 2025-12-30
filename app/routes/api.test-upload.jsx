@@ -213,6 +213,17 @@ export const action = async ({ request }) => {
         message: `GraphQL upload failed: ${errors[0].message}`,
         results: results
       }, { status: 500 });
+    } else if (data.errors) {
+       console.error("❌ Top-level GraphQL Errors:", data.errors);
+       results.test3.success = false;
+       results.test3.errors = data.errors;
+       results.summary = `❌ Test 3 failed: ${data.errors.map(e => e.message).join("; ")}`;
+
+       return json({
+         success: false,
+         message: `GraphQL Error: ${data.errors[0].message}`,
+         results: results
+       }, { status: 500 });
     } else {
       console.error("❌ Unexpected GraphQL response", data);
       results.test3.success = false;
@@ -222,7 +233,7 @@ export const action = async ({ request }) => {
       
       return json({
         success: false,
-        message: "Unexpected GraphQL response",
+        message: "Unexpected GraphQL response (Check console for details)",
         results: results
       }, { status: 500 });
     }
