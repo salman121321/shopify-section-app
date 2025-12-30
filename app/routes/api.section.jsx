@@ -159,7 +159,6 @@ export const action = async ({ request }) => {
           throw new Error(`Shopify API ${response.status}: ${text}`);
       }
 
-
       return json({ success: true, message: "Section removed successfully" });
     }
 
