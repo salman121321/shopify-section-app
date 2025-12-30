@@ -1,0 +1,24 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "a21834654b350e333c82807b0369850c"
+name = "Shopi Section"
+application_url = "https://shopify-section-app-production.up.railway.app"
+embedded = true
+
+[build]
+automatically_update_urls_on_dev = true
+
+[webhooks]
+api_version = "2024-04"
+
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "write_products,write_themes,read_themes"
+
+[auth]
+redirect_urls = [
+  "https://shopify-section-app-production.up.railway.app/auth/callback",
+  "https://shopify-section-app-production.up.railway.app/auth/shopify/callback",
+  "https://shopify-section-app-production.up.railway.app/api/auth/callback"
+]
