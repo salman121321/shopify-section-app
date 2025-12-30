@@ -211,7 +211,8 @@ export default function Index() {
         if (sectionFetcher.data.reauth) {
             // Force re-authentication if token is invalid
             console.log("Re-auth required from section API. Reloading...");
-            window.top.location.reload();
+            // Use standard reload, App Bridge will handle the rest
+            window.location.reload(); 
             return;
         }
 
