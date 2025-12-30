@@ -233,10 +233,12 @@ export default function Index() {
             setThemeModalOpen(false);
             // Optimistically update installed status
             if (selectedSectionForInstall) {
-                 setInstalledSectionIds(prev => [...prev, selectedSectionForInstall.id]);
+                 setInstalledSectionIds(prev => {
+                     // Prevent duplicates
+                     if (prev.includes(selectedSectionForInstall.id)) return prev;
+                     return [...prev, selectedSectionForInstall.id];
+                 });
             }
-            // Force re-fetch themes to verify persistence immediately
-            themesFetcher.load("/api/themes");
         } else if (sectionFetcher.data.error) {
             setToastMessage("Error: " + sectionFetcher.data.error);
         }

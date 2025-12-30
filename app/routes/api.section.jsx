@@ -254,11 +254,6 @@ export const action = async ({ request }) => {
           method: "rest"
       });
 
-      const data = await response.json();
-      console.log("Direct Fetch Success:", data);
-      
-      return json({ success: true, message: "Section installed successfully" });
-
     } else if (action === "deactivate") {
       // Remove the Liquid file from the theme
       const shop = session.shop;
