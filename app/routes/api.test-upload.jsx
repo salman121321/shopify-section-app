@@ -14,79 +14,123 @@ export const action = async ({ request }) => {
 
   console.log("Theme ID:", themeId);
 
-  // Test 1: Can we fetch the theme?
+  const shop = session.shop;
+  const accessToken = session.accessToken;
+  const apiVersion = "2024-04";
+
+  // Test 1: Direct REST API - Fetch Theme
   try {
-    console.log("\n--- Test 1: Fetching Theme Info ---");
-    const themeResponse = await admin.rest.get({
-      path: `themes/${themeId}`,
+    console.log("\n--- Test 1: Fetch Theme (Direct REST) ---");
+    const url = `https://${shop}/admin/api/${apiVersion}/themes/${themeId}.json`;
+    console.log("URL:", url);
+
+    const response = await fetch(url, {
+      headers: { "X-Shopify-Access-Token": accessToken }
     });
-    console.log("Theme fetch status:", themeResponse.status);
-    console.log("Theme data:", JSON.stringify(themeResponse.body, null, 2));
+
+    console.log("Status:", response.status);
+    const data = await response.json();
+    console.log("Response:", JSON.stringify(data, null, 2));
+
+    if (!response.ok) {
+      console.error("❌ Test 1 Failed!");
+      return json({
+        success: false,
+        message: "Theme fetch failed",
+        status: response.status,
+        details: data
+      }, { status: 500 });
+    }
   } catch (e) {
-    console.error("Failed to fetch theme:", e.message);
+    console.error("❌ Test 1 Exception:", e.message);
+    return json({ success: false, message: `Test 1 failed: ${e.message}` }, { status: 500 });
   }
 
-  // Test 2: Can we list assets?
+  // Test 2: Direct REST API - Read Asset
   try {
-    console.log("\n--- Test 2: Listing Assets ---");
-    const assetsResponse = await admin.rest.get({
-      path: `themes/${themeId}/assets`,
-      query: { "asset[key]": "layout/theme.liquid" }
+    console.log("\n--- Test 2: Read Asset (Direct REST) ---");
+    const url = `https://${shop}/admin/api/${apiVersion}/themes/${themeId}/assets.json?asset[key]=layout/theme.liquid`;
+    console.log("URL:", url);
+
+    const response = await fetch(url, {
+      headers: { "X-Shopify-Access-Token": accessToken }
     });
-    console.log("Assets fetch status:", assetsResponse.status);
-    console.log("Asset data:", JSON.stringify(assetsResponse.body, null, 2));
+
+    console.log("Status:", response.status);
+    const data = await response.json();
+    console.log("Response:", JSON.stringify(data, null, 2));
+
+    if (!response.ok) {
+      console.error("❌ Test 2 Failed!");
+      return json({
+        success: false,
+        message: "Asset read failed",
+        status: response.status,
+        details: data
+      }, { status: 500 });
+    }
   } catch (e) {
-    console.error("Failed to fetch assets:", e.message);
+    console.error("❌ Test 2 Exception:", e.message);
+    return json({ success: false, message: `Test 2 failed: ${e.message}` }, { status: 500 });
   }
 
-  // Test 3: Try uploading a simple asset
+  // Test 3: Direct REST API - Upload Asset
   try {
-    console.log("\n--- Test 3: Uploading Test Asset ---");
+    console.log("\n--- Test 3: Upload Asset (Direct REST) ---");
 
-    const testContent = `{%- comment -%} Test section from Shopi Section App {%- endcomment -%}
-{% schema %}
+    const testContent = `{% schema %}
 {
   "name": "Test Section",
   "settings": []
 }
 {% endschema %}
-<div>Test</div>`;
+<div>Test from Shopi Section</div>`;
 
-    const uploadResponse = await admin.rest.put({
-      path: `themes/${themeId}/assets`,
-      data: {
+    const url = `https://${shop}/admin/api/${apiVersion}/themes/${themeId}/assets.json`;
+    console.log("URL:", url);
+    console.log("Uploading to:", "sections/shopi-test.liquid");
+
+    const response = await fetch(url, {
+      method: "PUT",
+      headers: {
+        "X-Shopify-Access-Token": accessToken,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
         asset: {
-          key: "sections/test-section.liquid",
+          key: "sections/shopi-test.liquid",
           value: testContent
         }
-      }
+      })
     });
 
-    console.log("Upload status:", uploadResponse.status);
-    console.log("Upload response:", JSON.stringify(uploadResponse.body, null, 2));
+    console.log("Status:", response.status);
+    const data = await response.json();
+    console.log("Response:", JSON.stringify(data, null, 2));
 
-    if (uploadResponse.status === 200) {
+    if (response.ok) {
+      console.log("✅ All Tests Passed!");
       return json({
         success: true,
-        message: "Test upload successful!",
-        details: uploadResponse.body
+        message: "All tests passed! Upload works!",
+        details: data
       });
     } else {
+      console.error("❌ Test 3 Failed!");
       return json({
         success: false,
         message: "Upload failed",
-        status: uploadResponse.status,
-        details: uploadResponse.body
+        status: response.status,
+        details: data
       }, { status: 500 });
     }
 
   } catch (e) {
-    console.error("Upload failed:", e.message);
-    console.error("Error details:", e);
-
+    console.error("❌ Test 3 Exception:", e.message);
+    console.error("Stack:", e.stack);
     return json({
       success: false,
-      message: e.message,
+      message: `Upload failed: ${e.message}`,
       error: String(e)
     }, { status: 500 });
   }
