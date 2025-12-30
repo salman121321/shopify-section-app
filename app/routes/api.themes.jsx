@@ -44,32 +44,28 @@ export const loader = async ({ request }) => {
         return 0;
     });
 
-    // Check for installed sections in ALL themes (to ensure status shows "Activated" regardless of which theme was used)
-    // We limit to checking the specific known sections to avoid fetching full asset lists
+    // Check for installed sections in ALL themes
     const installedSections = new Set();
-    const knownSections = [
-        "sections/3d-carousel-pro.liquid", 
-        "sections/my-custom-section.liquid"
-    ];
-
-    // Use Promise.all to check themes in parallel for performance
+    
+    // Use Promise.all to check themes in parallel
+    // We use the "List Assets" endpoint which is efficient and returns all asset keys
     await Promise.all(sortedThemes.map(async (theme) => {
         try {
-            for (const assetKey of knownSections) {
-                // If we already found this section in another theme, we might technically skip checking it again 
-                // if we only care about "is it installed anywhere". 
-                // But for now, let's just check to be thorough.
+            const assetsUrl = `https://${shop}/admin/api/${apiVersion}/themes/${theme.id}/assets.json`;
+            const assetsResp = await fetch(assetsUrl, {
+                headers: { "X-Shopify-Access-Token": accessToken }
+            });
+
+            if (assetsResp.ok) {
+                const assetsData = await assetsResp.json();
+                const assets = assetsData.assets || [];
                 
-                const assetUrl = `https://${shop}/admin/api/${apiVersion}/themes/${theme.id}/assets.json?asset[key]=${assetKey}`;
-                const assetResp = await fetch(assetUrl, {
-                    headers: { "X-Shopify-Access-Token": accessToken }
-                });
+                // Check if our sections exist in this theme's assets
+                const has3DCarousel = assets.some(a => a.key === "sections/3d-carousel-pro.liquid");
+                const hasCustomSection = assets.some(a => a.key === "sections/my-custom-section.liquid");
                 
-                if (assetResp.ok) {
-                    // Asset exists in this theme
-                    if (assetKey.includes("3d-carousel-pro")) installedSections.add("3d-carousel-pro");
-                    if (assetKey.includes("my-custom-section")) installedSections.add("my-custom-section");
-                }
+                if (has3DCarousel) installedSections.add("3d-carousel-pro");
+                if (hasCustomSection) installedSections.add("my-custom-section");
             }
         } catch (err) {
             console.warn(`Failed to check assets for theme ${theme.id}:`, err);
