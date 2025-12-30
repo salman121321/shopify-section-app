@@ -280,9 +280,9 @@ export const action = async ({ request }) => {
                 let gqlErrorDetails = "";
                 
                 try {
-                    // Try 2025-01 first (Stable)
-                    let gqlApiVersion = "2025-01";
-                    let gqlUrl = `https://${shop}/admin/api/${gqlApiVersion}/graphql.json`;
+                    // FORCE unstable for themeFilesUpsert as it is the most reliable version for this mutation
+                    const gqlApiVersion = "unstable";
+                    const gqlUrl = `https://${shop}/admin/api/${gqlApiVersion}/graphql.json`;
                     
                     const query = `
                       mutation themeFilesUpsert($files: [ThemeFilesUpsertInput!]!, $themeId: ID!) {
@@ -300,7 +300,7 @@ export const action = async ({ request }) => {
                     `;
                     
                     console.log(`Attempting GraphQL Injection via ${gqlApiVersion}...`);
-                    let gqlResp = await fetch(gqlUrl, {
+                    const gqlResp = await fetch(gqlUrl, {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
@@ -318,33 +318,8 @@ export const action = async ({ request }) => {
                         })
                     });
 
-                    let gqlData = await gqlResp.json();
-
-                    // Check for "ThemeFilesUpsertInput isn't a defined input type" error specifically
-                    if (gqlData.errors && JSON.stringify(gqlData.errors).includes("ThemeFilesUpsertInput")) {
-                        console.warn("GraphQL 2025-01 failed with Input Type error. Retrying with 'unstable'...");
-                        gqlApiVersion = "unstable";
-                        gqlUrl = `https://${shop}/admin/api/${gqlApiVersion}/graphql.json`;
-                        
-                        gqlResp = await fetch(gqlUrl, {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/json",
-                                "X-Shopify-Access-Token": accessToken
-                            },
-                            body: JSON.stringify({
-                                query: query,
-                                variables: {
-                                    themeId: `gid://shopify/Theme/${cleanThemeId}`,
-                                    files: [{
-                                        filename: sectionData.filename,
-                                        body: { value: sectionData.content }
-                                    }]
-                                }
-                            })
-                        });
-                        gqlData = await gqlResp.json();
-                    }
+                    const gqlData = await gqlResp.json();
+                    console.log("GraphQL Response:", JSON.stringify(gqlData));
 
                     if (gqlData.data?.themeFilesUpsert?.upsertedThemeFiles?.length > 0) {
                         console.log("GraphQL Injection SUCCESS!");
