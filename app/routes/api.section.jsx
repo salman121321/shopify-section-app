@@ -188,8 +188,8 @@ export const action = async ({ request }) => {
       // FALLBACK: Use direct fetch to bypass library issues
       const shop = session.shop;
       const accessToken = session.accessToken;
-      // Use unstable to access themeFilesUpsert if 2025-01 is missing the schema
-      const apiVersion = "unstable"; 
+      // Use 2024-04 for REST as it is stable for Asset API
+      const apiVersion = "2024-04"; 
       const cleanThemeId = String(themeId).trim();
 
       console.log(`Debug: Shop=${shop}, ThemeID=${cleanThemeId}, TokenLength=${accessToken?.length}`);
@@ -296,7 +296,7 @@ export const action = async ({ request }) => {
                       }
                     `;
                     
-                    const gqlUrl = `https://${shop}/admin/api/${apiVersion}/graphql.json`;
+                    const gqlUrl = `https://${shop}/admin/api/unstable/graphql.json`;
                     const gqlResp = await fetch(gqlUrl, {
                         method: "POST",
                         headers: {
@@ -352,18 +352,13 @@ export const action = async ({ request }) => {
                 }
 
                 // If GraphQL also failed or didn't run, return the original REST 404 error but with scope info
-                // MODIFIED: If injection fails, we assume Theme App Extension is available and Mark as Success.
-                console.warn("Injection failed via REST and GraphQL. Assuming Theme App Extension usage.");
+                // MODIFIED: Fail loudly if injection fails.
+                console.error("Injection failed via REST and GraphQL.");
                 
-                await markSectionInstalled(shop, accessToken, apiVersion, sectionId);
-
                 return json({ 
-                    success: true, 
-                    message: `Section enabled via Extension. Please add 'Shopi: 3D Carousel Pro' in Theme Editor.`,
-                    method: "extension-fallback",
-                    themeId: cleanThemeId,
-                    warning: true
-                });
+                    error: `Failed to inject section. REST: ${response.status} ${text}. GraphQL: ${gqlErrorDetails || 'Not attempted/Failed'}`,
+                    status: response.status
+                }, { status: 400 });
             }
 
             throw new Error(`Failed to save section: ${response.status} ${text}`);
@@ -391,7 +386,7 @@ export const action = async ({ request }) => {
                         }
                       }
                     `;
-                    const gqlUrl = `https://${shop}/admin/api/${apiVersion}/graphql.json`;
+                    const gqlUrl = `https://${shop}/admin/api/unstable/graphql.json`;
                     const gqlResp = await fetch(gqlUrl, {
                         method: "POST",
                         headers: { "Content-Type": "application/json", "X-Shopify-Access-Token": accessToken },
@@ -429,7 +424,7 @@ export const action = async ({ request }) => {
       // Remove the Liquid file from the theme
       const shop = session.shop;
       const accessToken = session.accessToken;
-      const apiVersion = "unstable"; // Sync with activate action
+      const apiVersion = "2024-04"; // Sync with activate action
       const cleanThemeId = String(themeId).trim();
       const url = `https://${shop}/admin/api/${apiVersion}/themes/${cleanThemeId}/assets.json?asset[key]=${sectionData.filename}`;
 
