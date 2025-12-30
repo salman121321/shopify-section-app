@@ -156,7 +156,10 @@ export const action = async ({ request }) => {
           "settings": [
              { "type": "text", "id": "heading", "label": "Heading", "default": "Hello World" }
           ],
-          "presets": [{ "name": "My Custom Section" }]
+          "presets": [{ 
+              "name": "My Custom Section",
+              "category": "Shopi Section"
+          }]
         }
         {% endschema %}
         <h2>{{ section.settings.heading }}</h2>
