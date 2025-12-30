@@ -1,5 +1,6 @@
 import { json } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
+import prisma from "../db.server";
 import { THREE_D_CAROUSEL_LIQUID } from "../templates/three-d-carousel";
 
 export const action = async ({ request }) => {
@@ -37,6 +38,12 @@ export const action = async ({ request }) => {
       console.log("Theme verified:", theme.name);
   } catch (e) {
       console.error("Theme verification failed:", e);
+      // Check if this error is also a 401
+      if (e.message && e.message.includes("401")) {
+          console.log("Details: 401 Unauthorized detected during theme check. Deleting invalid session.");
+          await prisma.session.deleteMany({ where: { shop: session.shop } });
+          return json({ reauth: true, error: "Authentication expired. Please reload the page." }, { status: 401 });
+      }
       return json({ error: `Theme with ID ${themeId} not accessible. Details: ${e.message}` }, { status: 404 });
   }
 
@@ -108,15 +115,14 @@ export const action = async ({ request }) => {
       });
 
       if (!response.ok) {
+          if (response.status === 401) {
+             console.log("Details: 401 Unauthorized detected. Deleting invalid session to force re-auth.");
+             await prisma.session.deleteMany({ where: { shop } });
+             return json({ reauth: true, error: "Authentication expired. Please reload the page." }, { status: 401 });
+          }
           const text = await response.text();
           // Include URL in error for debugging
           throw new Error(`Shopify API ${response.status}: ${text} | URL: ${url}`);
-      }
-
-      const data = await response.json();
-      console.log("Direct Fetch Success:", data);
-      
-      return json({ success: true, message: "Section installed successfully" });
       }
 
       const data = await response.json();
@@ -128,7 +134,7 @@ export const action = async ({ request }) => {
       // Remove the Liquid file from the theme
       const shop = session.shop;
       const accessToken = session.accessToken;
-      const apiVersion = "2025-01";
+      const apiVersion = "2024-10";
       const cleanThemeId = String(themeId).trim();
       const url = `https://${shop}/admin/api/${apiVersion}/themes/${cleanThemeId}/assets.json?asset[key]=${sectionData.filename}`;
 
@@ -140,6 +146,11 @@ export const action = async ({ request }) => {
       });
 
       if (!response.ok) {
+          if (response.status === 401) {
+             console.log("Details: 401 Unauthorized detected. Deleting invalid session to force re-auth.");
+             await prisma.session.deleteMany({ where: { shop } });
+             return json({ reauth: true, error: "Authentication expired. Please reload the page." }, { status: 401 });
+          }
           const text = await response.text();
           // If 404 on delete, it's already gone, consider success
           if (response.status === 404) {
@@ -147,6 +158,7 @@ export const action = async ({ request }) => {
           }
           throw new Error(`Shopify API ${response.status}: ${text}`);
       }
+
 
       return json({ success: true, message: "Section removed successfully" });
     }

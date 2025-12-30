@@ -186,17 +186,33 @@ export default function Index() {
   }, []); // Run once on mount
 
   useEffect(() => {
-    if (themesFetcher.data && themesFetcher.data.themes) {
-      setThemes(themesFetcher.data.themes);
-      // Default to main theme
-      const mainTheme = themesFetcher.data.themes.find(t => t.role === 'main');
-      if (mainTheme) setSelectedThemeId(mainTheme.id.toString());
+    if (themesFetcher.data) {
+      if (themesFetcher.data.reauth) {
+        // Force re-authentication if token is invalid
+        console.log("Re-auth required from themes API. Reloading...");
+        window.top.location.reload();
+        return;
+      }
+      
+      if (themesFetcher.data.themes) {
+        setThemes(themesFetcher.data.themes);
+        // Default to main theme
+        const mainTheme = themesFetcher.data.themes.find(t => t.role === 'main');
+        if (mainTheme) setSelectedThemeId(mainTheme.id.toString());
+      }
     }
   }, [themesFetcher.data]);
 
   // Handle installation response
   useEffect(() => {
     if (sectionFetcher.state === "idle" && sectionFetcher.data) {
+        if (sectionFetcher.data.reauth) {
+            // Force re-authentication if token is invalid
+            console.log("Re-auth required from section API. Reloading...");
+            window.top.location.reload();
+            return;
+        }
+
         if (sectionFetcher.data.success) {
             setToastMessage(sectionFetcher.data.message);
             setThemeModalOpen(false);

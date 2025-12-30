@@ -1,5 +1,6 @@
 import { json } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
+import prisma from "../db.server";
 
 export const loader = async ({ request }) => {
   const { admin, session } = await authenticate.admin(request);
@@ -10,7 +11,7 @@ export const loader = async ({ request }) => {
     // FALLBACK: Use direct fetch for maximum stability (matches api.section.jsx)
     const shop = session.shop;
     const accessToken = session.accessToken;
-    const apiVersion = "2025-01";
+    const apiVersion = "2024-10";
     const url = `https://${shop}/admin/api/${apiVersion}/themes.json`;
 
     const response = await fetch(url, {
@@ -20,6 +21,11 @@ export const loader = async ({ request }) => {
     });
 
     if (!response.ok) {
+        if (response.status === 401) {
+            console.log("Details: 401 Unauthorized detected. Deleting invalid session to force re-auth.");
+            await prisma.session.deleteMany({ where: { shop } });
+            return json({ reauth: true, error: "Authentication expired. Please reload the page." }, { status: 401 });
+        }
         throw new Error(`Failed to fetch themes: ${response.status} ${await response.text()}`);
     }
 
