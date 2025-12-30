@@ -90,8 +90,8 @@ export const action = async ({ request }) => {
       // FALLBACK: Use direct fetch to bypass library issues
       const shop = session.shop;
       const accessToken = session.accessToken;
-      // Use 2024-04 (Stable) to ensure compatibility
-      const apiVersion = "2024-04"; 
+      // Use 2024-10 (Latest Stable) to fix 404 on assets
+      const apiVersion = "2024-10"; 
       const cleanThemeId = String(themeId).trim();
 
       console.log(`Debug: Shop=${shop}, ThemeID=${cleanThemeId}, TokenLength=${accessToken?.length}`);
@@ -118,6 +118,23 @@ export const action = async ({ request }) => {
           throw new Error(`Theme Check Failed (${themeResp.status}): ${text} | URL: ${themeUrl}`);
       }
       console.log("Diagnostic 1 Success: Theme exists.");
+
+      // DIAGNOSTIC 2: Check Asset Endpoint Reachability (List Assets)
+      // This verifies if the assets endpoint is actually valid for this theme
+      const assetsCheckUrl = `https://${shop}/admin/api/${apiVersion}/themes/${cleanThemeId}/assets.json?limit=1`;
+      const assetsCheckResp = await fetch(assetsCheckUrl, {
+          headers: { "X-Shopify-Access-Token": accessToken }
+      });
+
+      if (!assetsCheckResp.ok) {
+          const text = await assetsCheckResp.text();
+          console.warn(`Diagnostic 2 Failed: Assets endpoint returned ${assetsCheckResp.status}`);
+          if (assetsCheckResp.status === 404) {
+              return json({ error: "This theme does not support Asset API modifications (Assets endpoint 404). It might be a development or trial theme." }, { status: 404 });
+          }
+      } else {
+          console.log("Diagnostic 2 Success: Assets endpoint is reachable.");
+      }
 
       // DIAGNOSTIC 3: Verify Actual Scopes from Shopify
       // Sometimes the session has scopes but the token doesn't (stale token)
