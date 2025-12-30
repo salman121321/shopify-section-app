@@ -190,7 +190,9 @@ export default function Index() {
       if (themesFetcher.data.reauth) {
         // Force re-authentication if token is invalid
         console.log("Re-auth required from themes API. Reloading...");
-        window.top.location.reload();
+        // Use Shopify App Bridge to break out or just reload the current frame to trigger loader
+        // Since window.top access is blocked, we use standard reload which Shopify App Bridge might intercept or simply reload the iframe
+        window.location.reload(); 
         return;
       }
       
@@ -596,9 +598,9 @@ export default function Index() {
                                         variant="primary"
                                         onClick={() => {
                                             // Force re-auth
-                                            const shop = new URLSearchParams(window.location.search).get("shop");
+                                            const shopDomain = new URLSearchParams(window.location.search).get("shop") || shop;
                                             // Redirect to auth endpoint
-                                            window.open(`/auth/login?shop=${shop}`, "_top");
+                                            window.open(`/auth/login?shop=${shopDomain}`, "_top");
                                         }}
                                       >
                                         Grant Permissions
