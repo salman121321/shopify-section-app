@@ -109,6 +109,12 @@ export const action = async ({ request }) => {
           if (themeResp.status === 404) {
                return json({ error: "Theme not found. It might have been deleted." }, { status: 404 });
           }
+          // If 403/401, handle reauth
+          if (themeResp.status === 403 || themeResp.status === 401) {
+              console.log("Triggering Re-Auth due to Theme Check failure...");
+              await prisma.session.deleteMany({ where: { shop } });
+              return json({ reauth: true, error: "Permissions need update. Reloading..." }, { status: 401 });
+          }
           throw new Error(`Theme Check Failed (${themeResp.status}): ${text} | URL: ${themeUrl}`);
       }
       console.log("Diagnostic 1 Success: Theme exists.");
@@ -118,24 +124,8 @@ export const action = async ({ request }) => {
       const url = `https://${shop}/admin/api/${apiVersion}/themes/${cleanThemeId}/assets.json`;
       
       // DIAGNOSTIC 2: Check Asset Access (List Assets)
-      const listAssetsUrl = `https://${shop}/admin/api/${apiVersion}/themes/${cleanThemeId}/assets.json?limit=1`;
-      const listResp = await fetch(listAssetsUrl, {
-          headers: { "X-Shopify-Access-Token": accessToken }
-      });
-      if (!listResp.ok) {
-           const text = await listResp.text();
-           console.error(`Asset List Check Failed (${listResp.status}): ${text}`);
-           // If we cannot list assets, we definitely cannot write them.
-           if (listResp.status === 403 || listResp.status === 401) {
-                console.log("Triggering Re-Auth due to Asset List failure...");
-                await prisma.session.deleteMany({ where: { shop } });
-                return json({ reauth: true, error: "Permissions need update. Reloading..." }, { status: 401 });
-           }
-           if (listResp.status === 404) {
-               return json({ error: `Asset Endpoint Not Found for Theme ${cleanThemeId}. URL: ${listAssetsUrl}` }, { status: 404 });
-           }
-      }
-      console.log("Diagnostic 2 Success: Can list assets.");
+      // Removed - listing assets can be heavy and we already checked theme existence
+      // If we have write_themes, we should be able to write.
 
       // DIAGNOSTIC 3: Verify Actual Scopes from Shopify
       // Sometimes the session has scopes but the token doesn't (stale token)
@@ -177,11 +167,18 @@ export const action = async ({ request }) => {
            console.error(`Asset Update Failed (${response.status}): ${text}`);
            
            // If 404 or 403 or 401, it is likely a Permission/Scope issue or Auth issue
-           if (response.status === 403 || response.status === 401 || response.status === 404) {
+           if (response.status === 403 || response.status === 401) {
                console.log(`Triggering Re-Auth due to write failure (${response.status})...`);
                // We delete the session to force a fresh token exchange next time
                await prisma.session.deleteMany({ where: { shop } });
                return json({ reauth: true, error: "Permissions synchronization failed. Reloading..." }, { status: 401 });
+           }
+
+            // 404 on PUT usually means the theme ID is wrong OR the endpoint is wrong.
+            // Since we verified the theme exists (Diag 1), it might be the API version or URL format.
+            // But for now, if it's 404, we return error instead of re-auth loops, as we verified scopes.
+           if (response.status === 404) {
+               return json({ error: `Shopify API returned 404 Not Found for Asset PUT. URL: ${url}. Response: ${text}` }, { status: 404 });
            }
 
            throw new Error(`Failed to save section: ${response.status} ${text}`);

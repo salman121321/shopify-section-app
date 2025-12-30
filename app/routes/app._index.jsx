@@ -34,18 +34,14 @@ import { authenticate } from "../shopify.server";
 export const loader = async ({ request }) => {
   const { session } = await authenticate.admin(request);
   
-  // Check scopes (Soft Check - do not block)
+  // Check scopes (Strictly based on write_themes)
   const currentScopes = new Set(session.scope ? session.scope.split(",").map(s => s.trim()) : []);
-  const envScopes = (process.env.SCOPES || "write_products,write_themes").split(",").map(s => s.trim());
   
-  const hasAllScopes = envScopes.every(scope => {
-      if (currentScopes.has(scope)) return true;
-      // write_themes implies read_themes
-      if (scope === 'read_themes' && currentScopes.has('write_themes')) return true;
-      // write_products implies read_products
-      if (scope === 'read_products' && currentScopes.has('write_products')) return true;
-      return false;
-  });
+  // Hardcode required scopes to what is strictly necessary for functionality
+  // We ignore read_themes because write_themes implies it, and we want to avoid UI confusion
+  const requiredScopes = ["write_products", "write_themes"];
+  
+  const hasAllScopes = requiredScopes.every(scope => currentScopes.has(scope));
 
   const shop = session.shop.replace(".myshopify.com", "");
   
@@ -54,7 +50,7 @@ export const loader = async ({ request }) => {
     shop, 
     reauthRequired: !hasAllScopes, 
     host: session.shop, 
-    requiredScopes: envScopes,
+    requiredScopes,
     currentScopesRaw: session.scope || "No scopes found"
   };
 };
