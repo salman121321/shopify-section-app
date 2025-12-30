@@ -166,6 +166,7 @@ export default function Index() {
   const { shop, reauthRequired, host, requiredScopes, currentScopesRaw } = useLoaderData();
   const themesFetcher = useFetcher();
   const sectionFetcher = useFetcher();
+  const testFetcher = useFetcher();
 
   // Add hover styles
   useEffect(() => {
@@ -292,17 +293,41 @@ export default function Index() {
 
   const handleConfirmInstall = () => {
     if (!selectedThemeId || !selectedSectionForInstall) return;
-    
+
     sectionFetcher.submit(
-      { 
-        action: "activate", 
-        themeId: selectedThemeId, 
-        sectionId: selectedSectionForInstall.id 
+      {
+        action: "activate",
+        themeId: selectedThemeId,
+        sectionId: selectedSectionForInstall.id
       },
       { method: "post", action: "/api/section" }
     );
   };
 
+  const handleTestUpload = () => {
+    if (!selectedThemeId) {
+      setToastMessage("Please select a theme first");
+      return;
+    }
+
+    console.log("Testing upload with theme:", selectedThemeId);
+    testFetcher.submit(
+      { themeId: selectedThemeId },
+      { method: "post", action: "/api/test-upload" }
+    );
+  };
+
+  // Handle test upload response
+  useEffect(() => {
+    if (testFetcher.state === "idle" && testFetcher.data) {
+      console.log("Test Upload Result:", testFetcher.data);
+      if (testFetcher.data.success) {
+        setToastMessage("✅ Test upload successful! Check terminal logs.");
+      } else {
+        setToastMessage(`❌ Test failed: ${testFetcher.data.message}`);
+      }
+    }
+  }, [testFetcher.state, testFetcher.data]);
 
   const categories = [
     { id: "all", label: "All Sections", icon: HomeIcon },
@@ -721,6 +746,13 @@ export default function Index() {
             )}
             <InlineStack align="end" gap="200">
                 <Button onClick={() => setThemeModalOpen(false)}>Cancel</Button>
+                <Button
+                    onClick={handleTestUpload}
+                    loading={testFetcher.state === "submitting"}
+                    disabled={!selectedThemeId || themes.length === 0}
+                >
+                    🔧 Test Upload
+                </Button>
                 {sectionFetcher.data?.error && (
                     <Button onClick={handleConfirmInstall} loading={sectionFetcher.state === "submitting"}>
                         Retry
