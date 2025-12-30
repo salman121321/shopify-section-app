@@ -243,9 +243,8 @@ export const action = async ({ request }) => {
       
       try {
           // SCOPE CHECK: Ensure we actually have write_themes
-          // The session might say we do, but the token might be old.
-          const accessScopes = await admin.rest.resources.AccessScope.all({ session: session });
-          const hasWriteThemes = accessScopes.some(scope => scope.handle === "write_themes");
+          // Use session.scope string (faster and safer than API call)
+          const hasWriteThemes = session.scope && session.scope.includes("write_themes");
           
           if (!hasWriteThemes) {
                console.error("CRITICAL: Token missing write_themes scope. Forcing Re-auth.");
