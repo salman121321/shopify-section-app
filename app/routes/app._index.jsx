@@ -756,13 +756,7 @@ export default function Index() {
             )}
             <InlineStack align="end" gap="200">
                 <Button onClick={() => setThemeModalOpen(false)}>Cancel</Button>
-                <Button
-                    onClick={handleTestUpload}
-                    loading={testFetcher.state === "submitting"}
-                    disabled={!selectedThemeId || themes.length === 0}
-                >
-                    🔧 Test Upload
-                </Button>
+                {/* Test Upload Button Removed as per request (Permissions Issue) */}
                 {sectionFetcher.data?.error && (
                     <Button onClick={handleConfirmInstall} loading={sectionFetcher.state === "submitting"}>
                         Retry

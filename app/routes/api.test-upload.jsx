@@ -102,8 +102,11 @@ export const action = async ({ request }) => {
   }
 
   // Test 3: GraphQL Upload (Correct method for OS 2.0)
+  // DISABLED TEMPORARILY: User does not have exemption for write_themes_assets or themeFilesUpsert yet.
+  /*
   try {
     console.log("\n--- Test 3: GraphQL Upload (OS 2.0 Method) ---");
+
 
     const testContent = `{% schema %}
 {
@@ -293,4 +296,13 @@ export const action = async ({ request }) => {
       results: results
     }, { status: 500 });
   }
+  */
+  
+  results.summary = "Test 3 Skipped (No Permission)";
+  return json({
+    success: true,
+    message: "Tests 1 & 2 Passed. Test 3 Skipped.",
+    results: results
+  });
+
 };
