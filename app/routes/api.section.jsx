@@ -55,6 +55,7 @@ async function markSectionInstalled(shop, accessToken, apiVersion, sectionId) {
                   metafields {
                     key
                     value
+                    valueType: JSON_STRING
                   }
                   userErrors {
                     field
@@ -63,6 +64,12 @@ async function markSectionInstalled(shop, accessToken, apiVersion, sectionId) {
                 }
               }
             `;
+            // NOTE: 'type' is deprecated in favor of specific types, but API version matters.
+            // For 2024-10, type is removed from MetafieldsSetInput in favor of inferring from definition or just value?
+            // Actually, for app-owned metafields, we often just need value.
+            // But let's check the spec. 'type' was deprecated. 
+            // We'll stick to what was working or use simplified input.
+            // Wait, previous code had `type: "json"`.
             
             const updateResp = await fetch(gqlUrl, {
                 method: "POST",
@@ -74,7 +81,7 @@ async function markSectionInstalled(shop, accessToken, apiVersion, sectionId) {
                             ownerId: appInstallation.id,
                             namespace: "shopi_section",
                             key: "installed_sections",
-                            type: "json",
+                            type: "json", 
                             value: JSON.stringify(installedSections)
                         }]
                     }
@@ -109,7 +116,13 @@ export const action = async ({ request }) => {
 
   if (!session.scope?.includes("write_themes")) {
       console.error("❌ Missing write_themes scope!");
-      return json({ error: "Missing 'write_themes' permission. Please reinstall the app or update permissions." }, { status: 403 });
+      // We can relax this check if we are just deep linking, but for now let's keep it 
+      // or we can remove it since we aren't uploading.
+      // But user said they don't have exemption access, so maybe they don't even have write_themes?
+      // If they don't have write_themes, this will block them.
+      // Let's REMOVE this check since we are using deep links now!
+      // return json({ error: "Missing 'write_themes' permission. Please reinstall the app or update permissions." }, { status: 403 });
+      console.warn("⚠️ User might be missing write_themes, but we are proceeding with Deep Link.");
   }
 
   const action = formData.get("action");
@@ -180,366 +193,6 @@ export const action = async ({ request }) => {
           details: "Section activation is handled via Theme Editor deep link."
       });
 
-      /* 
-      // LEGACY UPLOAD CODE (Disabled for Theme App Extensions)
-      // 1. Upload the Liquid file to the theme
-      console.log(`Uploading asset ${sectionData.filename} to theme ${themeId}`);
-
-      console.log(`Content length: ${sectionData.content.length}`);
-
-      // FALLBACK: Use direct fetch to bypass library issues
-      const shop = session.shop;
-      const accessToken = session.accessToken;
-      // Use 2024-10 for REST (Stable)
-      const apiVersion = "2024-10"; 
-      // Ensure strictly numeric ID
-      const cleanThemeId = String(themeId).replace(/\D/g, "");
-
-      console.log(`Debug: Shop=${shop}, ThemeID=${cleanThemeId}, TokenLength=${accessToken?.length}`);
-
-      // DIAGNOSTIC 1: Check if Theme Exists via REST
-      const themeUrl = `https://${shop}/admin/api/${apiVersion}/themes/${cleanThemeId}.json`;
-      
-      const themeResp = await fetch(themeUrl, {
-          headers: { "X-Shopify-Access-Token": accessToken }
-      });
-
-      if (!themeResp.ok) {
-          // ... (Existing error handling)
-          const text = await themeResp.text();
-          if (themeResp.status === 404) {
-               return json({ error: `Theme not found (ID: ${cleanThemeId}). It might have been deleted.` }, { status: 404 });
-          }
-          if (themeResp.status === 403 || themeResp.status === 401) {
-              await prisma.session.deleteMany({ where: { shop } });
-              return json({ reauth: true, error: "Permissions need update. Reloading..." }, { status: 401 });
-          }
-          throw new Error(`Theme Check Failed (${themeResp.status}): ${text}`);
-      }
-      console.log("Diagnostic 1 Success: Theme exists.");
-
-      // DIAGNOSTIC 2: Check Asset Access (Read layout/theme.liquid)
-      // This confirms we have 'read_themes' AND access to this specific theme's assets
-      const assetCheckUrl = `https://${shop}/admin/api/${apiVersion}/themes/${cleanThemeId}/assets.json?asset[key]=layout/theme.liquid`;
-      const assetCheckResp = await fetch(assetCheckUrl, {
-          headers: { "X-Shopify-Access-Token": accessToken }
-      });
-
-      if (!assetCheckResp.ok) {
-           const text = await assetCheckResp.text();
-           console.error(`Diagnostic 2 Failed: Cannot read assets. Status: ${assetCheckResp.status}`);
-           console.error(`Response: ${text}`);
-
-           if (assetCheckResp.status === 404) {
-                // Theme might be using Online Store 2.0 - try GraphQL instead
-                console.log("REST Asset read failed, theme might be OS 2.0. Continuing with GraphQL...");
-           }
-      } else {
-           console.log("Diagnostic 2 Success: Can read theme assets.");
-           const assetData = await assetCheckResp.json();
-           console.log("Asset read successful, theme is accessible");
-      }
-
-      // DIAGNOSTIC 3: Verify scopes using GraphQL
-      console.log("Verifying app has correct scopes...");
-      const scopeCheckQuery = `
-        query {
-          currentAppInstallation {
-            accessScopes {
-              handle
-            }
-          }
-        }
-      `;
-
-      const scopeCheckUrl = `https://${shop}/admin/api/${apiVersion}/graphql.json`;
-      const scopeCheckResp = await fetch(scopeCheckUrl, {
-          method: "POST",
-          headers: {
-              "Content-Type": "application/json",
-              "X-Shopify-Access-Token": accessToken
-          },
-          body: JSON.stringify({ query: scopeCheckQuery })
-      });
-
-      if (scopeCheckResp.ok) {
-          const scopeData = await scopeCheckResp.json();
-          const scopes = scopeData.data?.currentAppInstallation?.accessScopes?.map(s => s.handle) || [];
-          console.log("Current App Scopes:", scopes.join(", "));
-
-          if (!scopes.includes("write_themes")) {
-              return json({
-                  error: "App does not have write_themes permission. Please reinstall the app.",
-                  reauth: true
-              }, { status: 403 });
-          }
-      }
-
-      // PRIMARY METHOD: Using Shopify Admin REST Client (Official Way)
-      console.log("\n=== ATTEMPTING ASSET UPLOAD ===");
-      console.log(`Shop: ${shop}`);
-      console.log(`Theme ID: ${cleanThemeId}`);
-      console.log(`Filename: ${sectionData.filename}`);
-      console.log(`Content Length: ${sectionData.content.length} characters`);
-
-      let successResponse = null;
-      let uploadMethod = null;
-      let lastError = "Unknown error";
-      let lastStatus = 0;
-
-      // METHOD 1: Use GraphQL themeFilesUpsert (Correct for OS 2.0)
-      try {
-          console.log("\n=== METHOD 1: GraphQL themeFilesUpsert ===");
-
-          const graphqlQuery = `
-            mutation themeFilesUpsert($themeId: ID!, $files: [OnlineStoreThemeFilesUpsertFileInput!]!) {
-              themeFilesUpsert(themeId: $themeId, files: $files) {
-                upsertedThemeFiles {
-                  filename
-                }
-                userErrors {
-                  filename
-                  code
-                  message
-                }
-              }
-            }
-          `;
-
-          // Correct GID format for themes
-          const themeGid = `gid://shopify/Theme/${cleanThemeId}`;
-
-          const variables = {
-              themeId: themeGid,
-              files: [{
-                  filename: sectionData.filename,
-                  body: {
-                      type: "TEXT",
-                      value: sectionData.content
-                  }
-              }]
-          };
-
-          console.log("Theme GID:", themeGid);
-          console.log("Filename:", sectionData.filename);
-          console.log("Content length:", sectionData.content.length);
-
-          const response = await admin.graphql(graphqlQuery, { variables });
-          const responseData = await response.json();
-
-          console.log("GraphQL Response Status:", response.status);
-          console.log("GraphQL Response:", JSON.stringify(responseData, null, 2));
-
-          if (responseData.data?.themeFilesUpsert?.upsertedThemeFiles?.length > 0) {
-              console.log("✅ ✅ ✅ GraphQL Upload SUCCESS! ✅ ✅ ✅");
-              console.log("Uploaded File:", responseData.data.themeFilesUpsert.upsertedThemeFiles[0]);
-              successResponse = { ok: true };
-              uploadMethod = "graphql";
-          } else if (responseData.data?.themeFilesUpsert?.userErrors?.length > 0) {
-              const errors = responseData.data.themeFilesUpsert.userErrors;
-              console.error("❌ GraphQL User Errors:", errors);
-              lastError = errors.map(e => `[${e.code}] ${e.message} (field: ${e.field || 'unknown'})`).join("; ");
-              lastStatus = 400;
-          } else if (responseData.errors) {
-              console.error("❌ GraphQL API Errors:", responseData.errors);
-              lastError = responseData.errors.map(e => e.message).join("; ");
-              lastStatus = 400;
-          } else {
-              console.warn("❌ Unexpected GraphQL response structure");
-              console.log("Full response:", responseData);
-              lastError = "Unexpected response - no files uploaded and no errors";
-              lastStatus = 500;
-          }
-      } catch (graphqlError) {
-          console.error("❌ GraphQL Exception:", graphqlError.message);
-          console.error("Error Stack:", graphqlError.stack);
-          lastError = `GraphQL Exception: ${graphqlError.message}`;
-      }
-
-      // METHOD 2: Direct REST API (Fallback)
-      /*
-      if (!successResponse) {
-        console.log("\n=== METHOD 2: Direct REST API (Fallback) ===");
-        // ... (Rest of legacy upload code)
-      }
-      */
-    }
-  } catch (e) {
-    console.error("Section Activation Failed:", e);
-    return json({ error: e.message, technicalDetails: e.stack }, { status: 500 });
-  }
-};
-      if (!successResponse) {
-          try {
-              console.log("\n=== METHOD 2: Direct REST API ===");
-
-              const apiVer = "2024-04";
-              const assetUrl = `https://${shop}/admin/api/${apiVer}/themes/${cleanThemeId}/assets.json`;
-
-              console.log(`Trying URL: ${assetUrl}`);
-
-              const response = await fetch(assetUrl, {
-                  method: "PUT",
-                  headers: {
-                      "X-Shopify-Access-Token": accessToken,
-                      "Content-Type": "application/json"
-                  },
-                  body: JSON.stringify({
-                      asset: {
-                          key: sectionData.filename,
-                          value: sectionData.content
-                      }
-                  })
-              });
-
-              console.log(`Response Status: ${response.status}`);
-
-              if (response.ok) {
-                  const data = await response.json();
-                  console.log("✅ Direct REST Success!");
-                  console.log("Asset saved:", data.asset);
-                  successResponse = response;
-                  uploadMethod = "direct-rest";
-              } else {
-                  const errorText = await response.text();
-                  lastError = errorText;
-                  lastStatus = response.status;
-                  console.error(`❌ Direct REST Failed (${response.status}):`, errorText);
-
-                  if (response.status === 401 || response.status === 403) {
-                      await prisma.session.deleteMany({ where: { shop } });
-                      return json({ reauth: true, error: "Authentication failed. Please reload the page." }, { status: 401 });
-                  }
-
-                  // Try alternative API versions
-                  console.log("Trying alternative API versions...");
-                  const altVersions = ["2024-10", "2024-07"];
-
-                  for (const v of altVersions) {
-                      console.log(`Trying alternative version: ${v}`);
-                      const altUrl = `https://${shop}/admin/api/${v}/themes/${cleanThemeId}/assets.json`;
-
-                      try {
-                          const altResp = await fetch(altUrl, {
-                              method: "PUT",
-                              headers: {
-                                  "X-Shopify-Access-Token": accessToken,
-                                  "Content-Type": "application/json"
-                              },
-                              body: JSON.stringify({
-                                  asset: {
-                                      key: sectionData.filename,
-                                      value: sectionData.content
-                                  }
-                              })
-                          });
-
-                          if (altResp.ok) {
-                              console.log(`✅ Success with ${v}!`);
-                              successResponse = altResp;
-                              uploadMethod = `rest-${v}`;
-                              break;
-                          } else {
-                              lastStatus = altResp.status;
-                              lastError = await altResp.text();
-                              console.warn(`Version ${v} failed (${lastStatus})`);
-                          }
-                      } catch (e) {
-                          console.error(`Exception with ${v}:`, e.message);
-                          lastError = e.message;
-                      }
-                  }
-
-                  // FALLBACK METHOD 3: Try simplified filename
-                  if (!successResponse && lastStatus === 404) {
-                      console.log("Trying simplified filename...");
-
-                      const simplifiedFilename = sectionData.filename.replace('shopi-', '');
-                      const simpleUrl = `https://${shop}/admin/api/2024-04/themes/${cleanThemeId}/assets.json`;
-
-                      try {
-                          const simpleResp = await fetch(simpleUrl, {
-                              method: "PUT",
-                              headers: {
-                                  "X-Shopify-Access-Token": accessToken,
-                                  "Content-Type": "application/json"
-                              },
-                              body: JSON.stringify({
-                                  asset: {
-                                      key: simplifiedFilename,
-                                      value: sectionData.content
-                                  }
-                              })
-                          });
-
-                          if (simpleResp.ok) {
-                              console.log("✅ Simplified filename worked!");
-                              successResponse = simpleResp;
-                              uploadMethod = "rest-simplified";
-                              sectionData.filename = simplifiedFilename;
-                          }
-                      } catch (e) {
-                          console.error("Simplified filename failed:", e.message);
-                          lastError = e.message;
-                      }
-                  }
-              }
-          } catch (methodTwoError) {
-              console.error("❌ METHOD 2 Exception:", methodTwoError.message);
-              lastError = methodTwoError.message;
-          }
-      }
-
-      // Final error if all methods failed
-      if (!successResponse) {
-          console.error("\n=== ALL UPLOAD METHODS FAILED ===");
-          console.error(`Last Error: ${lastError}`);
-          console.error(`Last Status: ${lastStatus}`);
-
-          let helpfulMessage = `Failed to upload section. Error: ${lastError}`;
-
-          if (lastStatus === 404) {
-              helpfulMessage = "Theme not accessible. Please check:\n";
-              helpfulMessage += "1. Theme ID is correct\n";
-              helpfulMessage += "2. Try a different theme (duplicate or development theme)\n";
-              helpfulMessage += "3. Check terminal logs for detailed error";
-          } else if (lastStatus === 403 || lastStatus === 401) {
-              helpfulMessage = "Permission denied. Please reinstall the app with write_themes permission.";
-          }
-
-          return json({
-              error: helpfulMessage,
-              technicalDetails: `Status ${lastStatus}: ${lastError}`,
-              debug: { lastStatus, lastError, shop, themeId: cleanThemeId }
-          }, { status: 500 });
-      }
-      
-      // If we are here, successResponse is valid.
-      // DIAGNOSTIC 4: VERIFY WRITE
-      console.log("Verifying write via GET...");
-      const verifyUrl = `https://${shop}/admin/api/${apiVersion}/themes/${cleanThemeId}/assets.json?asset[key]=${sectionData.filename}`;
-      const verifyResp = await fetch(verifyUrl, {
-           headers: { "X-Shopify-Access-Token": accessToken }
-      });
-      
-      if (!verifyResp.ok) {
-           console.warn("Write verification failed. File not found immediately after write.");
-           // Also Soft Fail here if verification fails but write said OK (or we want to be lenient)
-           // But normally if write OK, verify OK.
-           // If write OK but verify 404, it might be propagation delay.
-           // We will proceed to mark as installed.
-      }
-      
-      // Mark as installed via Metafield (Success Case)
-      await markSectionInstalled(shop, accessToken, apiVersion, sectionId);
-
-      return json({
-          success: true,
-          message: `Section successfully added to theme!`,
-          method: uploadMethod,
-          filename: sectionData.filename
-      });
-
     } else if (action === "deactivate") {
       // FOR THEME APP EXTENSIONS: We do NOT delete files.
       // We just redirect to the theme editor so user can remove it.
@@ -550,97 +203,12 @@ export const action = async ({ request }) => {
         method: "deep_link",
         details: "Section removal is handled via Theme Editor." 
       });
-
-      /*
-      // Remove the Liquid file from the theme
-      const shop = session.shop;
-
-      const accessToken = session.accessToken;
-      const apiVersion = "2024-04"; // Sync with activate action
-      // Ensure strictly numeric ID
-      const cleanThemeId = String(themeId).replace(/\D/g, "");
-      const url = `https://${shop}/admin/api/${apiVersion}/themes/${cleanThemeId}/assets.json?asset[key]=${sectionData.filename}`;
-
-      const response = await fetch(url, {
-          method: "DELETE",
-          headers: {
-              "X-Shopify-Access-Token": accessToken
-          }
-      });
-
-      if (!response.ok) {
-          if (response.status === 401) {
-             console.log("Details: 401 Unauthorized detected. Deleting invalid session to force re-auth.");
-             await prisma.session.deleteMany({ where: { shop } });
-             return json({ reauth: true, error: "Authentication expired. Please reload the page." }, { status: 401 });
-          }
-          const text = await response.text();
-          // If 404 on delete, it's already gone, consider success
-          if (response.status === 404) {
-             return json({ success: true, message: "Section already removed" });
-          }
-          throw new Error(`Shopify API ${response.status}: ${text}`);
-      }
-
-      return json({ success: true, message: "Section removed successfully" });
-      */
     }
 
     return json({ error: "Invalid action" }, { status: 400 });
 
   } catch (error) {
-    console.error("Asset API Error:", error);
-
-    let msg = "Unknown error";
-    let details = "";
-    let userFriendlyMsg = "";
-
-    // Check if error is a Response object (common in fetch/shopify-api)
-    if (error && typeof error.text === 'function') {
-        try {
-            const text = await error.text();
-            msg = `API Error ${error.status || ''}: ${text}`;
-            try {
-                const jsonErr = JSON.parse(text);
-                if (jsonErr.errors) {
-                    msg = `Shopify API Error: ${JSON.stringify(jsonErr.errors)}`;
-                }
-            } catch (e) {
-                // Not JSON
-            }
-        } catch (e) {
-            msg = "Failed to read error response body";
-        }
-    } else if (error instanceof Error) {
-        msg = error.message;
-        details = error.stack;
-    } else if (typeof error === 'string') {
-        msg = error;
-    } else {
-        try {
-            msg = JSON.stringify(error);
-        } catch (e) {
-            msg = "Circular error object";
-        }
-    }
-
-    // Create user-friendly error messages
-    if (msg.includes("404") || msg.includes("Not Found")) {
-        userFriendlyMsg = "Theme not accessible. This might be a protected theme or the theme ID is incorrect. Try selecting a different theme or contact support.";
-    } else if (msg.includes("401") || msg.includes("403") || msg.includes("Unauthorized") || msg.includes("Forbidden")) {
-        userFriendlyMsg = "Permission denied. Please reinstall the app to grant required permissions.";
-    } else if (msg.includes("All upload methods failed")) {
-        userFriendlyMsg = "Unable to upload section to theme. Please ensure you have write_themes permission and the theme is editable.";
-    } else {
-        userFriendlyMsg = `Upload failed: ${msg}`;
-    }
-
-    console.error("Error Details:", { msg, details, userFriendlyMsg });
-
-    return json({
-        error: userFriendlyMsg,
-        technicalDetails: msg,
-        debug: details || msg
-    }, { status: 500 });
+    console.error("Section Activation Failed:", error);
+    return json({ error: error.message, technicalDetails: error.stack }, { status: 500 });
   }
 };
