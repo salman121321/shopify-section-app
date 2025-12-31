@@ -1181,7 +1181,7 @@ export default function Index() {
                     <p>The app is missing required permissions to modify your theme.</p>
                 </Banner>
                 <Text as="p">
-                    To install sections, Shopi Section needs the <b>write_themes</b> permission.
+                    To install sections, Shopi Section needs the <b>read_themes</b> permission.
                     Please click the button below to grant these permissions.
                 </Text>
                 <Box padding="400" background="bg-surface-secondary" borderRadius="200">
