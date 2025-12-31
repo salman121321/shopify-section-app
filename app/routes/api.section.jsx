@@ -104,6 +104,92 @@ async function markSectionInstalled(shop, accessToken, apiVersion, sectionId) {
     }
 }
 
+async function unmarkSectionInstalled(shop, accessToken, apiVersion, sectionId) {
+    try {
+        const getQuery = `
+          query {
+            currentAppInstallation {
+              id
+              metafield(namespace: "shopi_section", key: "installed_sections") {
+                value
+                id
+              }
+            }
+          }
+        `;
+        
+        const gqlUrl = `https://${shop}/admin/api/${apiVersion}/graphql.json`;
+        const getResp = await fetch(gqlUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-Shopify-Access-Token": accessToken },
+            body: JSON.stringify({ query: getQuery })
+        });
+        
+        const getData = await getResp.json();
+        const appInstallation = getData.data?.currentAppInstallation;
+        if (!appInstallation) {
+             console.error("Failed to get AppInstallation for Metafield update");
+             return; // Silent fail or throw?
+        }
+
+        let installedSections = [];
+        if (appInstallation.metafield?.value) {
+            try {
+                installedSections = JSON.parse(appInstallation.metafield.value);
+            } catch (e) {
+                console.warn("Failed to parse existing metafield value:", e);
+            }
+        }
+
+        if (installedSections.includes(sectionId)) {
+            // Filter out the section
+            installedSections = installedSections.filter(id => id !== sectionId);
+            
+            const updateQuery = `
+              mutation MetafieldsSet($metafields: [MetafieldsSetInput!]!) {
+                metafieldsSet(metafields: $metafields) {
+                  metafields {
+                    key
+                    value
+                  }
+                  userErrors {
+                    field
+                    message
+                  }
+                }
+              }
+            `;
+            
+            const updateResp = await fetch(gqlUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "X-Shopify-Access-Token": accessToken },
+                body: JSON.stringify({
+                    query: updateQuery,
+                    variables: {
+                        metafields: [{
+                            ownerId: appInstallation.id,
+                            namespace: "shopi_section",
+                            key: "installed_sections",
+                            type: "json", 
+                            value: JSON.stringify(installedSections)
+                        }]
+                    }
+                })
+            });
+            
+            const updateData = await updateResp.json();
+            const userErrors = updateData.data?.metafieldsSet?.userErrors;
+            if (userErrors && userErrors.length > 0) {
+                 throw new Error(`Metafield Update Failed: ${JSON.stringify(userErrors)}`);
+            }
+        }
+    } catch (err) {
+        console.error("Failed to remove installed section metafield:", err);
+        throw err;
+    }
+}
+
+
 export const action = async ({ request }) => {
   const { admin, session } = await authenticate.admin(request);
   const formData = await request.formData();
@@ -178,29 +264,33 @@ export const action = async ({ request }) => {
   try {
     if (requestAction === "activate") {
       // FOR THEME APP EXTENSIONS: We do NOT upload liquid files anymore.
-      // Instead, we just mark it as installed (for our own records) and redirect to the deep link.
+      // Instead, we just mark it as installed (for our own records).
       
-      console.log(`Skipping asset upload for Theme App Extension: ${sectionData.filename}`);
+      console.log(`Activating section: ${sectionId} for shop: ${session.shop}`);
       
       // Still mark as installed in our DB/Metafields if needed
       await markSectionInstalled(session.shop, session.accessToken, "2024-10", sectionId);
 
       return json({ 
           success: true, 
-          message: "Redirecting to Theme Editor...",
-          method: "deep_link",
-          details: "Section activation is handled via Theme Editor deep link."
+          message: "Section Activated Successfully",
+          method: "metafield_update",
+          details: "Section has been marked as active. It will now be visible in the Theme Editor."
       });
 
     } else if (requestAction === "deactivate") {
       // FOR THEME APP EXTENSIONS: We do NOT delete files.
-      // We just redirect to the theme editor so user can remove it.
+      // We should probably remove it from the installed list.
+      
+      console.log(`Deactivating section: ${sectionId} for shop: ${session.shop}`);
+
+      await unmarkSectionInstalled(session.shop, session.accessToken, "2024-10", sectionId);
       
       return json({ 
         success: true, 
-        message: "Redirecting to Theme Editor...", 
-        method: "deep_link",
-        details: "Section removal is handled via Theme Editor." 
+        message: "Section Deactivated Successfully", 
+        method: "metafield_update",
+        details: "Section has been marked as inactive." 
       });
     }
 

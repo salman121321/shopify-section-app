@@ -80,6 +80,9 @@
 }
 {% endschema %}
 
+{% assign installed_sections = app.metafields.shopi_section.installed_sections %}
+{% if installed_sections contains '3d-carousel-pro' %}
+
 <div style="background-color: {{ section.settings.background_color }}; position: relative; overflow: hidden; padding: 40px 0;">
   <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: {{ section.settings.bg_overlay_color }}; opacity: {{ section.settings.bg_overlay_opacity | divided_by: 100.0 }}; pointer-events: none;"></div>
   
@@ -102,3 +105,10 @@
     {% endfor %}
   </div>
 </div>
+
+{% else %}
+  <div style="padding: 20px; background: #fff3cd; color: #856404; border: 1px solid #ffeeba; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+    <div style="font-weight: bold; margin-bottom: 8px;">⚠️ Section Not Activated</div>
+    <p style="margin: 0;">Please activate <strong>3D Carousel Pro</strong> in the <strong>Shopi Section App</strong> to use this section on your store.</p>
+  </div>
+{% endif %}

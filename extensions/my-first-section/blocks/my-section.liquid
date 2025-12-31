@@ -31,7 +31,17 @@
 }
 {% endschema %}
 
+{% assign installed_sections = app.metafields.shopi_section.installed_sections %}
+{% if installed_sections contains 'my-custom-section' %}
+
 <div style="background-color: {{ section.settings.background_color }}; color: {{ section.settings.text_color }}; padding: 40px; text-align: center;">
   <h2 style="margin: 0; font-size: 24px;">{{ section.settings.heading }}</h2>
   <p style="margin-top: 10px;">This section is powered by your Shopify App!</p>
 </div>
+
+{% else %}
+  <div style="padding: 20px; background: #fff3cd; color: #856404; border: 1px solid #ffeeba; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+    <div style="font-weight: bold; margin-bottom: 8px;">⚠️ Section Not Activated</div>
+    <p style="margin: 0;">Please activate <strong>My Custom Section</strong> in the <strong>Shopi Section App</strong> to use this section on your store.</p>
+  </div>
+{% endif %}
