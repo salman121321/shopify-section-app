@@ -223,30 +223,9 @@ export const action = async ({ request }) => {
 
   // Map section IDs to their Liquid templates
   const sectionTemplates = {
-    "3d-carousel-pro": {
-        filename: "sections/shopi-3d-carousel-pro.liquid",
+    "3d-carousel": {
+        filename: "extensions/my-first-section/blocks/3d-carousel.liquid", // Path is informational for activation check
         content: THREE_D_CAROUSEL_LIQUID
-    },
-    "product-collection-grid": {
-        filename: "app/assets/sections/product-collection-grid.liquid",
-        content: "" // Content is handled via file upload/deployment, this key is just for activation validation
-    },
-    "my-custom-section": {
-        filename: "sections/my-custom-section.liquid",
-        content: `{% schema %}
-        {
-          "name": "My Custom Section",
-          "settings": [
-             { "type": "text", "id": "heading", "label": "Heading", "default": "Hello World" }
-          ],
-          "presets": [{ 
-              "name": "My Custom Section",
-              "category": "Shopi Section"
-          }]
-        }
-        {% endschema %}
-        <h2>{{ section.settings.heading }}</h2>
-        `
     }
   };
 

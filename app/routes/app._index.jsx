@@ -186,7 +186,6 @@ export default function Index() {
   const [viewMode, setViewMode] = useState("desktop"); // desktop | mobile
   
   // Theme Selection State
-  const [themeModalOpen, setThemeModalOpen] = useState(false);
   const [selectedSectionForInstall, setSelectedSectionForInstall] = useState(null);
   const [selectedThemeId, setSelectedThemeId] = useState("");
   const [themes, setThemes] = useState([]);
@@ -243,7 +242,9 @@ export default function Index() {
                 // If deep link method, redirect user to theme editor
                 // Construct Deep Link: https://{shop}/admin/themes/{themeId}/editor?context=apps&template=index&activateAppId={uuid}/{handle}
                 const shopName = shop.replace(".myshopify.com", "");
+                // Ensure we use the theme ID used for activation (should be selectedThemeId or main theme)
                 const cleanThemeId = String(selectedThemeId).replace(/\D/g, "");
+                
                 // Replace with your actual Extension UUID and Handle from shopify.extension.toml
                 const extensionUuid = "ec818bbb-e7fe-9b80-8c63-162866afa4028167e78f"; 
                 const extensionHandle = "shopi-section"; 
@@ -259,7 +260,6 @@ export default function Index() {
                 const method = sectionFetcher.data.method || "unknown";
                 setToastMessage(`✓ ${sectionFetcher.data.message} (Method: ${method})`);
             }
-            setThemeModalOpen(false);
             // Optimistically update installed status
             if (selectedSectionForInstall) {
                  setInstalledSectionIds(prev => {
@@ -297,56 +297,29 @@ export default function Index() {
 
   const handleInstallClick = (section) => {
     setSelectedSectionForInstall(section);
-    setThemeModalOpen(true);
-  };
-
-  const handleConfirmInstall = () => {
-    if (!selectedThemeId || !selectedSectionForInstall) return;
-
+    
+    // Auto-select main theme
+    const mainTheme = themes.find(t => t.role === 'main') || themes[0];
+    
+    if (!mainTheme) {
+        setToastMessage("❌ No themes found. Please ensure you have a theme installed.");
+        return;
+    }
+    
+    const themeId = mainTheme.id.toString();
+    setSelectedThemeId(themeId);
+    
+    setToastMessage("Activating section...");
+    
     sectionFetcher.submit(
       {
         action: "activate",
-        themeId: selectedThemeId,
-        sectionId: selectedSectionForInstall.id
+        themeId: themeId,
+        sectionId: section.id
       },
       { method: "post", action: "/api/section" }
     );
   };
-
-  const handleTestUpload = () => {
-    if (!selectedThemeId) {
-      setToastMessage("Please select a theme first");
-      return;
-    }
-
-    console.log("Testing upload with theme:", selectedThemeId);
-    testFetcher.submit(
-      { themeId: selectedThemeId },
-      { method: "post", action: "/api/test-upload" }
-    );
-  };
-
-  // Handle test upload response
-  useEffect(() => {
-    if (testFetcher.state === "idle" && testFetcher.data) {
-      console.log("=== TEST RESULTS ===");
-      console.log("Full Response:", testFetcher.data);
-
-      if (testFetcher.data.results) {
-        console.log("\nTest 1 (Fetch Theme):", testFetcher.data.results.test1);
-        console.log("Test 2 (Read Asset):", testFetcher.data.results.test2);
-        console.log("Test 3 (Upload):", testFetcher.data.results.test3);
-        console.log("\nSummary:", testFetcher.data.results.summary);
-      }
-
-      if (testFetcher.data.success) {
-        setToastMessage("✅ All tests passed! Upload works!");
-      } else {
-        const summary = testFetcher.data.results?.summary || testFetcher.data.message;
-        setToastMessage(`${summary} (Check console for details)`);
-      }
-    }
-  }, [testFetcher.state, testFetcher.data]);
 
   const categories = [
     { id: "all", label: "All Sections", icon: HomeIcon },
@@ -677,109 +650,7 @@ export default function Index() {
         </Modal.Section>
       </Modal> */}
 
-      {/* Theme Selection Modal */}
-      <Modal
-        open={themeModalOpen}
-        onClose={() => setThemeModalOpen(false)}
-        title={`Activate ${selectedSectionForInstall?.title}`}
-      >
-        <Modal.Section>
-            <BlockStack gap="400">
-                <Text as="p">
-                    Select the theme where you want to add this section. 
-                    The section will be automatically added and activated in the selected theme.
-                </Text>
-                
-                {themesFetcher.state === "loading" ? (
-                    <Box display="flex" justifyContent="center" padding="400">
-                        <Spinner size="large" />
-                    </Box>
-                ) : themes.length === 0 ? (
-                    <BlockStack gap="200">
-                        <Banner tone="warning">
-                            {themesFetcher.data?.error ? (
-                              <>
-                                <p>Error: {themesFetcher.data.error}</p>
-                                {(themesFetcher.data.error.includes("Access denied") || themesFetcher.data.error.includes("scope")) && (
-                                   <div style={{ marginTop: '0.5rem' }}>
-                                      <Button 
-                                        variant="primary"
-                                        onClick={() => {
-                                            // Force re-auth
-                                            const shopDomain = new URLSearchParams(window.location.search).get("shop") || shop;
-                                            // Redirect to auth endpoint
-                                            window.open(`/auth/login?shop=${shopDomain}`, "_top");
-                                        }}
-                                      >
-                                        Grant Permissions
-                                      </Button>
-                                      <p style={{ marginTop: '0.25rem' }}><small>App needs permission to read themes.</small></p>
-                                   </div>
-                                )}
-                                {themesFetcher.data.details && <p><small>{themesFetcher.data.details}</small></p>}
-                              </>
-                            ) : (
-                              "No themes found or failed to load."
-                            )}
-                        </Banner>
-                        <Button onClick={() => themesFetcher.load("/api/themes")}>Retry Loading Themes</Button>
-                    </BlockStack>
-                ) : (
-                    <Select
-                        label="Select Theme"
-                        options={themeOptions}
-                        value={selectedThemeId}
-                        onChange={setSelectedThemeId}
-                    />
-                )}
-            </BlockStack>
-        </Modal.Section>
-        <Modal.Section>
-            {sectionFetcher.data?.error && (
-                <Box paddingBlockEnd="400">
-                    <Banner tone="critical">
-                        <div style={{ whiteSpace: 'pre-wrap', fontFamily: 'monospace', fontSize: '13px' }}>
-                            {sectionFetcher.data.error}
-                        </div>
-                        {sectionFetcher.data.technicalDetails && sectionFetcher.data.technicalDetails !== sectionFetcher.data.error && (
-                            <details style={{ marginTop: '12px' }}>
-                                <summary style={{ cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>🔧 Technical Details (for debugging)</summary>
-                                <pre style={{ fontSize: '11px', marginTop: '8px', padding: '12px', background: '#f6f6f7', borderRadius: '4px', overflow: 'auto', maxHeight: '200px' }}>
-                                    {sectionFetcher.data.technicalDetails}
-                                </pre>
-                            </details>
-                        )}
-                    </Banner>
-                </Box>
-            )}
-            <InlineStack align="end" gap="200">
-                <Button onClick={() => setThemeModalOpen(false)}>Cancel</Button>
-                {/* Test Upload Button Removed as per request (Permissions Issue) */}
-                {sectionFetcher.data?.error && (
-                    <Button onClick={handleConfirmInstall} loading={sectionFetcher.state === "submitting"}>
-                        Retry
-                    </Button>
-                )}
-                {selectedSectionForInstall && installedSectionIds.includes(selectedSectionForInstall.id) ? (
-                    <Button
-                        disabled
-                        variant="secondary"
-                    >
-                        Already Activated
-                    </Button>
-                ) : (
-                    <Button
-                        variant="primary"
-                        onClick={handleConfirmInstall}
-                        loading={sectionFetcher.state === "submitting"}
-                        disabled={!selectedThemeId || themes.length === 0}
-                    >
-                        Add & Activate
-                    </Button>
-                )}
-            </InlineStack>
-        </Modal.Section>
-      </Modal>
+
 
       {/* Full Screen Overlay */}
       {isFullScreen && previewModal.section && (
