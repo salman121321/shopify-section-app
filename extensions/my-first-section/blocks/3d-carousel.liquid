@@ -268,7 +268,7 @@
     {% endif %}
 
     {% assign collection = collections[section.settings.collection] %}
-    {% assign limit = section.settings.product_limit %}
+    {% assign limit = section.settings.product_limit | default: 8 %}
     
     <!-- Robust Check for Collection -->
     {% if section.settings.collection == blank %}
@@ -279,13 +279,15 @@
         {% assign show_placeholder = false %}
     {% endif %}
 
-    <!-- Debug Info (Hidden by default, visible if needed for troubleshooting) -->
-    <div style="display:none; color: red; text-align: center; padding: 10px; background: #fff; border: 1px solid red; margin-bottom: 20px;">
-       <strong>DEBUG INFO:</strong><br>
-       Collection Handle: {{ section.settings.collection }} <br>
-       Collection Object: {{ collection.title }} <br>
-       Product Count: {{ collection.products_count }} <br>
-       Show Placeholder: {{ show_placeholder }}
+    <!-- Debug Info (Visible for troubleshooting) -->
+    <div style="background: #fff; border: 2px solid red; padding: 10px; margin: 20px; text-align: center; color: red;">
+       <strong>DEBUG MODE</strong><br>
+       Settings Collection Handle: "{{ section.settings.collection }}"<br>
+       Limit: {{ limit }}<br>
+       Show Placeholder: {{ show_placeholder }}<br>
+       {% if section.settings.collection == blank %}
+         <span>⚠️ No collection selected. Please open the Block Settings and choose a collection.</span>
+       {% endif %}
     </div>
 
     <!-- Explicit Message if Collection is Selected but Empty -->
