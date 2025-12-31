@@ -284,27 +284,39 @@ export const action = async ({ request }) => {
                 contentToUpload = await fs.readFile(filePath, "utf-8");
             } catch (readErr) {
                 console.error(`Failed to read file ${sectionData.filename}:`, readErr);
-                throw new Error(`Failed to read section file: ${readErr.message}`);
+                // Return a clear error if the file cannot be read
+                return json({ 
+                    success: false, 
+                    error: `Server Error: Failed to read section file from ${sectionData.filename}. Please contact support.` 
+                }, { status: 500 });
             }
         }
 
         if (contentToUpload) {
             if (!themeId) {
-                throw new Error("Theme ID is required for section installation.");
+                return json({ success: false, error: "Theme ID is required for section installation." }, { status: 400 });
             }
 
             console.log(`Uploading asset to theme ${themeId}...`);
-            const asset = new admin.rest.resources.Asset({ session: session });
-            asset.theme_id = themeId;
-            
-            // Determine the target key (always in sections/ folder for sections)
-            // We use the basename of the source file
-            const fileName = sectionData.filename.split('/').pop(); // e.g., product-collection-grid.liquid
-            asset.key = `sections/${fileName}`;
-            asset.value = contentToUpload;
-            
-            await asset.save({ update: true });
-            console.log(`Successfully uploaded ${asset.key} to theme ${themeId}`);
+            try {
+                const asset = new admin.rest.resources.Asset({ session: session });
+                asset.theme_id = themeId;
+                
+                // Determine the target key (always in sections/ folder for sections)
+                // We use the basename of the source file
+                const fileName = sectionData.filename.split('/').pop(); // e.g., product-collection-grid.liquid
+                asset.key = `sections/${fileName}`;
+                asset.value = contentToUpload;
+                
+                await asset.save({ update: true });
+                console.log(`Successfully uploaded ${asset.key} to theme ${themeId}`);
+            } catch (assetError) {
+                console.error("Asset API Error:", assetError);
+                return json({ 
+                    success: false, 
+                    error: `Shopify Error: Failed to upload section file. ${assetError.message || "Please ensure the app has 'write_themes' permission."}` 
+                }, { status: 500 });
+            }
         }
 
         await markSectionInstalled(session.shop, session.accessToken, "2024-10", sectionId);
