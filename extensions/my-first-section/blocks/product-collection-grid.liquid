@@ -175,205 +175,6 @@
       "label": "Section Background Color",
       "default": "#ffffff"
     }
-  ],
-  "blocks": [
-    {
-      "type": "collection",
-      "name": "Collection Item",
-      "settings": [
-        {
-          "type": "collection",
-          "id": "collection",
-          "label": "Select Collection"
-        },
-        {
-          "type": "text",
-          "id": "custom_label",
-          "label": "Custom Label",
-          "info": "Leave empty to use collection title"
-        },
-        {
-          "type": "header",
-          "content": "Badge Settings"
-        },
-        {
-          "type": "text",
-          "id": "badge_text",
-          "label": "Badge Text",
-          "info": "Leave empty to hide badge"
-        },
-        {
-          "type": "color",
-          "id": "badge_bg_color",
-          "label": "Badge Background Color",
-          "default": "#ff0000"
-        },
-        {
-          "type": "color",
-          "id": "badge_text_color",
-          "label": "Badge Text Color",
-          "default": "#ffffff"
-        },
-        {
-          "type": "text",
-          "id": "main_price",
-          "label": "Main Price",
-          "info": "Enter price to display (e.g., $99.00)"
-        },
-        {
-          "type": "image_picker",
-          "id": "custom_image",
-          "label": "Custom Image",
-          "info": "Override collection featured image"
-        },
-        {
-          "type": "image_picker",
-          "id": "hover_image",
-          "label": "Hover Image",
-          "info": "Image to show on hover"
-        },
-        {
-          "type": "checkbox",
-          "id": "show_product_count",
-          "label": "Show Product Count",
-          "default": false
-        },
-        {
-          "type": "header",
-          "content": "Image Overlay"
-        },
-        {
-          "type": "checkbox",
-          "id": "show_overlay",
-          "label": "Show Image Overlay",
-          "default": false
-        },
-        {
-          "type": "color",
-          "id": "overlay_color",
-          "label": "Overlay Color",
-          "default": "#000000"
-        },
-        {
-          "type": "range",
-          "id": "overlay_opacity",
-          "min": 0,
-          "max": 100,
-          "step": 5,
-          "unit": "%",
-          "label": "Overlay Opacity",
-          "default": 20
-        }
-      ]
-    },
-    {
-      "type": "product",
-      "name": "Product Item",
-      "settings": [
-        {
-          "type": "product",
-          "id": "product",
-          "label": "Select Product"
-        },
-        {
-          "type": "text",
-          "id": "custom_label",
-          "label": "Custom Label",
-          "info": "Leave empty to use product title"
-        },
-        {
-          "type": "header",
-          "content": "Badge Settings"
-        },
-        {
-          "type": "text",
-          "id": "badge_text",
-          "label": "Badge Text",
-          "info": "Leave empty to hide badge"
-        },
-        {
-          "type": "color",
-          "id": "badge_bg_color",
-          "label": "Badge Background Color",
-          "default": "#ff0000"
-        },
-        {
-          "type": "color",
-          "id": "badge_text_color",
-          "label": "Badge Text Color",
-          "default": "#ffffff"
-        },
-        {
-          "type": "text",
-          "id": "main_price",
-          "label": "Custom Price",
-          "info": "Leave empty to use product price"
-        },
-        {
-          "type": "image_picker",
-          "id": "custom_image",
-          "label": "Custom Main Image",
-          "info": "Override product featured image"
-        },
-        {
-          "type": "image_picker",
-          "id": "hover_image",
-          "label": "Custom Hover Image",
-          "info": "Leave empty to use product's 2nd image"
-        },
-        {
-          "type": "checkbox",
-          "id": "show_product_count",
-          "label": "Show Variants Count",
-          "default": false
-        },
-        {
-          "type": "header",
-          "content": "Image Overlay"
-        },
-        {
-          "type": "checkbox",
-          "id": "show_overlay",
-          "label": "Show Image Overlay",
-          "default": false
-        },
-        {
-          "type": "color",
-          "id": "overlay_color",
-          "label": "Overlay Color",
-          "default": "#000000"
-        },
-        {
-          "type": "range",
-          "id": "overlay_opacity",
-          "min": 0,
-          "max": 100,
-          "step": 5,
-          "unit": "%",
-          "label": "Overlay Opacity",
-          "default": 20
-        }
-      ]
-    }
-  ],
-  "presets": [
-    {
-      "name": "Collection Grid",
-      "settings": {
-        "main_heading": "Shop By Category"
-      },
-      "blocks": [
-        {
-          "type": "collection"
-        },
-        {
-          "type": "collection"
-        },
-        {
-          "type": "collection"
-        }
-      ]
-    }
   ]
 }
 {% endschema %}
@@ -409,126 +210,35 @@
       grid-template-columns: repeat({{ section.settings.columns_desktop }}, 1fr);
       gap: {{ section.settings.grid_gap }}px;
     ">
-      {%- comment -%} Determine source: Blocks or Quick Collection List {%- endcomment -%}
-      {%- assign use_blocks = false -%}
-      {%- if section.blocks.size > 0 -%}
-        {%- assign use_blocks = true -%}
-      {%- endif -%}
-
-      {%- if use_blocks -%}
-        {%- for block in section.blocks -%}
-          <div class="grid-item" {{ block.shopify_attributes }}>
-            {%- case block.type -%}
-              {%- when 'collection' -%}
-                {%- assign collection = block.settings.collection -%}
-                {%- assign image = block.settings.custom_image | default: collection.featured_image -%}
-                {%- assign title = block.settings.custom_label | default: collection.title -%}
-                {%- assign url = collection.url -%}
-                
-                <a href="{{ url }}" class="collection-card">
-                  <div class="image-wrapper" style="position: relative; overflow: hidden; border-radius: 8px;">
-                     {%- if image != blank -%}
-                        <img src="{{ image | image_url: width: 600 }}" alt="{{ title }}" loading="lazy" style="width: 100%; height: auto; display: block; transition: transform 0.3s ease;">
-                     {%- else -%}
-                        {{ 'collection-1' | placeholder_svg_tag: 'placeholder-svg' }}
-                     {%- endif -%}
-                     
-                     {%- if block.settings.show_overlay -%}
-                        <div class="overlay" style="
-                           position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-                           background-color: {{ block.settings.overlay_color }};
-                           opacity: {{ block.settings.overlay_opacity | divided_by: 100.0 }};
-                           pointer-events: none;
-                        "></div>
-                     {%- endif -%}
-
-                     {%- if block.settings.badge_text != blank -%}
-                        <span class="badge" style="
-                           position: absolute; top: 10px; left: 10px;
-                           background-color: {{ block.settings.badge_bg_color }};
-                           color: {{ block.settings.badge_text_color }};
-                           padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold;
-                        ">
-                           {{ block.settings.badge_text }}
-                        </span>
-                     {%- endif -%}
-                  </div>
-                  <div class="content" style="margin-top: 10px; text-align: center;">
-                     <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #333;">{{ title }}</h3>
-                     {%- if block.settings.show_product_count -%}
-                        <p style="margin: 0; font-size: 14px; color: #666;">{{ collection.all_products_count }} products</p>
-                     {%- endif -%}
-                     {%- if block.settings.main_price != blank -%}
-                        <p style="margin: 5px 0 0; font-weight: bold; color: {{ section.settings.main_heading_color }};">{{ block.settings.main_price }}</p>
-                     {%- endif -%}
-                  </div>
-                </a>
-
-              {%- when 'product' -%}
-                 {%- assign product = block.settings.product -%}
-                 {%- assign image = block.settings.custom_image | default: product.featured_image -%}
-                 {%- assign title = block.settings.custom_label | default: product.title -%}
-                 {%- assign url = product.url -%}
-                 
-                 <a href="{{ url }}" class="product-card">
-                   <div class="image-wrapper" style="position: relative; overflow: hidden; border-radius: 8px;">
-                      {%- if image != blank -%}
-                         <img src="{{ image | image_url: width: 600 }}" alt="{{ title }}" loading="lazy" style="width: 100%; height: auto; display: block;">
-                      {%- else -%}
-                         {{ 'product-1' | placeholder_svg_tag: 'placeholder-svg' }}
-                      {%- endif -%}
-
-                      {%- if block.settings.show_overlay -%}
-                        <div class="overlay" style="
-                           position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-                           background-color: {{ block.settings.overlay_color }};
-                           opacity: {{ block.settings.overlay_opacity | divided_by: 100.0 }};
-                        "></div>
-                      {%- endif -%}
-                   </div>
-                   <div class="content" style="margin-top: 10px; text-align: center;">
-                      <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #333;">{{ title }}</h3>
-                      {%- if block.settings.main_price != blank -%}
-                         <p style="margin: 5px 0 0; font-weight: bold;">{{ block.settings.main_price }}</p>
-                      {%- else -%}
-                         <p style="margin: 5px 0 0; font-weight: bold;">{{ product.price | money }}</p>
-                      {%- endif -%}
-                   </div>
-                 </a>
-            {%- endcase -%}
-          </div>
-        {%- endfor -%}
+      {%- comment -%} Determine source: Quick Collection List {%- endcomment -%}
+      {%- for collection in section.settings.collection_list -%}
+         <div class="grid-item">
+            <a href="{{ collection.url }}" class="collection-card">
+               <div class="image-wrapper" style="position: relative; overflow: hidden; border-radius: 8px;">
+                  {%- if collection.featured_image != blank -%}
+                     <img src="{{ collection.featured_image | image_url: width: 600 }}" alt="{{ collection.title }}" loading="lazy" style="width: 100%; height: auto; display: block;">
+                  {%- else -%}
+                     {{ 'collection-1' | placeholder_svg_tag: 'placeholder-svg' }}
+                  {%- endif -%}
+               </div>
+               <div class="content" style="margin-top: 10px; text-align: center;">
+                  <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #333;">{{ collection.title }}</h3>
+               </div>
+            </a>
+         </div>
       {%- else -%}
-        {%- comment -%} Fallback to Quick Collection List {%- endcomment -%}
-        {%- for collection in section.settings.collection_list -%}
+         {%- comment -%} Empty State {%- endcomment -%}
+         {%- for i in (1..4) -%}
            <div class="grid-item">
-              <a href="{{ collection.url }}" class="collection-card">
-                 <div class="image-wrapper" style="position: relative; overflow: hidden; border-radius: 8px;">
-                    {%- if collection.featured_image != blank -%}
-                       <img src="{{ collection.featured_image | image_url: width: 600 }}" alt="{{ collection.title }}" loading="lazy" style="width: 100%; height: auto; display: block;">
-                    {%- else -%}
-                       {{ 'collection-1' | placeholder_svg_tag: 'placeholder-svg' }}
-                    {%- endif -%}
-                 </div>
-                 <div class="content" style="margin-top: 10px; text-align: center;">
-                    <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #333;">{{ collection.title }}</h3>
-                 </div>
-              </a>
+              <div class="image-wrapper" style="background: #f4f4f4; border-radius: 8px; overflow: hidden;">
+                 {{ 'image' | placeholder_svg_tag: 'placeholder-svg' }}
+              </div>
+              <div class="content" style="margin-top: 10px; text-align: center;">
+                 <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #333;">Example Item {{ i }}</h3>
+              </div>
            </div>
-        {%- else -%}
-           {%- comment -%} Empty State {%- endcomment -%}
-           {%- for i in (1..4) -%}
-             <div class="grid-item">
-                <div class="image-wrapper" style="background: #f4f4f4; border-radius: 8px; overflow: hidden;">
-                   {{ 'image' | placeholder_svg_tag: 'placeholder-svg' }}
-                </div>
-                <div class="content" style="margin-top: 10px; text-align: center;">
-                   <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #333;">Example Item {{ i }}</h3>
-                </div>
-             </div>
-           {%- endfor -%}
-        {%- endfor -%}
-      {%- endif -%}
+         {%- endfor -%}
+      {%- endfor -%}
     </div>
   </div>
 </div>
