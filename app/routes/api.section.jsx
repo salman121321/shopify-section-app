@@ -1,6 +1,5 @@
 import { json } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
-import prisma from "../db.server";
 import { THREE_D_CAROUSEL_LIQUID } from "../templates/three-d-carousel";
 
 // Helper to mark section as installed in Shop Metafields
