@@ -198,6 +198,8 @@ export default function Index() {
   const [installedSectionIds, setInstalledSectionIds] = useState([]);
   const [toastMessage, setToastMessage] = useState(null);
   const [showReauthModal, setShowReauthModal] = useState(false);
+  const [blocksModalOpen, setBlocksModalOpen] = useState(false);
+  const [selectedSectionForBlocks, setSelectedSectionForBlocks] = useState(null);
 
   // Load themes on mount
   useEffect(() => {
@@ -396,6 +398,215 @@ export default function Index() {
         subheading_size: 16
       },
       renderPreview: (settings, compact) => <ThreeDCarouselPreview settings={settings} compact={compact} />
+    },
+    {
+      id: "product-collection-grid",
+      title: "Collection Grid",
+      description: "A customizable grid layout for collections and products.",
+      category: "products",
+      status: "active",
+      defaultSettings: {
+        heading: "Shop By Category"
+      },
+      blocksSchema: [
+        {
+          "type": "collection",
+          "name": "Collection Item",
+          "settings": [
+            {
+              "type": "collection",
+              "id": "collection",
+              "label": "Select Collection"
+            },
+            {
+              "type": "text",
+              "id": "custom_label",
+              "label": "Custom Label",
+              "info": "Leave empty to use collection title"
+            },
+            {
+              "type": "header",
+              "content": "Badge Settings"
+            },
+            {
+              "type": "text",
+              "id": "badge_text",
+              "label": "Badge Text",
+              "info": "Leave empty to hide badge"
+            },
+            {
+              "type": "color",
+              "id": "badge_bg_color",
+              "label": "Badge Background Color",
+              "default": "#ff0000"
+            },
+            {
+              "type": "color",
+              "id": "badge_text_color",
+              "label": "Badge Text Color",
+              "default": "#ffffff"
+            },
+            {
+              "type": "text",
+              "id": "main_price",
+              "label": "Main Price",
+              "info": "Enter price to display (e.g., $99.00)"
+            },
+            {
+              "type": "image_picker",
+              "id": "custom_image",
+              "label": "Custom Image",
+              "info": "Override collection featured image"
+            },
+            {
+              "type": "image_picker",
+              "id": "hover_image",
+              "label": "Hover Image",
+              "info": "Image to show on hover"
+            },
+            {
+              "type": "checkbox",
+              "id": "show_product_count",
+              "label": "Show Product Count",
+              "default": false
+            },
+            {
+              "type": "header",
+              "content": "Image Overlay"
+            },
+            {
+              "type": "checkbox",
+              "id": "show_overlay",
+              "label": "Show Image Overlay",
+              "default": false
+            },
+            {
+              "type": "color",
+              "id": "overlay_color",
+              "label": "Overlay Color",
+              "default": "#000000"
+            },
+            {
+              "type": "range",
+              "id": "overlay_opacity",
+              "min": 0,
+              "max": 100,
+              "step": 5,
+              "unit": "%",
+              "label": "Overlay Opacity",
+              "default": 20
+            }
+          ]
+        },
+        {
+          "type": "product",
+          "name": "Product Item",
+          "settings": [
+            {
+              "type": "product",
+              "id": "product",
+              "label": "Select Product"
+            },
+            {
+              "type": "text",
+              "id": "custom_label",
+              "label": "Custom Label",
+              "info": "Leave empty to use product title"
+            },
+            {
+              "type": "header",
+              "content": "Badge Settings"
+            },
+            {
+              "type": "text",
+              "id": "badge_text",
+              "label": "Badge Text",
+              "info": "Leave empty to hide badge"
+            },
+            {
+              "type": "color",
+              "id": "badge_bg_color",
+              "label": "Badge Background Color",
+              "default": "#ff0000"
+            },
+            {
+              "type": "color",
+              "id": "badge_text_color",
+              "label": "Badge Text Color",
+              "default": "#ffffff"
+            },
+            {
+              "type": "text",
+              "id": "main_price",
+              "label": "Custom Price",
+              "info": "Leave empty to use product price"
+            },
+            {
+              "type": "image_picker",
+              "id": "custom_image",
+              "label": "Custom Main Image",
+              "info": "Override product featured image"
+            },
+            {
+              "type": "image_picker",
+              "id": "hover_image",
+              "label": "Custom Hover Image",
+              "info": "Leave empty to use product's 2nd image"
+            },
+            {
+              "type": "checkbox",
+              "id": "show_product_count",
+              "label": "Show Variants Count",
+              "default": false
+            },
+            {
+              "type": "header",
+              "content": "Image Overlay"
+            },
+            {
+              "type": "checkbox",
+              "id": "show_overlay",
+              "label": "Show Image Overlay",
+              "default": false
+            },
+            {
+              "type": "color",
+              "id": "overlay_color",
+              "label": "Overlay Color",
+              "default": "#000000"
+            },
+            {
+              "type": "range",
+              "id": "overlay_opacity",
+              "min": 0,
+              "max": 100,
+              "step": 5,
+              "unit": "%",
+              "label": "Overlay Opacity",
+              "default": 20
+            }
+          ]
+        }
+      ],
+      renderPreview: (settings, compact) => (
+        <div style={{
+            padding: '20px', 
+            textAlign: 'center', 
+            background: '#f5f1ed', 
+            height: '100%', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            justifyContent: 'center'
+        }}>
+            <h3 style={{margin: '0 0 10px 0', color: '#333'}}>Shop By Category</h3>
+            <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', opacity: 0.6}}>
+                <div style={{background: '#ccc', height: '60px'}}></div>
+                <div style={{background: '#ccc', height: '60px'}}></div>
+                <div style={{background: '#ccc', height: '60px'}}></div>
+                <div style={{background: '#ccc', height: '60px'}}></div>
+            </div>
+        </div>
+      )
     }
   ];
 
@@ -601,6 +812,19 @@ export default function Index() {
                                     Preview
                                 </Button>
                              </InlineStack>
+
+                             {section.blocksSchema && (
+                                <Button
+                                   fullWidth
+                                   icon={ViewIcon}
+                                   onClick={() => {
+                                      setSelectedSectionForBlocks(section);
+                                      setBlocksModalOpen(true);
+                                   }}
+                                >
+                                   Blocks
+                                </Button>
+                             )}
                            </BlockStack>
                          </Box>
                       </Card>
@@ -794,6 +1018,44 @@ export default function Index() {
                     </Button>
                 )}
             </InlineStack>
+        </Modal.Section>
+      </Modal>
+
+      {/* Blocks Modal */}
+      <Modal
+        open={blocksModalOpen}
+        onClose={() => setBlocksModalOpen(false)}
+        title={`Blocks for ${selectedSectionForBlocks?.title}`}
+        large
+      >
+        <Modal.Section>
+          <BlockStack gap="400">
+            <Text as="p">
+              Available Blocks Schema:
+            </Text>
+            {selectedSectionForBlocks?.blocksSchema ? (
+               <div style={{
+                  background: '#1e1e1e',
+                  color: '#d4d4d4',
+                  padding: '16px',
+                  borderRadius: '8px',
+                  overflow: 'auto',
+                  maxHeight: '500px',
+                  fontFamily: 'monospace'
+               }}>
+                  <pre style={{margin: 0, fontSize: '12px'}}>
+                     {JSON.stringify(selectedSectionForBlocks.blocksSchema, null, 2)}
+                  </pre>
+               </div>
+            ) : (
+               <Banner tone="warning">No blocks schema available.</Banner>
+            )}
+          </BlockStack>
+        </Modal.Section>
+        <Modal.Section>
+           <InlineStack align="end">
+              <Button onClick={() => setBlocksModalOpen(false)}>Close</Button>
+           </InlineStack>
         </Modal.Section>
       </Modal>
 
