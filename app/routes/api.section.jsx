@@ -125,10 +125,10 @@ export const action = async ({ request }) => {
       console.warn("⚠️ User might be missing write_themes, but we are proceeding with Deep Link.");
   }
 
-  const action = formData.get("action");
+  const requestAction = formData.get("action");
   const themeId = formData.get("themeId");
 
-  console.log("Action:", action);
+  console.log("Action:", requestAction);
   console.log("Theme ID:", themeId);
 
   if (!themeId) {
