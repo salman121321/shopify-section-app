@@ -70,21 +70,11 @@
       "label": "Overlay Opacity",
       "default": 0
     }
-  ],
-  "presets": [
-    {
-      "name": "3D Carousel Pro",
-      "category": "Shopi Section"
-    }
   ]
 }
 {% endschema %}
 
 {% assign installed_sections = shop.metafields.shopi_section.installed_sections.value %}
-<div style="background: #000; color: #fff; padding: 5px; font-size: 10px; text-align: left;">
-  DEBUG: {{ shop.metafields.shopi_section.installed_sections.value | json }}
-  <br>Looking for: 3d-carousel-pro
-</div>
 
 {% if installed_sections contains '3d-carousel-pro' %}
 

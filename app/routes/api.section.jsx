@@ -270,13 +270,12 @@ export const action = async ({ request }) => {
             details: "Section has been marked as active. It will now be visible in the Theme Editor."
         });
     } else if (requestAction === "deactivate") {
-        console.log(`Deactivating section: ${sectionId} for shop: ${session.shop}`);
-        await unmarkSectionInstalled(session.shop, session.accessToken, "2024-10", sectionId);
+        console.log(`Deactivation attempted for section: ${sectionId} (BLOCKED)`);
+        // Deactivation is disabled per user request
         return json({ 
-            success: true, 
-            message: "Section Deactivated Successfully", 
-            method: "metafield_update",
-            details: "Section has been marked as inactive." 
+            success: false, 
+            message: "Deactivation is not allowed.", 
+            details: "Once activated, sections cannot be deactivated from the app." 
         });
     }
 

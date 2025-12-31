@@ -778,25 +778,10 @@ export default function Index() {
                 )}
                 {selectedSectionForInstall && installedSectionIds.includes(selectedSectionForInstall.id) ? (
                     <Button
-                        tone="critical"
-                        variant="primary"
-                        onClick={() => {
-                            if (!selectedThemeId || !selectedSectionForInstall) return;
-                            sectionFetcher.submit(
-                                {
-                                    action: "deactivate",
-                                    themeId: selectedThemeId,
-                                    sectionId: selectedSectionForInstall.id
-                                },
-                                { method: "post", action: "/api/section" }
-                            );
-                            setThemeModalOpen(false);
-                            // Optimistic update
-                            setInstalledSectionIds(prev => prev.filter(id => id !== selectedSectionForInstall.id));
-                        }}
-                        loading={sectionFetcher.state === "submitting"}
+                        disabled
+                        variant="secondary"
                     >
-                        Deactivate
+                        Already Activated
                     </Button>
                 ) : (
                     <Button
