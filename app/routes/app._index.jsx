@@ -244,7 +244,21 @@ export default function Index() {
         }
 
         if (sectionFetcher.data.success) {
-            if (sectionFetcher.data.warning) {
+            if (sectionFetcher.data.method === "deep_link") {
+                // If deep link method, redirect user to theme editor
+                // Construct Deep Link: https://{shop}/admin/themes/{themeId}/editor?context=apps&template=index&activateAppId={uuid}/{handle}
+                const shopName = shop.replace(".myshopify.com", "");
+                const cleanThemeId = String(selectedThemeId).replace(/\D/g, "");
+                // Replace with your actual Extension UUID and Handle from shopify.extension.toml
+                const extensionUuid = "ec818bbb-e7fe-9b80-8c63-162866afa4028167e78f"; 
+                const extensionHandle = "shopi-section"; 
+                
+                const deepLink = `https://admin.shopify.com/store/${shopName}/themes/${cleanThemeId}/editor?context=apps&template=index&activateAppId=${extensionUuid}/${extensionHandle}`;
+                
+                console.log("Redirecting to Deep Link:", deepLink);
+                window.open(deepLink, "_blank");
+                setToastMessage("Redirecting to Theme Editor to activate section...");
+            } else if (sectionFetcher.data.warning) {
                 setToastMessage("Warning: " + sectionFetcher.data.message);
             } else {
                 const method = sectionFetcher.data.method || "unknown";

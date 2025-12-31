@@ -165,8 +165,26 @@ export const action = async ({ request }) => {
 
   try {
     if (action === "activate") {
+      // FOR THEME APP EXTENSIONS: We do NOT upload liquid files anymore.
+      // Instead, we just mark it as installed (for our own records) and redirect to the deep link.
+      
+      console.log(`Skipping asset upload for Theme App Extension: ${sectionData.filename}`);
+      
+      // Still mark as installed in our DB/Metafields if needed
+      await markSectionInstalled(session.shop, session.accessToken, "2024-10", sectionId);
+
+      return json({ 
+          success: true, 
+          message: "Redirecting to Theme Editor...",
+          method: "deep_link",
+          details: "Section activation is handled via Theme Editor deep link."
+      });
+
+      /* 
+      // LEGACY UPLOAD CODE (Disabled for Theme App Extensions)
       // 1. Upload the Liquid file to the theme
       console.log(`Uploading asset ${sectionData.filename} to theme ${themeId}`);
+
       console.log(`Content length: ${sectionData.content.length}`);
 
       // FALLBACK: Use direct fetch to bypass library issues
@@ -339,6 +357,18 @@ export const action = async ({ request }) => {
       }
 
       // METHOD 2: Direct REST API (Fallback)
+      /*
+      if (!successResponse) {
+        console.log("\n=== METHOD 2: Direct REST API (Fallback) ===");
+        // ... (Rest of legacy upload code)
+      }
+      */
+    }
+  } catch (e) {
+    console.error("Section Activation Failed:", e);
+    return json({ error: e.message, technicalDetails: e.stack }, { status: 500 });
+  }
+};
       if (!successResponse) {
           try {
               console.log("\n=== METHOD 2: Direct REST API ===");
@@ -511,8 +541,20 @@ export const action = async ({ request }) => {
       });
 
     } else if (action === "deactivate") {
+      // FOR THEME APP EXTENSIONS: We do NOT delete files.
+      // We just redirect to the theme editor so user can remove it.
+      
+      return json({ 
+        success: true, 
+        message: "Redirecting to Theme Editor...", 
+        method: "deep_link",
+        details: "Section removal is handled via Theme Editor." 
+      });
+
+      /*
       // Remove the Liquid file from the theme
       const shop = session.shop;
+
       const accessToken = session.accessToken;
       const apiVersion = "2024-04"; // Sync with activate action
       // Ensure strictly numeric ID
@@ -541,6 +583,7 @@ export const action = async ({ request }) => {
       }
 
       return json({ success: true, message: "Section removed successfully" });
+      */
     }
 
     return json({ error: "Invalid action" }, { status: 400 });
