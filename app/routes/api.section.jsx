@@ -235,7 +235,7 @@ export const action = async ({ request }) => {
         content: THREE_D_CAROUSEL_LIQUID
     },
     "product-collection-grid": {
-        filename: "extensions/my-first-section/blocks/product-collection-grid.liquid",
+        filename: "app/assets/sections/product-collection-grid.liquid",
         content: "" // Content is handled via file upload/deployment, this key is just for activation validation
     },
     "my-custom-section": {
