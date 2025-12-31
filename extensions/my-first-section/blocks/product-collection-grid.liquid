@@ -1,0 +1,420 @@
+{% schema %}
+{
+  "name": "Collection Grid",
+  "target": "section",
+  "class": "section-collection-grid",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Data Source"
+    },
+    {
+      "type": "paragraph",
+      "content": "To add collections, use the 'Collections List' setting below. For advanced customization (custom labels, badges), use the App Dashboard."
+    },
+    {
+      "type": "collection_list",
+      "id": "collection_list",
+      "label": "Collections",
+      "limit": 12
+    },
+    {
+      "type": "header",
+      "content": "Main Heading"
+    },
+    {
+      "type": "text",
+      "id": "main_heading",
+      "label": "Main Heading",
+      "default": "Shop By Category"
+    },
+    {
+      "type": "range",
+      "id": "main_heading_size",
+      "min": 16,
+      "max": 60,
+      "step": 2,
+      "unit": "px",
+      "label": "Main Heading Size",
+      "default": 32
+    },
+    {
+      "type": "color",
+      "id": "main_heading_color",
+      "label": "Main Heading Color",
+      "default": "#333333"
+    },
+    {
+      "type": "header",
+      "content": "Sub Heading"
+    },
+    {
+      "type": "textarea",
+      "id": "sub_heading",
+      "label": "Sub Heading",
+      "info": "Optional subheading text"
+    },
+    {
+      "type": "range",
+      "id": "sub_heading_size",
+      "min": 12,
+      "max": 24,
+      "step": 1,
+      "unit": "px",
+      "label": "Sub Heading Size",
+      "default": 16
+    },
+    {
+      "type": "color",
+      "id": "sub_heading_color",
+      "label": "Sub Heading Color",
+      "default": "#666666"
+    },
+    {
+      "type": "header",
+      "content": "Heading Settings"
+    },
+    {
+      "type": "select",
+      "id": "heading_alignment",
+      "label": "Heading Alignment",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ],
+      "default": "center"
+    },
+    {
+      "type": "range",
+      "id": "heading_spacing",
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "unit": "px",
+      "label": "Heading Bottom Spacing",
+      "default": 40
+    },
+    {
+      "type": "header",
+      "content": "Grid Layout"
+    },
+    {
+      "type": "range",
+      "id": "desktop_columns",
+      "min": 1,
+      "max": 6,
+      "step": 1,
+      "label": "Collections per Row (Desktop)",
+      "default": 4,
+      "info": "Number of collections to show in one row on desktop"
+    },
+    {
+      "type": "range",
+      "id": "mobile_columns",
+      "min": 1,
+      "max": 3,
+      "step": 1,
+      "label": "Collections per Row (Mobile)",
+      "default": 2,
+      "info": "Number of collections to show in one row on mobile"
+    },
+    {
+      "type": "range",
+      "id": "grid_gap",
+      "min": 0,
+      "max": 50,
+      "step": 5,
+      "unit": "px",
+      "label": "Grid Gap",
+      "default": 20
+    },
+    {
+      "type": "range",
+      "id": "image_ratio",
+      "min": 50,
+      "max": 150,
+      "step": 5,
+      "unit": "%",
+      "label": "Image Aspect Ratio",
+      "default": 100,
+      "info": "100% = Square, 75% = Landscape, 125% = Portrait"
+    },
+    {
+      "type": "header",
+      "content": "Collection Labels"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_labels",
+      "label": "Show Collection Labels",
+      "default": true
+    },
+    {
+      "type": "range",
+      "id": "label_size",
+      "min": 10,
+      "max": 24,
+      "step": 1,
+      "unit": "px",
+      "label": "Label Font Size",
+      "default": 13
+    },
+    {
+      "type": "color",
+      "id": "label_color",
+      "label": "Label Color",
+      "default": "#333333"
+    },
+    {
+      "type": "range",
+      "id": "letter_spacing",
+      "min": 0,
+      "max": 5,
+      "step": 0.5,
+      "unit": "px",
+      "label": "Letter Spacing",
+      "default": 1.5
+    },
+    {
+      "type": "range",
+      "id": "label_padding",
+      "min": 0,
+      "max": 40,
+      "step": 5,
+      "unit": "px",
+      "label": "Label Padding",
+      "default": 20
+    },
+    {
+      "type": "select",
+      "id": "label_alignment",
+      "label": "Label Alignment",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ],
+      "default": "left"
+    },
+    {
+      "type": "range",
+      "id": "count_size",
+      "min": 10,
+      "max": 20,
+      "step": 1,
+      "unit": "px",
+      "label": "Product Count Font Size",
+      "default": 12
+    },
+    {
+      "type": "color",
+      "id": "count_color",
+      "label": "Product Count Color",
+      "default": "#666666"
+    },
+    {
+      "type": "header",
+      "content": "Colors"
+    },
+    {
+      "type": "color",
+      "id": "section_bg_color",
+      "label": "Section Background Color",
+      "default": "#f5f1ed"
+    },
+    {
+      "type": "header",
+      "content": "Section Spacing"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "unit": "px",
+      "label": "Padding Top",
+      "default": 40
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "unit": "px",
+      "label": "Padding Bottom",
+      "default": 40
+    },
+    {
+      "type": "range",
+      "id": "padding_left",
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "unit": "px",
+      "label": "Padding Left",
+      "default": 0,
+      "info": "Left side spacing of section"
+    },
+    {
+      "type": "range",
+      "id": "padding_right",
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "unit": "px",
+      "label": "Padding Right",
+      "default": 0,
+      "info": "Right side spacing of section"
+    },
+    {
+      "type": "header",
+      "content": "Container Settings"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_container",
+      "label": "Enable Default Container",
+      "default": true,
+      "info": "Disable to use custom container width"
+    },
+    {
+      "type": "range",
+      "id": "container_width",
+      "min": 1000,
+      "max": 2000,
+      "step": 50,
+      "unit": "px",
+      "label": "Custom Container Width",
+      "default": 1400,
+      "info": "Only works when default container is disabled"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color Scheme",
+      "default": "scheme-1"
+    }
+  ]
+}
+{% endschema %}
+
+{% assign installed_sections = shop.metafields.shopi_section.installed_sections.value %}
+
+{% comment %} 
+  Check if section is installed (metafield check). 
+  Since this is an App Block, we technically don't need this check if the user added it via customizer,
+  but it helps keep consistency with the 'Activate' flow.
+{% endcomment %}
+{% if installed_sections contains 'product-collection-grid' or request.design_mode %}
+
+{{ 'section-collection-grid.css' | asset_url | stylesheet_tag }}
+
+<div class="collection-grid-wrapper-cu-co color-{{ section.settings.color_scheme }}" style="padding-top: {{ section.settings.padding_top }}px; padding-bottom: {{ section.settings.padding_bottom }}px; padding-left: {{ section.settings.padding_left }}px; padding-right: {{ section.settings.padding_right }}px; background-color: {{ section.settings.section_bg_color }};">
+  <div class="{% if section.settings.enable_container %}page-width-cu-co{% else %}custom-container-cu-co{% endif %}" {% unless section.settings.enable_container %}style="max-width: {{ section.settings.container_width }}px;"{% endunless %}>
+    
+    {% if section.settings.main_heading != blank or section.settings.sub_heading != blank %}
+      <div class="section-heading-cu-co" style="text-align: {{ section.settings.heading_alignment }}; margin-bottom: {{ section.settings.heading_spacing }}px;">
+        
+        {% if section.settings.main_heading != blank %}
+          <h2 class="main-heading-cu-co" style="font-size: {{ section.settings.main_heading_size }}px; color: {{ section.settings.main_heading_color }};">
+            {{ section.settings.main_heading }}
+          </h2>
+        {% endif %}
+
+        {% if section.settings.sub_heading != blank %}
+          <p class="sub-heading-cu-co" style="font-size: {{ section.settings.sub_heading_size }}px; color: {{ section.settings.sub_heading_color }};">
+            {{ section.settings.sub_heading }}
+          </p>
+        {% endif %}
+
+      </div>
+    {% endif %}
+
+    <div class="collection-grid-cu-co" style="gap: {{ section.settings.grid_gap }}px; --desktop-columns: {{ section.settings.desktop_columns }}; --mobile-columns: {{ section.settings.mobile_columns }};">
+      
+      {% comment %} 
+        Iterate over the Collection List setting.
+        This allows selecting multiple collections in the Theme Editor without nested blocks.
+      {% endcomment %}
+      {% for collection in section.settings.collection_list %}
+          <div class="collection-card-cu-co">
+            <a href="{{ collection.url }}" class="collection-link-cu-co">
+              
+              <div class="collection-image-container-cu-co" style="padding-top: {{ section.settings.image_ratio }}%;">
+                {% if collection.featured_image %}
+                  {{ collection.featured_image | image_url: width: 800 | image_tag:
+                    loading: 'lazy',
+                    class: 'collection-image-cu-co collection-image-main-cu-co',
+                    alt: collection.featured_image.alt | default: collection.title
+                  }}
+                {% else %}
+                  {{ 'collection-1' | placeholder_svg_tag: 'placeholder-svg-cu-co' }}
+                {% endif %}
+
+                {% comment %} Hover Image Logic (uses 2nd image or placeholder if not available) {% endcomment %}
+                {% if collection.products.first.featured_image %}
+                   {{ collection.products.first.featured_image | image_url: width: 800 | image_tag:
+                    loading: 'lazy',
+                    class: 'collection-image-cu-co collection-image-hover-cu-co',
+                    alt: collection.title
+                  }}
+                {% endif %}
+
+                <div class="image-overlay-cu-co" style="background: #000; opacity: 0.1;"></div>
+              </div>
+
+              {% if section.settings.show_labels %}
+                <div class="collection-label-cu-co" style="padding: {{ section.settings.label_padding }}px; text-align: {{ section.settings.label_alignment }};">
+                  <h3 class="collection-title-cu-co" style="font-size: {{ section.settings.label_size }}px; color: {{ section.settings.label_color }}; letter-spacing: {{ section.settings.letter_spacing }}px;">
+                    {{ collection.title }}
+                  </h3>
+                  
+                  <p class="collection-count-cu-co" style="font-size: {{ section.settings.count_size }}px; color: {{ section.settings.count_color }};">
+                    {{ collection.products_count }} Products
+                  </p>
+                </div>
+              {% endif %}
+            </a>
+          </div>
+      {% endfor %}
+
+      {% if section.settings.collection_list == blank %}
+         {% comment %} Empty State / Onboarding {% endcomment %}
+         {% for i in (1..4) %}
+            <div class="collection-card-cu-co">
+                <div class="collection-image-container-cu-co" style="padding-top: {{ section.settings.image_ratio }}%;">
+                   {{ 'collection-' | append: i | placeholder_svg_tag: 'placeholder-svg-cu-co' }}
+                </div>
+                <div class="collection-label-cu-co" style="padding: 20px; text-align: center;">
+                    <h3 class="collection-title-cu-co">Example Collection {{ i }}</h3>
+                </div>
+            </div>
+         {% endfor %}
+      {% endif %}
+
+    </div>
+  </div>
+</div>
+
+{% endif %}

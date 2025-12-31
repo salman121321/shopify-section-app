@@ -38,8 +38,8 @@ export const loader = async ({ request }) => {
   const currentScopes = new Set(session.scope ? session.scope.split(",").map(s => s.trim()) : []);
   
   // Hardcode required scopes to what is strictly necessary for functionality
-  // We ignore read_themes because write_themes implies it, and we want to avoid UI confusion
-  const requiredScopes = ["write_products", "write_themes"];
+  // We removed write_themes as per user request to avoid code injection
+  const requiredScopes = ["write_products", "read_themes"];
   
   const hasAllScopes = requiredScopes.every(scope => currentScopes.has(scope));
 

@@ -197,15 +197,8 @@ export const action = async ({ request }) => {
   console.log("Session Scopes:", session.scope);
   console.log("Session Access Token Length:", session.accessToken?.length || 0);
 
-  if (!session.scope?.includes("write_themes")) {
-      console.error("❌ Missing write_themes scope!");
-      // We can relax this check if we are just deep linking, but for now let's keep it 
-      // or we can remove it since we aren't uploading.
-      // But user said they don't have exemption access, so maybe they don't even have write_themes?
-      // If they don't have write_themes, this will block them.
-      // Let's REMOVE this check since we are using deep links now!
-      // return json({ error: "Missing 'write_themes' permission. Please reinstall the app or update permissions." }, { status: 403 });
-      console.warn("⚠️ User might be missing write_themes, but we are proceeding with Deep Link.");
+  if (false) {
+      console.error("❌ Missing write_themes scope check skipped.");
   }
 
   const requestAction = formData.get("action");
@@ -267,64 +260,19 @@ export const action = async ({ request }) => {
     if (requestAction === "activate") {
         console.log(`Activating section: ${sectionId} for shop: ${session.shop}`);
 
-        // Logic to upload the section file to the theme (Asset API)
-        // This is required because Theme App Extensions do not support nested 'blocks', 
-        // so we must install the section as a standard Liquid Section to preserve schema.
-        let contentToUpload = sectionData.content;
-
-        // If content is empty but filename exists, try to read from disk
-        if (!contentToUpload && sectionData.filename) {
-            try {
-                // Dynamic import to avoid build issues if processed by frontend tools (though this is a resource route)
-                const fs = await import("fs/promises");
-                const path = await import("path");
-                
-                const filePath = path.resolve(process.cwd(), sectionData.filename);
-                console.log(`Reading section file from: ${filePath}`);
-                contentToUpload = await fs.readFile(filePath, "utf-8");
-            } catch (readErr) {
-                console.error(`Failed to read file ${sectionData.filename}:`, readErr);
-                // Return a clear error if the file cannot be read
-                return json({ 
-                    success: false, 
-                    error: `Server Error: Failed to read section file from ${sectionData.filename}. Please contact support.` 
-                }, { status: 500 });
-            }
-        }
-
-        if (contentToUpload) {
-            if (!themeId) {
-                return json({ success: false, error: "Theme ID is required for section installation." }, { status: 400 });
-            }
-
-            console.log(`Uploading asset to theme ${themeId}...`);
-            try {
-                const asset = new admin.rest.resources.Asset({ session: session });
-                asset.theme_id = themeId;
-                
-                // Determine the target key (always in sections/ folder for sections)
-                // We use the basename of the source file
-                const fileName = sectionData.filename.split('/').pop(); // e.g., product-collection-grid.liquid
-                asset.key = `sections/${fileName}`;
-                asset.value = contentToUpload;
-                
-                await asset.save({ update: true });
-                console.log(`Successfully uploaded ${asset.key} to theme ${themeId}`);
-            } catch (assetError) {
-                console.error("Asset API Error:", assetError);
-                return json({ 
-                    success: false, 
-                    error: `Shopify Error: Failed to upload section file. ${assetError.message || "Please ensure the app has 'write_themes' permission."}` 
-                }, { status: 500 });
-            }
-        }
+        // Note: We are NO LONGER uploading the file via Asset API to avoid 'write_themes' permission.
+        // The file is now deployed as a Theme App Extension (App Block).
+        // The activation merely marks it as "installed" in our app's database/metafield for tracking.
+        // The actual addition to the theme happens via Deep Link in the frontend.
 
         await markSectionInstalled(session.shop, session.accessToken, "2024-10", sectionId);
+        
+        // Return success with deep_link method signal
         return json({ 
             success: true, 
             message: "Section Activated Successfully",
-            method: "asset_upload_and_metafield",
-            details: "Section has been installed to your theme and marked as active."
+            method: "deep_link",
+            details: "Please use the Theme Editor to add the section."
         });
     } else if (requestAction === "deactivate") {
         console.log(`Deactivation attempted for section: ${sectionId} (BLOCKED)`);
