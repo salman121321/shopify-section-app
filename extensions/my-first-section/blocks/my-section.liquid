@@ -31,7 +31,7 @@
 }
 {% endschema %}
 
-{% assign installed_sections = app.metafields.shopi_section.installed_sections %}
+{% assign installed_sections = app.metafields.shopi_section.installed_sections.value %}
 {% if installed_sections contains 'my-custom-section' %}
 
 <div style="background-color: {{ section.settings.background_color }}; color: {{ section.settings.text_color }}; padding: 40px; text-align: center;">
