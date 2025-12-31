@@ -5,108 +5,16 @@
   "class": "section-collection-grid",
   "settings": [
     {
-      "type": "header",
-      "content": "Data Source"
-    },
-    {
-      "type": "paragraph",
-      "content": "You can add items using the 'Add Block' button for full customization, or use the 'Collections List' setting below for a quick setup."
-    },
-    {
       "type": "collection_list",
       "id": "collection_list",
-      "label": "Quick Collections List",
+      "label": "Collections",
       "limit": 12
-    },
-    {
-      "type": "header",
-      "content": "Main Heading"
     },
     {
       "type": "text",
       "id": "main_heading",
-      "label": "Main Heading",
+      "label": "Heading",
       "default": "Shop By Category"
-    },
-    {
-      "type": "range",
-      "id": "main_heading_size",
-      "min": 16,
-      "max": 60,
-      "step": 2,
-      "unit": "px",
-      "label": "Main Heading Size",
-      "default": 32
-    },
-    {
-      "type": "color",
-      "id": "main_heading_color",
-      "label": "Main Heading Color",
-      "default": "#333333"
-    },
-    {
-      "type": "header",
-      "content": "Sub Heading"
-    },
-    {
-      "type": "textarea",
-      "id": "sub_heading",
-      "label": "Sub Heading",
-      "info": "Optional subheading text"
-    },
-    {
-      "type": "range",
-      "id": "sub_heading_size",
-      "min": 12,
-      "max": 24,
-      "step": 1,
-      "unit": "px",
-      "label": "Sub Heading Size",
-      "default": 16
-    },
-    {
-      "type": "color",
-      "id": "sub_heading_color",
-      "label": "Sub Heading Color",
-      "default": "#666666"
-    },
-    {
-      "type": "header",
-      "content": "Heading Settings"
-    },
-    {
-      "type": "select",
-      "id": "heading_alignment",
-      "label": "Heading Alignment",
-      "options": [
-        {
-          "value": "left",
-          "label": "Left"
-        },
-        {
-          "value": "center",
-          "label": "Center"
-        },
-        {
-          "value": "right",
-          "label": "Right"
-        }
-      ],
-      "default": "center"
-    },
-    {
-      "type": "range",
-      "id": "heading_spacing",
-      "min": 0,
-      "max": 100,
-      "step": 5,
-      "unit": "px",
-      "label": "Heading Bottom Spacing",
-      "default": 40
-    },
-    {
-      "type": "header",
-      "content": "Grid Settings"
     },
     {
       "type": "range",
@@ -114,101 +22,33 @@
       "min": 2,
       "max": 6,
       "step": 1,
-      "label": "Columns (Desktop)",
+      "label": "Columns",
       "default": 4
-    },
-    {
-      "type": "range",
-      "id": "columns_tablet",
-      "min": 1,
-      "max": 4,
-      "step": 1,
-      "label": "Columns (Tablet)",
-      "default": 3
-    },
-    {
-      "type": "range",
-      "id": "columns_mobile",
-      "min": 1,
-      "max": 3,
-      "step": 1,
-      "label": "Columns (Mobile)",
-      "default": 2
-    },
-    {
-      "type": "range",
-      "id": "grid_gap",
-      "min": 0,
-      "max": 50,
-      "step": 5,
-      "unit": "px",
-      "label": "Grid Gap",
-      "default": 20
-    },
-    {
-      "type": "header",
-      "content": "Section Padding"
-    },
-    {
-      "type": "range",
-      "id": "padding_top",
-      "min": 0,
-      "max": 100,
-      "step": 5,
-      "unit": "px",
-      "label": "Top Padding",
-      "default": 60
-    },
-    {
-      "type": "range",
-      "id": "padding_bottom",
-      "min": 0,
-      "max": 100,
-      "step": 5,
-      "unit": "px",
-      "label": "Bottom Padding",
-      "default": 60
-    },
-    {
-      "type": "color",
-      "id": "section_bg_color",
-      "label": "Section Background Color",
-      "default": "#ffffff"
     }
   ]
 }
 {% endschema %}
 
 <div class="collection-grid-section" style="
-  background-color: {{ section.settings.section_bg_color }};
-  padding-top: {{ section.settings.padding_top }}px;
-  padding-bottom: {{ section.settings.padding_bottom }}px;
+  padding-top: 60px;
+  padding-bottom: 60px;
+  background-color: #ffffff;
 ">
-  <div class="page-width">
-    {% if section.settings.main_heading != blank %}
-      <div class="section-header text-{{ section.settings.heading_alignment }}" style="margin-bottom: {{ section.settings.heading_spacing }}px;">
+  <div class="page-width" style="max-width: 1200px; margin: 0 auto; padding: 0 20px;">
+    {%- if section.settings.main_heading != blank -%}
+      <div class="section-header text-center" style="text-align: center; margin-bottom: 40px;">
         <h2 class="title" style="
-          font-size: {{ section.settings.main_heading_size }}px;
-          color: {{ section.settings.main_heading_color }};
-        ">
-          {{ section.settings.main_heading }}
-        </h2>
-        {% if section.settings.sub_heading != blank %}
-          <div class="rte" style="
-            font-size: {{ section.settings.sub_heading_size }}px;
-            color: {{ section.settings.sub_heading_color }};
-            margin-top: 10px;
-          ">
-            {{ section.settings.sub_heading }}
-          </div>
-        {% endif %}
+          font-size: 32px;
+          color: #333333;
+          margin: 0;
+        ">{{ section.settings.main_heading }}</h2>
       </div>
-    {% endif %}
+    {%- endif -%}
 
     <div class="grid-container" style="
       display: grid;
       grid-template-columns: repeat({{ section.settings.columns_desktop }}, 1fr);
-      gap: {{ section.settings.grid_gap }}px;
+      gap: 20px;
     ">
       {%- comment -%} Determine source: Quick Collection List {%- endcomment -%}
       {%- for collection in section.settings.collection_list -%}
@@ -216,7 +56,7 @@
             <a href="{{ collection.url }}" class="collection-card">
                <div class="image-wrapper" style="position: relative; overflow: hidden; border-radius: 8px;">
                   {%- if collection.featured_image != blank -%}
-                     <img src="{{ collection.featured_image | image_url: width: 600 }}" alt="{{ collection.title }}" loading="lazy" style="width: 100%; height: auto; display: block;">
+                     <img src="{{ collection.featured_image | image_url: width: 600 }}" alt="{{ collection.title }}" width="600" height="600" loading="lazy" style="width: 100%; height: auto; display: block;">
                   {%- else -%}
                      {{ 'collection-1' | placeholder_svg_tag: 'placeholder-svg' }}
                   {%- endif -%}
@@ -246,12 +86,12 @@
 <style>
   @media screen and (max-width: 1024px) {
     .grid-container {
-      grid-template-columns: repeat({{ section.settings.columns_tablet }}, 1fr) !important;
+      grid-template-columns: repeat(3, 1fr) !important;
     }
   }
   @media screen and (max-width: 767px) {
     .grid-container {
-      grid-template-columns: repeat({{ section.settings.columns_mobile }}, 1fr) !important;
+      grid-template-columns: repeat(2, 1fr) !important;
     }
   }
 </style>
