@@ -4,24 +4,23 @@ import { THREE_D_CAROUSEL_LIQUID } from "../templates/three-d-carousel";
 
 // Helper to mark section as installed in Shop Metafields
 // We use a Shop Metafield to store the list of installed sections per theme or globally.
-// Ideally, we attach this to the Theme, but Shop is easier to access consistently.
-// We will store: namespace: "shopi_installed", key: "sections", value: JSON array of section IDs
+// We use Shop Metafields (owner: Shop) because they are more reliably accessible in Liquid than App Metafields.
 async function markSectionInstalled(shop, accessToken, apiVersion, sectionId) {
     try {
-        // 1. Fetch current installed sections
+        const gqlUrl = `https://${shop}/admin/api/${apiVersion}/graphql.json`;
+
+        // 1. Fetch Shop ID and current installed sections
         const getQuery = `
           query {
-            currentAppInstallation {
+            shop {
               id
               metafield(namespace: "shopi_section", key: "installed_sections") {
                 value
-                id
               }
             }
           }
         `;
         
-        const gqlUrl = `https://${shop}/admin/api/${apiVersion}/graphql.json`;
         const getResp = await fetch(gqlUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json", "X-Shopify-Access-Token": accessToken },
@@ -29,16 +28,17 @@ async function markSectionInstalled(shop, accessToken, apiVersion, sectionId) {
         });
         
         const getData = await getResp.json();
-        const appInstallation = getData.data?.currentAppInstallation;
-        if (!appInstallation) {
-            console.error("Failed to get AppInstallation for Metafield update");
-            throw new Error("Failed to get AppInstallation for Metafield update (Permissions?)");
+        const shopData = getData.data?.shop;
+        
+        if (!shopData) {
+            console.error("Failed to get Shop data for Metafield update");
+            throw new Error("Failed to get Shop data");
         }
 
         let installedSections = [];
-        if (appInstallation.metafield?.value) {
+        if (shopData.metafield?.value) {
             try {
-                installedSections = JSON.parse(appInstallation.metafield.value);
+                installedSections = JSON.parse(shopData.metafield.value);
             } catch (e) {
                 console.warn("Failed to parse existing metafield value:", e);
             }
@@ -47,14 +47,13 @@ async function markSectionInstalled(shop, accessToken, apiVersion, sectionId) {
         if (!installedSections.includes(sectionId)) {
             installedSections.push(sectionId);
             
-            // 2. Update Metafield
+            // 2. Update Metafield on Shop Owner
             const updateQuery = `
               mutation MetafieldsSet($metafields: [MetafieldsSetInput!]!) {
                 metafieldsSet(metafields: $metafields) {
                   metafields {
                     key
                     value
-                    valueType: JSON_STRING
                   }
                   userErrors {
                     field
@@ -63,12 +62,6 @@ async function markSectionInstalled(shop, accessToken, apiVersion, sectionId) {
                 }
               }
             `;
-            // NOTE: 'type' is deprecated in favor of specific types, but API version matters.
-            // For 2024-10, type is removed from MetafieldsSetInput in favor of inferring from definition or just value?
-            // Actually, for app-owned metafields, we often just need value.
-            // But let's check the spec. 'type' was deprecated. 
-            // We'll stick to what was working or use simplified input.
-            // Wait, previous code had `type: "json"`.
             
             const updateResp = await fetch(gqlUrl, {
                 method: "POST",
@@ -77,7 +70,7 @@ async function markSectionInstalled(shop, accessToken, apiVersion, sectionId) {
                     query: updateQuery,
                     variables: {
                         metafields: [{
-                            ownerId: appInstallation.id,
+                            ownerId: shopData.id,
                             namespace: "shopi_section",
                             key: "installed_sections",
                             type: "json", 
@@ -88,16 +81,11 @@ async function markSectionInstalled(shop, accessToken, apiVersion, sectionId) {
             });
             
             const updateData = await updateResp.json();
-            console.log("Metafield Update Result:", JSON.stringify(updateData));
-            
             const userErrors = updateData.data?.metafieldsSet?.userErrors;
             if (userErrors && userErrors.length > 0) {
                  throw new Error(`Metafield Update Failed: ${JSON.stringify(userErrors)}`);
             }
-        } else {
-            console.log("Section already in metafield list.");
         }
-
     } catch (err) {
         console.error("Failed to update installed section metafield:", err);
         throw err;
@@ -106,19 +94,20 @@ async function markSectionInstalled(shop, accessToken, apiVersion, sectionId) {
 
 async function unmarkSectionInstalled(shop, accessToken, apiVersion, sectionId) {
     try {
+        const gqlUrl = `https://${shop}/admin/api/${apiVersion}/graphql.json`;
+
+        // 1. Fetch Shop ID and current installed sections
         const getQuery = `
           query {
-            currentAppInstallation {
+            shop {
               id
               metafield(namespace: "shopi_section", key: "installed_sections") {
                 value
-                id
               }
             }
           }
         `;
         
-        const gqlUrl = `https://${shop}/admin/api/${apiVersion}/graphql.json`;
         const getResp = await fetch(gqlUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json", "X-Shopify-Access-Token": accessToken },
@@ -126,16 +115,17 @@ async function unmarkSectionInstalled(shop, accessToken, apiVersion, sectionId) 
         });
         
         const getData = await getResp.json();
-        const appInstallation = getData.data?.currentAppInstallation;
-        if (!appInstallation) {
-             console.error("Failed to get AppInstallation for Metafield update");
-             return; // Silent fail or throw?
+        const shopData = getData.data?.shop;
+        
+        if (!shopData) {
+             console.error("Failed to get Shop data for Metafield update");
+             return;
         }
 
         let installedSections = [];
-        if (appInstallation.metafield?.value) {
+        if (shopData.metafield?.value) {
             try {
-                installedSections = JSON.parse(appInstallation.metafield.value);
+                installedSections = JSON.parse(shopData.metafield.value);
             } catch (e) {
                 console.warn("Failed to parse existing metafield value:", e);
             }
@@ -167,7 +157,7 @@ async function unmarkSectionInstalled(shop, accessToken, apiVersion, sectionId) 
                     query: updateQuery,
                     variables: {
                         metafields: [{
-                            ownerId: appInstallation.id,
+                            ownerId: shopData.id,
                             namespace: "shopi_section",
                             key: "installed_sections",
                             type: "json", 

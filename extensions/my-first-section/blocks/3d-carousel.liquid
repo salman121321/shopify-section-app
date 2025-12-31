@@ -80,7 +80,7 @@
 }
 {% endschema %}
 
-{% assign installed_sections = app.metafields.shopi_section.installed_sections.value %}
+{% assign installed_sections = shop.metafields.shopi_section.installed_sections.value %}
 {% if installed_sections contains '3d-carousel-pro' %}
 
 <div style="background-color: {{ section.settings.background_color }}; position: relative; overflow: hidden; padding: 40px 0;">
