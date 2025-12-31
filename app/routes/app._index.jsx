@@ -776,14 +776,38 @@ export default function Index() {
                         Retry
                     </Button>
                 )}
-                <Button
-                    variant="primary"
-                    onClick={handleConfirmInstall}
-                    loading={sectionFetcher.state === "submitting"}
-                    disabled={!selectedThemeId || themes.length === 0}
-                >
-                    Add & Activate
-                </Button>
+                {selectedSectionForInstall && installedSectionIds.includes(selectedSectionForInstall.id) ? (
+                    <Button
+                        tone="critical"
+                        variant="primary"
+                        onClick={() => {
+                            if (!selectedThemeId || !selectedSectionForInstall) return;
+                            sectionFetcher.submit(
+                                {
+                                    action: "deactivate",
+                                    themeId: selectedThemeId,
+                                    sectionId: selectedSectionForInstall.id
+                                },
+                                { method: "post", action: "/api/section" }
+                            );
+                            setThemeModalOpen(false);
+                            // Optimistic update
+                            setInstalledSectionIds(prev => prev.filter(id => id !== selectedSectionForInstall.id));
+                        }}
+                        loading={sectionFetcher.state === "submitting"}
+                    >
+                        Deactivate
+                    </Button>
+                ) : (
+                    <Button
+                        variant="primary"
+                        onClick={handleConfirmInstall}
+                        loading={sectionFetcher.state === "submitting"}
+                        disabled={!selectedThemeId || themes.length === 0}
+                    >
+                        Add & Activate
+                    </Button>
+                )}
             </InlineStack>
         </Modal.Section>
       </Modal>
