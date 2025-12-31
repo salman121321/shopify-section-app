@@ -634,18 +634,7 @@ export default function Index() {
                                 </Button>
                              </InlineStack>
 
-                             {section.blocksSchema && (
-                                <Button
-                                   fullWidth
-                                   icon={ViewIcon}
-                                   onClick={() => {
-                                      setSelectedSectionForBlocks(section);
-                                      setBlocksModalOpen(true);
-                                   }}
-                                >
-                                   Blocks
-                                </Button>
-                             )}
+
                            </BlockStack>
                          </Box>
                       </Card>
