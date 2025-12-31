@@ -1025,28 +1025,53 @@ export default function Index() {
       <Modal
         open={blocksModalOpen}
         onClose={() => setBlocksModalOpen(false)}
-        title={`Blocks for ${selectedSectionForBlocks?.title}`}
+        title={`Available Blocks for ${selectedSectionForBlocks?.title}`}
         large
       >
         <Modal.Section>
           <BlockStack gap="400">
-            <Text as="p">
-              Available Blocks Schema:
-            </Text>
+            <Banner tone="info">
+               <p>
+                 <strong>How to use blocks:</strong> These blocks are managed in the Shopify Theme Editor. 
+                 After activating this section, go to your Theme Editor, add the <strong>{selectedSectionForBlocks?.title}</strong> section, and click "Add Block" in the sidebar to use them.
+               </p>
+            </Banner>
+            
+            <Text variant="headingMd" as="h3">Block Types</Text>
+            
             {selectedSectionForBlocks?.blocksSchema ? (
-               <div style={{
-                  background: '#1e1e1e',
-                  color: '#d4d4d4',
-                  padding: '16px',
-                  borderRadius: '8px',
-                  overflow: 'auto',
-                  maxHeight: '500px',
-                  fontFamily: 'monospace'
-               }}>
-                  <pre style={{margin: 0, fontSize: '12px'}}>
-                     {JSON.stringify(selectedSectionForBlocks.blocksSchema, null, 2)}
-                  </pre>
-               </div>
+               <Grid>
+                 {selectedSectionForBlocks.blocksSchema.map((block, index) => (
+                   <Grid.Cell key={index} columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
+                      <Card>
+                        <BlockStack gap="200">
+                           <InlineStack align="space-between">
+                              <Text variant="headingSm" as="h4">{block.name}</Text>
+                              <Badge>{block.type}</Badge>
+                           </InlineStack>
+                           
+                           <Text variant="bodySm" tone="subdued" as="p">
+                              {block.settings?.length || 0} configurable settings
+                           </Text>
+                           
+                           <Box paddingBlockStart="200">
+                              <Text variant="bodyXs" tone="subdued" as="p">Settings include:</Text>
+                              <div style={{display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px'}}>
+                                 {block.settings?.slice(0, 5).map((setting, i) => (
+                                    <span key={i} style={{background: '#f1f2f3', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', border: '1px solid #e1e3e5'}}>
+                                       {setting.label || setting.id}
+                                    </span>
+                                 ))}
+                                 {(block.settings?.length || 0) > 5 && (
+                                    <span style={{fontSize: '11px', color: '#6d7175', padding: '2px 4px'}}>+{block.settings.length - 5} more</span>
+                                 )}
+                              </div>
+                           </Box>
+                        </BlockStack>
+                      </Card>
+                   </Grid.Cell>
+                 ))}
+               </Grid>
             ) : (
                <Banner tone="warning">No blocks schema available.</Banner>
             )}

@@ -234,6 +234,10 @@ export const action = async ({ request }) => {
         filename: "sections/shopi-3d-carousel-pro.liquid",
         content: THREE_D_CAROUSEL_LIQUID
     },
+    "product-collection-grid": {
+        filename: "extensions/my-first-section/blocks/product-collection-grid.liquid",
+        content: "" // Content is handled via file upload/deployment, this key is just for activation validation
+    },
     "my-custom-section": {
         filename: "sections/my-custom-section.liquid",
         content: `{% schema %}
