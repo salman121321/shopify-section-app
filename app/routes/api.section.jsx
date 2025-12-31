@@ -177,7 +177,7 @@ export const action = async ({ request }) => {
   }
 
   try {
-    if (action === "activate") {
+    if (requestAction === "activate") {
       // FOR THEME APP EXTENSIONS: We do NOT upload liquid files anymore.
       // Instead, we just mark it as installed (for our own records) and redirect to the deep link.
       
@@ -193,7 +193,7 @@ export const action = async ({ request }) => {
           details: "Section activation is handled via Theme Editor deep link."
       });
 
-    } else if (action === "deactivate") {
+    } else if (requestAction === "deactivate") {
       // FOR THEME APP EXTENSIONS: We do NOT delete files.
       // We just redirect to the theme editor so user can remove it.
       
