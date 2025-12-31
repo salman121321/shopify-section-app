@@ -73,7 +73,7 @@
     },
     {
       "type": "collection",
-      "id": "collection",
+      "id": "slider_collection",
       "label": "Select Collection"
     },
     {
@@ -267,11 +267,11 @@
       </h2>
     {% endif %}
 
-    {% assign collection = collections[section.settings.collection] %}
+    {% assign collection = collections[section.settings.slider_collection] %}
     {% assign limit = section.settings.product_limit | default: 8 %}
     
     <!-- Robust Check for Collection -->
-    {% if section.settings.collection == blank %}
+    {% if section.settings.slider_collection == blank %}
         {% assign show_placeholder = true %}
     {% elsif collection == empty or collection.products_count == 0 %}
         {% assign show_placeholder = true %}
@@ -282,16 +282,16 @@
     <!-- Debug Info (Visible for troubleshooting) -->
     <div style="background: #fff; border: 2px solid red; padding: 10px; margin: 20px; text-align: center; color: red;">
        <strong>DEBUG MODE</strong><br>
-       Settings Collection Handle: "{{ section.settings.collection }}"<br>
+       Settings Collection Handle: "{{ section.settings.slider_collection }}"<br>
        Limit: {{ limit }}<br>
        Show Placeholder: {{ show_placeholder }}<br>
-       {% if section.settings.collection == blank %}
+       {% if section.settings.slider_collection == blank %}
          <span>⚠️ No collection selected. Please open the Block Settings and choose a collection.</span>
        {% endif %}
     </div>
 
     <!-- Explicit Message if Collection is Selected but Empty -->
-    {% if section.settings.collection != blank and collection.products_count == 0 %}
+    {% if section.settings.slider_collection != blank and collection.products_count == 0 %}
       <div style="text-align: center; padding: 20px; color: #666;">
         <p>Selected collection "{{ collection.title }}" has no products visible.</p>
         <p>Please check if products are Active and available in the Online Store channel.</p>
@@ -397,8 +397,7 @@
   .shopi-carousel-item {
     position: absolute;
     width: 100%;
-    /* height is automatic based on content, but for 3D we need fixed bounds often. 
-       We will let flex handle it, but position absolute needs control. */
+    min-width: 250px; /* Safety min-width */
     left: 0;
     top: 0;
     {% if section.settings.show_shadow %}
