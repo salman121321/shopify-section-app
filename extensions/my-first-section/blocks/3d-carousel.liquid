@@ -247,16 +247,7 @@
       "step": 20,
       "unit": "px",
       "label": "Mobile Container Height",
-      "default": 350
-    }
-  ],
-  "presets": [
-    {
-      "name": "3D Animation Slider",
-      "settings": {
-        "container_width": "1200px",
-        "product_limit": 8
-      }
+      "default": 360
     }
   ]
 }
@@ -302,6 +293,8 @@
                          sizes="(max-width: 600px) 100vw, 400px"
                          alt="{{ product.title | escape }}" 
                          loading="lazy"
+                         width="600"
+                         height="800"
                          style="object-fit: {{ section.settings.image_fit }};">
                   {% else %}
                     {{ 'product-1' | placeholder_svg_tag: 'shopi-placeholder' }}
