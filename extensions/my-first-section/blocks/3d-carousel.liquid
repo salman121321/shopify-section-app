@@ -13,6 +13,8 @@
       "label": "Container Width",
       "options": [
         { "value": "1200px", "label": "Fixed (1200px)" },
+        { "value": "1400px", "label": "Fixed (1400px)" },
+        { "value": "1600px", "label": "Fixed (1600px)" },
         { "value": "100%", "label": "Full Width" }
       ],
       "default": "1200px"
@@ -38,6 +40,12 @@
       "default": 60
     },
     {
+      "type": "color",
+      "id": "bg_color",
+      "label": "Section Background",
+      "default": "#f0f4f8"
+    },
+    {
       "type": "header",
       "content": "Content"
     },
@@ -45,17 +53,23 @@
       "type": "text",
       "id": "heading",
       "label": "Heading",
-      "default": "New Arrivals"
+      "default": "Featured Collection"
     },
     {
       "type": "range",
       "id": "heading_size",
       "min": 1,
-      "max": 4,
+      "max": 5,
       "step": 0.1,
       "unit": "rem",
       "label": "Heading Size",
       "default": 2.5
+    },
+    {
+      "type": "color",
+      "id": "heading_color",
+      "label": "Heading Color",
+      "default": "#1a1a1a"
     },
     {
       "type": "collection",
@@ -66,21 +80,14 @@
       "type": "range",
       "id": "product_limit",
       "min": 4,
-      "max": 12,
+      "max": 15,
       "step": 1,
       "label": "Product Limit",
-      "default": 8,
-      "info": "Best results with 6-10 products"
+      "default": 8
     },
     {
       "type": "header",
       "content": "Card Appearance"
-    },
-    {
-      "type": "color",
-      "id": "bg_color",
-      "label": "Section Background",
-      "default": "#f0f4f8"
     },
     {
       "type": "color",
@@ -114,17 +121,79 @@
       "type": "range",
       "id": "card_width",
       "min": 200,
-      "max": 400,
+      "max": 450,
       "step": 10,
       "unit": "px",
       "label": "Card Width (Desktop)",
       "default": 300
     },
     {
+      "type": "range",
+      "id": "card_gap",
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "unit": "px",
+      "label": "Gap Between Cards (3D Spacing)",
+      "default": 40
+    },
+    {
+      "type": "select",
+      "id": "image_aspect_ratio",
+      "label": "Image Aspect Ratio",
+      "options": [
+        { "value": "1/1", "label": "Square (1:1)" },
+        { "value": "3/4", "label": "Portrait (3:4)" },
+        { "value": "4/3", "label": "Landscape (4:3)" },
+        { "value": "auto", "label": "Auto (Natural)" }
+      ],
+      "default": "3/4"
+    },
+    {
+      "type": "select",
+      "id": "image_fit",
+      "label": "Image Fit",
+      "options": [
+        { "value": "cover", "label": "Cover (Crop)" },
+        { "value": "contain", "label": "Contain (No Crop)" }
+      ],
+      "default": "cover"
+    },
+    {
       "type": "checkbox",
       "id": "show_shadow",
       "label": "Show Card Shadow",
       "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_price",
+      "label": "Show Price",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_view_btn",
+      "label": "Show View Button",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "view_btn_text",
+      "label": "Button Text",
+      "default": "View Details"
+    },
+    {
+      "type": "color",
+      "id": "btn_bg_color",
+      "label": "Button Background",
+      "default": "#1a1a1a"
+    },
+    {
+      "type": "color",
+      "id": "btn_text_color",
+      "label": "Button Text Color",
+      "default": "#ffffff"
     },
     {
       "type": "header",
@@ -140,72 +209,141 @@
       "type": "range",
       "id": "rotation_speed",
       "min": 2,
-      "max": 20,
+      "max": 30,
       "step": 1,
       "unit": "s",
-      "label": "Rotation Speed",
-      "default": 10
+      "label": "Rotation Speed (Seconds per full spin)",
+      "default": 15
     },
     {
       "type": "header",
       "content": "Mobile Settings"
     },
     {
+      "type": "select",
+      "id": "mobile_mode",
+      "label": "Mobile Layout",
+      "options": [
+        { "value": "3d", "label": "3D Carousel (Scaled)" },
+        { "value": "scroll", "label": "Horizontal Scroll (Flat)" }
+      ],
+      "default": "3d"
+    },
+    {
       "type": "range",
       "id": "mobile_scale",
-      "min": 0.5,
+      "min": 0.3,
       "max": 1.0,
       "step": 0.1,
-      "label": "Mobile Scale",
-      "default": 0.8,
-      "info": "Scale down the carousel on mobile devices"
+      "label": "Mobile 3D Scale",
+      "default": 0.6,
+      "info": "Only applies to 3D Carousel mode"
+    },
+    {
+      "type": "range",
+      "id": "mobile_height",
+      "min": 200,
+      "max": 600,
+      "step": 20,
+      "unit": "px",
+      "label": "Mobile Container Height",
+      "default": 350
+    }
+  ],
+  "presets": [
+    {
+      "name": "3D Animation Slider",
+      "settings": {
+        "container_width": "1200px",
+        "product_limit": 8
+      }
     }
   ]
 }
 {% endschema %}
 
-<div class="shopi-3d-section-wrapper" style="background-color: {{ section.settings.bg_color }}; padding-top: {{ section.settings.padding_top }}px; padding-bottom: {{ section.settings.padding_bottom }}px; overflow: hidden;">
+<div class="shopi-3d-section-wrapper" 
+     style="background-color: {{ section.settings.bg_color }}; 
+            padding-top: {{ section.settings.padding_top }}px; 
+            padding-bottom: {{ section.settings.padding_bottom }}px; 
+            overflow: hidden;">
+            
   <div class="shopi-container" style="max-width: {{ section.settings.container_width }}; margin: 0 auto; padding: 0 20px;">
     {% if section.settings.heading != blank %}
-      <h2 class="shopi-heading" style="color: {{ section.settings.text_color }}; text-align: center; margin-bottom: 50px; font-weight: 700;">
+      <h2 class="shopi-heading" 
+          style="color: {{ section.settings.heading_color }}; text-align: center; margin-bottom: 50px; font-weight: 700;">
         {{ section.settings.heading }}
       </h2>
     {% endif %}
 
-    <div class="shopi-carousel-stage">
+    {% assign collection = collections[section.settings.collection] %}
+    {% assign limit = section.settings.product_limit %}
+    
+    <!-- Robust Check for Collection -->
+    {% if section.settings.collection == blank %}
+        {% assign show_placeholder = true %}
+    {% elsif collection == empty or collection.products_count == 0 %}
+        {% assign show_placeholder = true %}
+    {% else %}
+        {% assign show_placeholder = false %}
+    {% endif %}
+
+    <div class="shopi-carousel-stage shopi-mobile-mode-{{ section.settings.mobile_mode }}">
       <div class="shopi-carousel-spinner" id="spinner-{{ section.id }}">
-        {% assign collection = collections[section.settings.collection] %}
-        {% assign limit = section.settings.product_limit %}
         
-        {% if collection != blank and collection.products_count > 0 %}
+        {% if show_placeholder == false %}
           {% for product in collection.products limit: limit %}
             <div class="shopi-carousel-item" style="background: {{ section.settings.card_bg }}; border-radius: {{ section.settings.card_border_radius }}px;">
-              <a href="{{ product.url }}" style="text-decoration: none; color: inherit; display: block; height: 100%;">
-                <div class="shopi-card-image">
+              <a href="{{ product.url }}" class="shopi-card-link">
+                <div class="shopi-card-image" style="aspect-ratio: {{ section.settings.image_aspect_ratio }};">
                   {% if product.featured_image %}
-                    <img src="{{ product.featured_image | img_url: '400x' }}" alt="{{ product.title | escape }}" loading="lazy">
+                    <img src="{{ product.featured_image | image_url: width: 600 }}" 
+                         srcset="{{ product.featured_image | image_url: width: 400 }} 400w, {{ product.featured_image | image_url: width: 800 }} 800w"
+                         sizes="(max-width: 600px) 100vw, 400px"
+                         alt="{{ product.title | escape }}" 
+                         loading="lazy"
+                         style="object-fit: {{ section.settings.image_fit }};">
                   {% else %}
                     {{ 'product-1' | placeholder_svg_tag: 'shopi-placeholder' }}
                   {% endif %}
                 </div>
                 <div class="shopi-card-info">
-                  <h3 style="color: {{ section.settings.text_color }}">{{ product.title | truncate: 25 }}</h3>
+                  <h3 class="shopi-product-title" style="color: {{ section.settings.text_color }}">{{ product.title | truncate: 35 }}</h3>
+                  
+                  {% if section.settings.show_price %}
                   <div class="shopi-price" style="color: {{ section.settings.price_color }}">
                     {{ product.price | money }}
                   </div>
+                  {% endif %}
+
+                  {% if section.settings.show_view_btn %}
+                    <button class="shopi-btn" style="background-color: {{ section.settings.btn_bg_color }}; color: {{ section.settings.btn_text_color }}; border-radius: {{ section.settings.card_border_radius | divided_by: 2 }}px;">
+                      {{ section.settings.view_btn_text }}
+                    </button>
+                  {% endif %}
                 </div>
               </a>
             </div>
           {% endfor %}
         {% else %}
+          <!-- Placeholder Items -->
           {% for i in (1..limit) %}
             <div class="shopi-carousel-item" style="background: {{ section.settings.card_bg }}; border-radius: {{ section.settings.card_border_radius }}px;">
-              <div class="shopi-card-image">
-                {{ 'product-' | append: i | placeholder_svg_tag: 'shopi-placeholder' }}
-              </div>
-              <div class="shopi-card-info">
-                <h3 style="color: {{ section.settings.text_color }}">Sample Product {{ i }}</h3>
-                <div class="shopi-price" style="color: {{ section.settings.price_color }}">$99.99</div>
+              <div class="shopi-card-link">
+                <div class="shopi-card-image" style="aspect-ratio: {{ section.settings.image_aspect_ratio }};">
+                  {{ 'product-' | append: i | placeholder_svg_tag: 'shopi-placeholder' }}
+                </div>
+                <div class="shopi-card-info">
+                  <h3 class="shopi-product-title" style="color: {{ section.settings.text_color }}">Sample Product {{ i }}</h3>
+                  {% if section.settings.show_price %}
+                  <div class="shopi-price" style="color: {{ section.settings.price_color }}">$99.99</div>
+                  {% endif %}
+                  {% if section.settings.show_view_btn %}
+                    <button class="shopi-btn" style="background-color: {{ section.settings.btn_bg_color }}; color: {{ section.settings.btn_text_color }}; border-radius: {{ section.settings.card_border_radius | divided_by: 2 }}px;">
+                      {{ section.settings.view_btn_text }}
+                    </button>
+                  {% endif %}
+                </div>
               </div>
             </div>
           {% endfor %}
@@ -222,22 +360,24 @@
   
   .shopi-heading {
     font-size: {{ section.settings.heading_size }}rem;
+    line-height: 1.2;
   }
 
+  /* Default 3D Styles */
   .shopi-carousel-stage {
     margin: 0 auto;
     width: {{ section.settings.card_width }}px;
-    height: 400px;
-    perspective: 1000px;
+    height: 500px; /* Base height, adjustable */
+    perspective: 2000px;
     position: relative;
-    /* Prevent horizontal scrollbar on body when items rotate out */
+    padding-bottom: 50px; /* Space for shadows */
   }
 
   .shopi-carousel-spinner {
     width: 100%;
     height: 100%;
     transform-style: preserve-3d;
-    transform-origin: 50% 50% -500px; /* Base origin, adjusted by JS */
+    transform-origin: 50% 50% -500px; /* Adjusted by JS */
     transition: transform 1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     position: relative;
   }
@@ -245,42 +385,50 @@
   .shopi-carousel-item {
     position: absolute;
     width: 100%;
-    height: 100%;
+    /* height is automatic based on content, but for 3D we need fixed bounds often. 
+       We will let flex handle it, but position absolute needs control. */
     left: 0;
     top: 0;
     {% if section.settings.show_shadow %}
     box-shadow: 0 15px 35px rgba(0,0,0,0.15);
     {% else %}
-    box-shadow: none;
-    border: 1px solid rgba(0,0,0,0.1);
+    border: 1px solid rgba(0,0,0,0.08);
     {% endif %}
     overflow: hidden;
-    backface-visibility: hidden; /* Often smoother without it, but helps perf */
+    /* backface-visibility: hidden;  Removed for better 3D depth perception if cards are transparent-ish */
     display: flex;
     flex-direction: column;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     -webkit-font-smoothing: antialiased;
+    background: white;
   }
   
   .shopi-carousel-item:hover {
     transform: translateY(-10px) scale(1.02);
     box-shadow: 0 25px 50px rgba(0,0,0,0.25);
-    z-index: 100; /* Bring to front on hover */
-    border-color: transparent;
+    z-index: 100;
+  }
+
+  .shopi-card-link {
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
   }
 
   .shopi-card-image {
-    flex: 2;
-    overflow: hidden;
+    width: 100%;
     position: relative;
     background: #f4f4f4;
+    overflow: hidden;
   }
 
   .shopi-card-image img, .shopi-card-image svg {
     width: 100%;
     height: 100%;
-    object-fit: cover;
-    transition: transform 0.5s ease;
+    display: block;
+    transition: transform 0.6s ease;
   }
   
   .shopi-carousel-item:hover .shopi-card-image img {
@@ -288,16 +436,16 @@
   }
 
   .shopi-card-info {
-    flex: 1;
     padding: 20px;
     text-align: center;
     display: flex;
     flex-direction: column;
-    justify-content: center;
     gap: 8px;
+    flex-grow: 1;
+    justify-content: center;
   }
 
-  .shopi-card-info h3 {
+  .shopi-product-title {
     margin: 0;
     font-size: 1.1rem;
     font-weight: 600;
@@ -307,28 +455,85 @@
   .shopi-price {
     font-weight: 700;
     font-size: 1.2rem;
+    margin-top: 5px;
+  }
+
+  .shopi-btn {
+    display: inline-block;
+    padding: 10px 20px;
+    margin-top: 10px;
+    border: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    width: 100%;
+  }
+  
+  .shopi-btn:hover {
+    opacity: 0.9;
   }
 
   .shopi-placeholder {
     width: 100%;
     height: 100%;
     background: #eee;
-    display: block;
+    fill: #ccc;
   }
 
   /* Responsive Adjustments */
+  @media (max-width: 900px) {
+     .shopi-carousel-stage {
+        perspective: 1500px;
+     }
+  }
+
   @media (max-width: 768px) {
     .shopi-heading {
       font-size: calc({{ section.settings.heading_size }}rem * 0.8);
       margin-bottom: 30px;
     }
-    
-    .shopi-carousel-stage {
-      /* Scale down the entire stage for mobile */
+
+    /* Mobile Mode: 3D Scaled */
+    .shopi-carousel-stage.shopi-mobile-mode-3d {
       transform: scale({{ section.settings.mobile_scale }});
       transform-origin: center top;
-      /* Adjust height to compensate for scale */
-      height: 320px; 
+      height: {{ section.settings.mobile_height }}px;
+      width: 100%;
+      max-width: 320px; /* Prevent overflow */
+    }
+
+    /* Mobile Mode: Horizontal Scroll (Flat) */
+    .shopi-carousel-stage.shopi-mobile-mode-scroll {
+      width: 100%;
+      height: auto;
+      perspective: none;
+      display: flex;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      gap: 15px;
+      padding-bottom: 20px;
+      /* Reset 3D props */
+      transform: none !important; 
+    }
+
+    .shopi-mobile-mode-scroll .shopi-carousel-spinner {
+      display: flex;
+      width: auto;
+      height: auto;
+      transform: none !important; /* Disable rotation */
+      gap: 15px;
+      padding: 0 10px;
+    }
+
+    .shopi-mobile-mode-scroll .shopi-carousel-item {
+      position: relative;
+      flex: 0 0 260px; /* Fixed width cards */
+      transform: none !important;
+      left: auto;
+      top: auto;
+      scroll-snap-align: center;
+      height: auto;
     }
   }
 </style>
@@ -338,17 +543,20 @@
   const container = document.getElementById('spinner-{{ section.id }}');
   if (!container) return;
 
+  const stage = container.parentElement;
+  const isMobileScroll = stage.classList.contains('shopi-mobile-mode-scroll') && window.innerWidth <= 768;
+
+  // If in mobile scroll mode, we disable the 3D logic
+  if (isMobileScroll) return;
+
   const items = container.querySelectorAll('.shopi-carousel-item');
   const count = items.length;
   const cardWidth = {{ section.settings.card_width }};
+  const gap = {{ section.settings.card_gap }};
   
   // Calculate radius
-  // Circumference ~= count * cardWidth
-  // 2 * PI * r = count * (cardWidth + gap)
-  // r = (count * cardWidth) / (2 * PI)
-  // We add a bit of gap (20px)
-  
-  const gap = 40;
+  // Circumference = count * (cardWidth + gap)
+  // r = Circumference / (2 * PI)
   const radius = Math.round(((cardWidth + gap) * count) / (2 * Math.PI));
 
   // Arrange items in a circle
@@ -365,87 +573,131 @@
   let autoRotate = {{ section.settings.auto_rotate | json }};
   let interval;
   let isPaused = false;
-
-  function rotate() {
-    if (isPaused) return;
-    currAngle -= angleStep;
-    container.style.transform = `rotateY(${currAngle}deg)`;
+  let rotationSpeed = {{ section.settings.rotation_speed }} * 1000;
+  // Calculate speed per frame or use CSS transition?
+  // We use CSS transition for smooth movement, so we just update angle periodically or use requestAnimationFrame
+  // But here we use a simple interval to increment angle? 
+  // Actually, to make it smooth "continuous" rotation, we need to keep updating.
+  // The current implementation uses CSS transition (1s) and updates logic.
+  // Better implementation for continuous:
+  
+  // Reset transition for JS control if we want continuous smooth 
+  // But let's stick to the current logic: Step rotation?
+  // No, user wants smooth.
+  // Let's use requestAnimationFrame for auto rotation if we want it super smooth, 
+  // but CSS is easier on battery if we just rotate by small increments?
+  // Let's stick to the interval method but make it smaller steps?
+  // Or just set a long transition and keep rotating?
+  
+  // Simple approach: Auto rotate by angleStep every X seconds? No, that's a slideshow.
+  // User wants "Animation Slider".
+  // Let's do a continuous slow spin.
+  
+  function startAutoRotate() {
+    if (!autoRotate) return;
+    clearInterval(interval);
+    // Rotate 360 degrees over 'rotationSpeed' seconds
+    // We can use CSS animation instead of JS for smoother performance
+    // But JS allows drag interaction.
+    
+    // We'll stick to JS updating the angle slightly every frame
+    let lastTime = Date.now();
+    
+    interval = setInterval(() => {
+      if (isPaused) return;
+      const now = Date.now();
+      const dt = now - lastTime;
+      lastTime = now;
+      
+      // degrees per ms = 360 / (rotationSpeed * 1000) (if speed is for full rotation)
+      // Actually speed setting is "Rotation Speed" in seconds.
+      const degPerMs = 360 / rotationSpeed;
+      currAngle -= degPerMs * dt;
+      
+      // Disable transition for smooth continuous movement
+      container.style.transition = 'none';
+      container.style.transform = `rotateY(${currAngle}deg)`;
+    }, 20);
   }
 
   if (autoRotate) {
-    const speed = {{ section.settings.rotation_speed }} * 1000;
-    interval = setInterval(rotate, speed);
+    startAutoRotate();
   }
   
   // Pause on hover
   container.addEventListener('mouseenter', () => isPaused = true);
-  container.addEventListener('mouseleave', () => isPaused = false);
+  container.addEventListener('mouseleave', () => {
+    isPaused = false;
+    // Reset lastTime to prevent jump
+    if(autoRotate) {
+        clearInterval(interval);
+        startAutoRotate();
+    }
+  });
   
-  // Touch/Drag support
+  // Interaction
   let startX = 0;
   let isDragging = false;
   let startAngle = 0;
   
-  const stage = container.parentElement;
-  
-  // Mouse Events
   stage.addEventListener('mousedown', (e) => {
     startX = e.pageX;
     isDragging = true;
     startAngle = currAngle;
     stage.style.cursor = 'grabbing';
-    isPaused = true; // Pause auto rotate while interacting
+    isPaused = true;
+    container.style.transition = 'none'; // Instant follow
   });
   
   document.addEventListener('mouseup', () => {
     if (isDragging) {
        isDragging = false;
        stage.style.cursor = 'default';
-       isPaused = false; // Resume auto rotate
+       if(autoRotate) {
+         isPaused = false;
+         startAutoRotate();
+       } else {
+         // Add some momentum/snap? (Optional, skip for now)
+         container.style.transition = 'transform 0.5s ease-out';
+       }
     }
   });
   
   document.addEventListener('mousemove', (e) => {
     if (!isDragging) return;
-    e.preventDefault(); // Prevent selection
+    e.preventDefault();
     const dx = e.pageX - startX;
-    // Sensitivity factor
-    const sensitivity = 0.5;
-    currAngle = startAngle + (dx * sensitivity);
+    currAngle = startAngle + (dx * 0.5);
     container.style.transform = `rotateY(${currAngle}deg)`;
   });
 
-  // Touch Events (Mobile)
+  // Touch
   stage.addEventListener('touchstart', (e) => {
     startX = e.touches[0].pageX;
     isDragging = true;
     startAngle = currAngle;
     isPaused = true;
+    container.style.transition = 'none';
   }, { passive: true });
 
   stage.addEventListener('touchend', () => {
     isDragging = false;
-    isPaused = false;
+    if(autoRotate) {
+         isPaused = false;
+         startAutoRotate();
+    }
   });
 
   stage.addEventListener('touchmove', (e) => {
     if (!isDragging) return;
-    
     const x = e.touches[0].pageX;
     const dx = x - startX;
-    
-    // Only intercept if horizontal scroll is dominant
-    if (Math.abs(dx) > 10) { 
-        // We don't prevent default here to allow vertical scrolling if needed, 
-        // but for a 3D carousel, user usually intends to spin it.
-        // If we want to prevent page scroll while spinning:
-        if (e.cancelable) e.preventDefault();
-        
-        const sensitivity = 0.5;
-        currAngle = startAngle + (dx * sensitivity);
+    if (Math.abs(dx) > 5) {
+        // e.preventDefault(); // Chrome treats passive: false if we want to prevent
+        currAngle = startAngle + (dx * 0.5);
         container.style.transform = `rotateY(${currAngle}deg)`;
     }
-  }, { passive: false });
+  }, { passive: true });
 
 })();
 </script>
