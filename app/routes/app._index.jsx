@@ -192,6 +192,7 @@ export default function Index() {
   const [installedSectionIds, setInstalledSectionIds] = useState([]);
   const [toastMessage, setToastMessage] = useState(null);
   const [showReauthModal, setShowReauthModal] = useState(false);
+  const [activationUrl, setActivationUrl] = useState(null);
 
   // Load themes on mount
   useEffect(() => {
@@ -251,9 +252,11 @@ export default function Index() {
                 
                 const deepLink = `https://admin.shopify.com/store/${shopName}/themes/${cleanThemeId}/editor?context=apps&template=index&activateAppId=${extensionUuid}/${extensionHandle}`;
                 
-                console.log("Redirecting to Deep Link:", deepLink);
-                window.open(deepLink, "_blank");
-                setToastMessage("Redirecting to Theme Editor to activate section...");
+                console.log("Deep Link generated:", deepLink);
+                // Removed auto-redirect
+                // window.open(deepLink, "_blank");
+                setActivationUrl(deepLink);
+                setToastMessage("Section ready to activate! Click 'Open Editor' below.");
             } else if (sectionFetcher.data.warning) {
                 setToastMessage("Warning: " + sectionFetcher.data.message);
             } else {
@@ -726,6 +729,12 @@ export default function Index() {
           onDismiss={() => setToastMessage(null)}
           duration={toastMessage.includes("❌") ? 8000 : 4500}
           error={toastMessage.includes("❌")}
+          action={toastMessage.includes("ready to activate") && activationUrl ? {
+            content: 'Open Editor',
+            onAction: () => {
+                window.open(activationUrl, "_blank");
+            }
+          } : undefined}
         />
       )}
 
