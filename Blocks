@@ -1,0 +1,5 @@
+[33mcommit 4deea0eb147ae6fe790071714fd429b6e0f95023[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
+Author: Ahmar ali <Ahmarali78648@gmail.com>
+Date:   Wed Dec 31 20:43:34 2025 +0500
+
+    Fix activation ID, add presets to section, and improve blocks UI

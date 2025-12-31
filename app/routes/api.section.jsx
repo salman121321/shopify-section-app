@@ -266,12 +266,53 @@ export const action = async ({ request }) => {
   try {
     if (requestAction === "activate") {
         console.log(`Activating section: ${sectionId} for shop: ${session.shop}`);
+
+        // Logic to upload the section file to the theme (Asset API)
+        // This is required because Theme App Extensions do not support nested 'blocks', 
+        // so we must install the section as a standard Liquid Section to preserve schema.
+        let contentToUpload = sectionData.content;
+
+        // If content is empty but filename exists, try to read from disk
+        if (!contentToUpload && sectionData.filename) {
+            try {
+                // Dynamic import to avoid build issues if processed by frontend tools (though this is a resource route)
+                const fs = await import("fs/promises");
+                const path = await import("path");
+                
+                const filePath = path.resolve(process.cwd(), sectionData.filename);
+                console.log(`Reading section file from: ${filePath}`);
+                contentToUpload = await fs.readFile(filePath, "utf-8");
+            } catch (readErr) {
+                console.error(`Failed to read file ${sectionData.filename}:`, readErr);
+                throw new Error(`Failed to read section file: ${readErr.message}`);
+            }
+        }
+
+        if (contentToUpload) {
+            if (!themeId) {
+                throw new Error("Theme ID is required for section installation.");
+            }
+
+            console.log(`Uploading asset to theme ${themeId}...`);
+            const asset = new admin.rest.resources.Asset({ session: session });
+            asset.theme_id = themeId;
+            
+            // Determine the target key (always in sections/ folder for sections)
+            // We use the basename of the source file
+            const fileName = sectionData.filename.split('/').pop(); // e.g., product-collection-grid.liquid
+            asset.key = `sections/${fileName}`;
+            asset.value = contentToUpload;
+            
+            await asset.save({ update: true });
+            console.log(`Successfully uploaded ${asset.key} to theme ${themeId}`);
+        }
+
         await markSectionInstalled(session.shop, session.accessToken, "2024-10", sectionId);
         return json({ 
             success: true, 
             message: "Section Activated Successfully",
-            method: "metafield_update",
-            details: "Section has been marked as active. It will now be visible in the Theme Editor."
+            method: "asset_upload_and_metafield",
+            details: "Section has been installed to your theme and marked as active."
         });
     } else if (requestAction === "deactivate") {
         console.log(`Deactivation attempted for section: ${sectionId} (BLOCKED)`);
