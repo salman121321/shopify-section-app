@@ -81,6 +81,11 @@
 {% endschema %}
 
 {% assign installed_sections = shop.metafields.shopi_section.installed_sections.value %}
+<div style="background: #000; color: #fff; padding: 5px; font-size: 10px; text-align: left;">
+  DEBUG: {{ shop.metafields.shopi_section.installed_sections.value | json }}
+  <br>Looking for: 3d-carousel-pro
+</div>
+
 {% if installed_sections contains '3d-carousel-pro' %}
 
 <div style="background-color: {{ section.settings.background_color }}; position: relative; overflow: hidden; padding: 40px 0;">

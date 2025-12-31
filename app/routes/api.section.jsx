@@ -125,15 +125,23 @@ async function unmarkSectionInstalled(shop, accessToken, apiVersion, sectionId) 
         let installedSections = [];
         if (shopData.metafield?.value) {
             try {
-                installedSections = JSON.parse(shopData.metafield.value);
+                const parsed = JSON.parse(shopData.metafield.value);
+                if (Array.isArray(parsed)) {
+                    installedSections = parsed;
+                } else {
+                    console.warn("Metafield value is not an array, resetting.");
+                }
             } catch (e) {
                 console.warn("Failed to parse existing metafield value:", e);
             }
         }
 
+        console.log(`[Deactivate] Current installed sections: ${JSON.stringify(installedSections)}`);
+
         if (installedSections.includes(sectionId)) {
             // Filter out the section
             installedSections = installedSections.filter(id => id !== sectionId);
+            console.log(`[Deactivate] New installed sections: ${JSON.stringify(installedSections)}`);
             
             const updateQuery = `
               mutation MetafieldsSet($metafields: [MetafieldsSetInput!]!) {
@@ -253,35 +261,23 @@ export const action = async ({ request }) => {
 
   try {
     if (requestAction === "activate") {
-      // FOR THEME APP EXTENSIONS: We do NOT upload liquid files anymore.
-      // Instead, we just mark it as installed (for our own records).
-      
-      console.log(`Activating section: ${sectionId} for shop: ${session.shop}`);
-      
-      // Still mark as installed in our DB/Metafields if needed
-      await markSectionInstalled(session.shop, session.accessToken, "2024-10", sectionId);
-
-      return json({ 
-          success: true, 
-          message: "Section Activated Successfully",
-          method: "metafield_update",
-          details: "Section has been marked as active. It will now be visible in the Theme Editor."
-      });
-
+        console.log(`Activating section: ${sectionId} for shop: ${session.shop}`);
+        await markSectionInstalled(session.shop, session.accessToken, "2024-10", sectionId);
+        return json({ 
+            success: true, 
+            message: "Section Activated Successfully",
+            method: "metafield_update",
+            details: "Section has been marked as active. It will now be visible in the Theme Editor."
+        });
     } else if (requestAction === "deactivate") {
-      // FOR THEME APP EXTENSIONS: We do NOT delete files.
-      // We should probably remove it from the installed list.
-      
-      console.log(`Deactivating section: ${sectionId} for shop: ${session.shop}`);
-
-      await unmarkSectionInstalled(session.shop, session.accessToken, "2024-10", sectionId);
-      
-      return json({ 
-        success: true, 
-        message: "Section Deactivated Successfully", 
-        method: "metafield_update",
-        details: "Section has been marked as inactive." 
-      });
+        console.log(`Deactivating section: ${sectionId} for shop: ${session.shop}`);
+        await unmarkSectionInstalled(session.shop, session.accessToken, "2024-10", sectionId);
+        return json({ 
+            success: true, 
+            message: "Section Deactivated Successfully", 
+            method: "metafield_update",
+            details: "Section has been marked as inactive." 
+        });
     }
 
     return json({ error: "Invalid action" }, { status: 400 });
