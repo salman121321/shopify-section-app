@@ -38,10 +38,13 @@ export const loader = async ({ request }) => {
   const currentScopes = new Set(session.scope ? session.scope.split(",").map(s => s.trim()) : []);
   
   // Hardcode required scopes to what is strictly necessary for functionality
-  // We removed write_themes as per user request to avoid code injection
   const requiredScopes = ["write_products", "read_themes"];
   
-  const hasAllScopes = requiredScopes.every(scope => currentScopes.has(scope));
+  // Allow write_themes to satisfy read_themes requirement (legacy support)
+  const hasReadThemes = currentScopes.has("read_themes") || currentScopes.has("write_themes");
+  const hasWriteProducts = currentScopes.has("write_products");
+  
+  const hasAllScopes = hasReadThemes && hasWriteProducts;
 
   const shop = session.shop.replace(".myshopify.com", "");
   
