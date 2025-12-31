@@ -58,42 +58,14 @@ export const loader = async ({ request }) => {
   };
 };
 
-// Live Preview Component for "My Custom Section"
-const MyCustomSectionPreview = ({ settings, compact = false }) => {
-  return (
-    <div style={{
-      backgroundColor: settings.backgroundColor || "#f4f4f4",
-      color: settings.textColor || "#000000",
-      padding: compact ? '20px' : '40px',
-      textAlign: 'center',
-      width: '100%',
-      height: '100%',
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'center',
-      alignItems: 'center',
-      minHeight: compact ? '180px' : '300px',
-      borderTopLeftRadius: compact ? '8px' : '0',
-      borderTopRightRadius: compact ? '8px' : '0',
-    }}>
-      <h2 style={{ margin: 0, fontSize: compact ? '18px' : '24px', fontWeight: 'bold' }}>
-        {settings.heading || "Hello from Shopify Section App"}
-      </h2>
-      <p style={{ marginTop: '10px', fontSize: compact ? '12px' : '16px' }}>
-        This section is powered by your Shopify App!
-      </p>
-    </div>
-  );
-};
-
-// Live Preview Component for "3D Carousel Pro"
+// Live Preview Component for "3D Animation Slider"
 const ThreeDCarouselPreview = ({ settings, compact = false }) => {
-   const cardWidth = compact ? '100px' : '200px';
-   const cardHeight = compact ? '150px' : '300px';
-
+   const cardWidth = compact ? '80px' : '160px';
+   const cardHeight = compact ? '120px' : '240px';
+   
    return (
      <div style={{
-       backgroundColor: settings.backgroundColor || "#a3d5f7",
+       backgroundColor: settings.bg_color || "#f0f4f8",
        width: '100%',
        height: '100%',
        display: 'flex',
@@ -104,62 +76,82 @@ const ThreeDCarouselPreview = ({ settings, compact = false }) => {
        position: 'relative',
        minHeight: compact ? '180px' : '500px',
      }}>
-        {/* Overlay */}
-        <div style={{
-           position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-           backgroundColor: settings.bg_overlay_color || '#000',
-           opacity: (settings.bg_overlay_opacity || 0) / 100,
-           zIndex: 1
-        }}></div>
-
-        <div style={{zIndex: 2, textAlign: 'center', marginBottom: compact ? '10px' : '20px'}}>
+        <div style={{zIndex: 2, textAlign: 'center', marginBottom: compact ? '20px' : '40px'}}>
            <h2 style={{
-              color: settings.heading_color || '#1a1a1a', 
-              fontSize: compact ? '16px' : (settings.heading_size + 'px' || '24px'),
+              color: settings.text_color || '#1a1a1a', 
+              fontSize: compact ? '16px' : '24px',
+              fontWeight: 'bold',
               margin: '0 0 5px 0'
            }}>
-              {settings.heading || "Featured Products"}
+              {settings.heading || "New Arrivals"}
            </h2>
-           <p style={{
-              color: settings.subheading_color || '#4a4a4a',
-              fontSize: compact ? '10px' : (settings.subheading_size + 'px' || '16px'),
-              margin: 0
-           }}>
-              {settings.subheading?.replace(/<[^>]*>?/gm, '') || "Check out our latest collection"}
-           </p>
         </div>
 
-        {/* Mock Carousel */}
+        {/* Mock 3D Carousel */}
         <div style={{
            display: 'flex', 
-           gap: compact ? '10px' : '20px', 
-           zIndex: 2, 
-           transform: 'perspective(1000px) rotateY(-5deg)',
-           transformStyle: 'preserve-3d'
+           justifyContent: 'center',
+           alignItems: 'center',
+           perspective: '1000px',
+           width: '100%',
+           height: cardHeight,
+           position: 'relative'
         }}>
-           {[1, 2, 3].map((item, index) => (
-              <div key={index} style={{
-                 width: cardWidth,
-                 height: cardHeight,
-                 backgroundColor: '#fff',
-                 borderRadius: '12px',
-                 boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
-                 display: 'flex',
-                 flexDirection: 'column',
-                 overflow: 'hidden',
-                 transform: index === 1 ? 'translateZ(20px) scale(1.1)' : 'translateZ(0) scale(0.9)',
-                 opacity: index === 1 ? 1 : 0.7,
-                 transition: 'all 0.3s ease'
-              }}>
-                 <div style={{flex: 2, backgroundColor: '#eee', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-                    <Icon source={ProductIcon} color="subdued" />
-                 </div>
-                 <div style={{flex: 1, padding: '10px', display: 'flex', flexDirection: 'column', justifyContent: 'center'}}>
-                    <div style={{height: '8px', width: '80%', backgroundColor: '#ddd', marginBottom: '5px', borderRadius: '4px'}}></div>
-                    <div style={{height: '8px', width: '40%', backgroundColor: '#eee', borderRadius: '4px'}}></div>
-                 </div>
-              </div>
-           ))}
+           <div style={{
+              position: 'relative',
+              width: '100%',
+              height: '100%',
+              transformStyle: 'preserve-3d',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center'
+           }}>
+             {[1, 2, 3].map((item, index) => {
+                 let transform = '';
+                 let zIndex = 0;
+                 let opacity = 1;
+                 
+                 if (index === 0) { // Left
+                     transform = 'translateX(-60%) translateZ(-100px) rotateY(25deg)';
+                     zIndex = 1;
+                     opacity = 0.8;
+                 } else if (index === 1) { // Center
+                     transform = 'translateZ(50px)';
+                     zIndex = 10;
+                 } else { // Right
+                     transform = 'translateX(60%) translateZ(-100px) rotateY(-25deg)';
+                     zIndex = 1;
+                     opacity = 0.8;
+                 }
+
+                 return (
+                  <div key={index} style={{
+                     position: 'absolute',
+                     width: cardWidth,
+                     height: cardHeight,
+                     backgroundColor: settings.card_bg || '#fff',
+                     borderRadius: (settings.card_border_radius || 16) + 'px',
+                     boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
+                     display: 'flex',
+                     flexDirection: 'column',
+                     overflow: 'hidden',
+                     transform: transform,
+                     zIndex: zIndex,
+                     opacity: opacity,
+                     transition: 'all 0.5s ease',
+                     border: '1px solid rgba(0,0,0,0.05)'
+                  }}>
+                     <div style={{flex: 2, backgroundColor: '#f4f4f4', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                        <Icon source={ProductIcon} color="subdued" />
+                     </div>
+                     <div style={{flex: 1, padding: '8px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center'}}>
+                        <div style={{height: '6px', width: '70%', backgroundColor: '#e1e3e5', marginBottom: '4px', borderRadius: '4px'}}></div>
+                        <div style={{height: '6px', width: '40%', backgroundColor: settings.price_color || '#2c6ecb', borderRadius: '4px'}}></div>
+                     </div>
+                  </div>
+               );
+             })}
+           </div>
         </div>
      </div>
    );
@@ -368,66 +360,24 @@ export default function Index() {
 
   const sections = [
     {
-      id: "my-custom-section",
-      title: "My Custom Section",
-      description: "A customizable section with heading and colors.",
-      category: "headers",
-      status: "active",
-      // No image, we use preview component
-      defaultSettings: {
-        heading: "Hello from Shopify Section App",
-        textColor: "#000000",
-        backgroundColor: "#f4f4f4"
-      },
-      renderPreview: (settings, compact) => <MyCustomSectionPreview settings={settings} compact={compact} />
-    },
-    {
-      id: "3d-carousel-pro",
-      title: "3D Carousel Pro",
-      description: "A stunning 3D product carousel with interactive physics and glassmorphism effects.",
+      id: "3d-carousel",
+      title: "3D Animation Slider",
+      description: "A stunning 3D product carousel with interactive physics and glassmorphism effects. Features auto-rotation, hover effects, and full customization.",
       category: "products",
       status: "active",
       defaultSettings: {
-        heading: "Featured Products",
-        subheading: "Check out our latest collection",
-        backgroundColor: "#a3d5f7",
-        bg_overlay_color: "#000000",
-        bg_overlay_opacity: 0,
-        heading_color: "#1a1a1a",
-        subheading_color: "#4a4a4a",
-        heading_size: 36,
-        subheading_size: 16
+        heading: "Featured Collection",
+        collection: "",
+        product_limit: 8,
+        bg_color: "#f0f4f8",
+        card_bg: "#ffffff",
+        text_color: "#1a1a1a",
+        price_color: "#2c6ecb",
+        card_border_radius: 16,
+        auto_rotate: true,
+        rotation_speed: 10
       },
       renderPreview: (settings, compact) => <ThreeDCarouselPreview settings={settings} compact={compact} />
-    },
-    {
-      id: "product-collection-grid",
-      title: "Collection Grid",
-      description: "A customizable grid layout for collections and products.",
-      category: "products",
-      status: "active",
-      defaultSettings: {
-        heading: "Shop By Category"
-      },
-      renderPreview: (settings, compact) => (
-        <div style={{
-            padding: '20px', 
-            textAlign: 'center', 
-            background: '#f5f1ed', 
-            height: '100%', 
-            display: 'flex', 
-            flexDirection: 'column', 
-            justifyContent: 'center'
-        }}>
-            <h3 style={{margin: '0 0 10px 0', color: '#333'}}>Shop By Category</h3>
-            <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', opacity: 0.6}}>
-                <div style={{background: '#ccc', height: '60px'}}></div>
-                <div style={{background: '#ccc', height: '60px'}}></div>
-                <div style={{background: '#ccc', height: '60px'}}></div>
-                <div style={{background: '#ccc', height: '60px'}}></div>
-            </div>
-        </div>
-      )
     }
   ];
 

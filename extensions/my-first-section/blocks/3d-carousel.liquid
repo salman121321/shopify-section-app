@@ -1,109 +1,461 @@
 {% schema %}
 {
-  "name": "Shopi: 3D Carousel Pro",
+  "name": "3D Animation Slider",
   "target": "section",
-  "class": "shopi-section-carousel",
   "settings": [
+    {
+      "type": "header",
+      "content": "Section Layout"
+    },
+    {
+      "type": "select",
+      "id": "container_width",
+      "label": "Container Width",
+      "options": [
+        { "value": "1200px", "label": "Fixed (1200px)" },
+        { "value": "100%", "label": "Full Width" }
+      ],
+      "default": "1200px"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "Padding Top",
+      "default": 60
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "Padding Bottom",
+      "default": 60
+    },
+    {
+      "type": "header",
+      "content": "Content"
+    },
     {
       "type": "text",
       "id": "heading",
       "label": "Heading",
-      "default": "Featured Products"
-    },
-    {
-      "type": "text",
-      "id": "subheading",
-      "label": "Subheading",
-      "default": "Check out our latest collection"
-    },
-    {
-      "type": "color",
-      "id": "background_color",
-      "label": "Background Color",
-      "default": "#a3d5f7"
-    },
-    {
-      "type": "color",
-      "id": "heading_color",
-      "label": "Heading Color",
-      "default": "#1a1a1a"
-    },
-    {
-      "type": "color",
-      "id": "subheading_color",
-      "label": "Subheading Color",
-      "default": "#4a4a4a"
+      "default": "New Arrivals"
     },
     {
       "type": "range",
       "id": "heading_size",
-      "min": 12,
-      "max": 60,
-      "step": 1,
-      "unit": "px",
+      "min": 1,
+      "max": 4,
+      "step": 0.1,
+      "unit": "rem",
       "label": "Heading Size",
-      "default": 36
+      "default": 2.5
+    },
+    {
+      "type": "collection",
+      "id": "collection",
+      "label": "Select Collection"
     },
     {
       "type": "range",
-      "id": "subheading_size",
-      "min": 10,
-      "max": 40,
+      "id": "product_limit",
+      "min": 4,
+      "max": 12,
       "step": 1,
-      "unit": "px",
-      "label": "Subheading Size",
-      "default": 16
+      "label": "Product Limit",
+      "default": 8,
+      "info": "Best results with 6-10 products"
+    },
+    {
+      "type": "header",
+      "content": "Card Appearance"
     },
     {
       "type": "color",
-      "id": "bg_overlay_color",
-      "label": "Overlay Color",
-      "default": "#000000"
+      "id": "bg_color",
+      "label": "Section Background",
+      "default": "#f0f4f8"
+    },
+    {
+      "type": "color",
+      "id": "card_bg",
+      "label": "Card Background",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text Color",
+      "default": "#1a1a1a"
+    },
+    {
+      "type": "color",
+      "id": "price_color",
+      "label": "Price Color",
+      "default": "#2c6ecb"
     },
     {
       "type": "range",
-      "id": "bg_overlay_opacity",
+      "id": "card_border_radius",
       "min": 0,
-      "max": 100,
+      "max": 30,
+      "step": 2,
+      "unit": "px",
+      "label": "Card Corner Radius",
+      "default": 16
+    },
+    {
+      "type": "range",
+      "id": "card_width",
+      "min": 200,
+      "max": 400,
+      "step": 10,
+      "unit": "px",
+      "label": "Card Width (Desktop)",
+      "default": 300
+    },
+    {
+      "type": "checkbox",
+      "id": "show_shadow",
+      "label": "Show Card Shadow",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Animation"
+    },
+    {
+      "type": "checkbox",
+      "id": "auto_rotate",
+      "label": "Auto Rotate",
+      "default": true
+    },
+    {
+      "type": "range",
+      "id": "rotation_speed",
+      "min": 2,
+      "max": 20,
       "step": 1,
-      "unit": "%",
-      "label": "Overlay Opacity",
-      "default": 0
+      "unit": "s",
+      "label": "Rotation Speed",
+      "default": 10
+    },
+    {
+      "type": "header",
+      "content": "Mobile Settings"
+    },
+    {
+      "type": "range",
+      "id": "mobile_scale",
+      "min": 0.5,
+      "max": 1.0,
+      "step": 0.1,
+      "label": "Mobile Scale",
+      "default": 0.8,
+      "info": "Scale down the carousel on mobile devices"
+    }
+  ],
+  "presets": [
+    {
+      "name": "3D Animation Slider",
+      "settings": {
+        "heading": "Featured Collection",
+        "product_limit": 8,
+        "bg_color": "#f0f4f8"
+      }
     }
   ]
 }
 {% endschema %}
 
-{% assign installed_sections = shop.metafields.shopi_section.installed_sections.value %}
+<div class="shopi-3d-section-wrapper" style="background-color: {{ section.settings.bg_color }}; padding-top: {{ section.settings.padding_top }}px; padding-bottom: {{ section.settings.padding_bottom }}px; overflow: hidden;">
+  <div class="shopi-container" style="max-width: {{ section.settings.container_width }}; margin: 0 auto; padding: 0 20px;">
+    {% if section.settings.heading != blank %}
+      <h2 class="shopi-heading" style="color: {{ section.settings.text_color }}; text-align: center; margin-bottom: 50px; font-weight: 700;">
+        {{ section.settings.heading }}
+      </h2>
+    {% endif %}
 
-{% if installed_sections contains '3d-carousel-pro' %}
-
-<div style="background-color: {{ section.settings.background_color }}; position: relative; overflow: hidden; padding: 40px 0;">
-  <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: {{ section.settings.bg_overlay_color }}; opacity: {{ section.settings.bg_overlay_opacity | divided_by: 100.0 }}; pointer-events: none;"></div>
-  
-  <div style="position: relative; z-index: 2; text-align: center; margin-bottom: 40px;">
-    <h2 style="color: {{ section.settings.heading_color }}; font-size: {{ section.settings.heading_size }}px; margin-bottom: 10px;">{{ section.settings.heading }}</h2>
-    <p style="color: {{ section.settings.subheading_color }}; font-size: {{ section.settings.subheading_size }}px;">{{ section.settings.subheading }}</p>
-  </div>
-
-  <div style="display: flex; justify-content: center; gap: 20px; perspective: 1000px; padding: 20px;">
-    {% for i in (1..3) %}
-      <div style="width: 250px; height: 350px; background: white; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); transform: rotateY({% if forloop.index == 1 %}15deg{% elsif forloop.index == 3 %}-15deg{% else %}0deg{% endif %}) scale({% if forloop.index == 2 %}1.05{% else %}0.95{% endif %}); transition: transform 0.3s ease;">
-        <div style="height: 60%; background: #f0f0f0; display: flex; align-items: center; justify-content: center; border-radius: 15px 15px 0 0;">
-          <span style="font-size: 40px;">📦</span>
-        </div>
-        <div style="padding: 20px;">
-          <div style="height: 10px; width: 80%; background: #ddd; margin-bottom: 10px; border-radius: 5px;"></div>
-          <div style="height: 10px; width: 60%; background: #eee; border-radius: 5px;"></div>
-        </div>
+    <div class="shopi-carousel-stage">
+      <div class="shopi-carousel-spinner" id="spinner-{{ section.id }}">
+        {% assign collection = collections[section.settings.collection] %}
+        {% assign limit = section.settings.product_limit %}
+        
+        {% if collection != blank and collection.products_count > 0 %}
+          {% for product in collection.products limit: limit %}
+            <div class="shopi-carousel-item" style="background: {{ section.settings.card_bg }}; border-radius: {{ section.settings.card_border_radius }}px;">
+              <a href="{{ product.url }}" style="text-decoration: none; color: inherit; display: block; height: 100%;">
+                <div class="shopi-card-image">
+                  {% if product.featured_image %}
+                    <img src="{{ product.featured_image | img_url: '400x' }}" alt="{{ product.title | escape }}" loading="lazy">
+                  {% else %}
+                    {{ 'product-1' | placeholder_svg_tag: 'shopi-placeholder' }}
+                  {% endif %}
+                </div>
+                <div class="shopi-card-info">
+                  <h3 style="color: {{ section.settings.text_color }}">{{ product.title | truncate: 25 }}</h3>
+                  <div class="shopi-price" style="color: {{ section.settings.price_color }}">
+                    {{ product.price | money }}
+                  </div>
+                </div>
+              </a>
+            </div>
+          {% endfor %}
+        {% else %}
+          {% for i in (1..limit) %}
+            <div class="shopi-carousel-item" style="background: {{ section.settings.card_bg }}; border-radius: {{ section.settings.card_border_radius }}px;">
+              <div class="shopi-card-image">
+                {{ 'product-' | append: i | placeholder_svg_tag: 'shopi-placeholder' }}
+              </div>
+              <div class="shopi-card-info">
+                <h3 style="color: {{ section.settings.text_color }}">Sample Product {{ i }}</h3>
+                <div class="shopi-price" style="color: {{ section.settings.price_color }}">$99.99</div>
+              </div>
+            </div>
+          {% endfor %}
+        {% endif %}
       </div>
-    {% endfor %}
+    </div>
   </div>
 </div>
 
-{% else %}
-  <div style="padding: 20px; background: #fff3cd; color: #856404; border: 1px solid #ffeeba; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
-    <div style="font-weight: bold; margin-bottom: 8px;">⚠️ Section Not Activated</div>
-    <p style="margin: 0;">Please activate <strong>3D Carousel Pro</strong> in the <strong>Shopi Section App</strong> to use this section on your store.</p>
-  </div>
-{% endif %}
+<style>
+  .shopi-3d-section-wrapper * {
+    box-sizing: border-box;
+  }
+  
+  .shopi-heading {
+    font-size: {{ section.settings.heading_size }}rem;
+  }
+
+  .shopi-carousel-stage {
+    margin: 0 auto;
+    width: {{ section.settings.card_width }}px;
+    height: 400px;
+    perspective: 1000px;
+    position: relative;
+    /* Prevent horizontal scrollbar on body when items rotate out */
+  }
+
+  .shopi-carousel-spinner {
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transform-origin: 50% 50% -500px; /* Base origin, adjusted by JS */
+    transition: transform 1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    position: relative;
+  }
+
+  .shopi-carousel-item {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    left: 0;
+    top: 0;
+    {% if section.settings.show_shadow %}
+    box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+    {% else %}
+    box-shadow: none;
+    border: 1px solid rgba(0,0,0,0.1);
+    {% endif %}
+    overflow: hidden;
+    backface-visibility: hidden; /* Often smoother without it, but helps perf */
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    -webkit-font-smoothing: antialiased;
+  }
+  
+  .shopi-carousel-item:hover {
+    transform: translateY(-10px) scale(1.02);
+    box-shadow: 0 25px 50px rgba(0,0,0,0.25);
+    z-index: 100; /* Bring to front on hover */
+    border-color: transparent;
+  }
+
+  .shopi-card-image {
+    flex: 2;
+    overflow: hidden;
+    position: relative;
+    background: #f4f4f4;
+  }
+
+  .shopi-card-image img, .shopi-card-image svg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+  }
+  
+  .shopi-carousel-item:hover .shopi-card-image img {
+    transform: scale(1.1);
+  }
+
+  .shopi-card-info {
+    flex: 1;
+    padding: 20px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .shopi-card-info h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+
+  .shopi-price {
+    font-weight: 700;
+    font-size: 1.2rem;
+  }
+
+  .shopi-placeholder {
+    width: 100%;
+    height: 100%;
+    background: #eee;
+    display: block;
+  }
+
+  /* Responsive Adjustments */
+  @media (max-width: 768px) {
+    .shopi-heading {
+      font-size: calc({{ section.settings.heading_size }}rem * 0.8);
+      margin-bottom: 30px;
+    }
+    
+    .shopi-carousel-stage {
+      /* Scale down the entire stage for mobile */
+      transform: scale({{ section.settings.mobile_scale }});
+      transform-origin: center top;
+      /* Adjust height to compensate for scale */
+      height: 320px; 
+    }
+  }
+</style>
+
+<script>
+(function() {
+  const container = document.getElementById('spinner-{{ section.id }}');
+  if (!container) return;
+
+  const items = container.querySelectorAll('.shopi-carousel-item');
+  const count = items.length;
+  const cardWidth = {{ section.settings.card_width }};
+  
+  // Calculate radius
+  // Circumference ~= count * cardWidth
+  // 2 * PI * r = count * (cardWidth + gap)
+  // r = (count * cardWidth) / (2 * PI)
+  // We add a bit of gap (20px)
+  
+  const gap = 40;
+  const radius = Math.round(((cardWidth + gap) * count) / (2 * Math.PI));
+
+  // Arrange items in a circle
+  const angleStep = 360 / count;
+  
+  items.forEach((item, index) => {
+    item.style.transform = `rotateY(${index * angleStep}deg) translateZ(${radius}px)`;
+  });
+  
+  // Adjust transform origin to center of the circle
+  container.style.transformOrigin = `50% 50% -${radius}px`;
+
+  let currAngle = 0;
+  let autoRotate = {{ section.settings.auto_rotate | json }};
+  let interval;
+  let isPaused = false;
+
+  function rotate() {
+    if (isPaused) return;
+    currAngle -= angleStep;
+    container.style.transform = `rotateY(${currAngle}deg)`;
+  }
+
+  if (autoRotate) {
+    const speed = {{ section.settings.rotation_speed }} * 1000;
+    interval = setInterval(rotate, speed);
+  }
+  
+  // Pause on hover
+  container.addEventListener('mouseenter', () => isPaused = true);
+  container.addEventListener('mouseleave', () => isPaused = false);
+  
+  // Touch/Drag support
+  let startX = 0;
+  let isDragging = false;
+  let startAngle = 0;
+  
+  const stage = container.parentElement;
+  
+  // Mouse Events
+  stage.addEventListener('mousedown', (e) => {
+    startX = e.pageX;
+    isDragging = true;
+    startAngle = currAngle;
+    stage.style.cursor = 'grabbing';
+    isPaused = true; // Pause auto rotate while interacting
+  });
+  
+  document.addEventListener('mouseup', () => {
+    if (isDragging) {
+       isDragging = false;
+       stage.style.cursor = 'default';
+       isPaused = false; // Resume auto rotate
+    }
+  });
+  
+  document.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    e.preventDefault(); // Prevent selection
+    const dx = e.pageX - startX;
+    // Sensitivity factor
+    const sensitivity = 0.5;
+    currAngle = startAngle + (dx * sensitivity);
+    container.style.transform = `rotateY(${currAngle}deg)`;
+  });
+
+  // Touch Events (Mobile)
+  stage.addEventListener('touchstart', (e) => {
+    startX = e.touches[0].pageX;
+    isDragging = true;
+    startAngle = currAngle;
+    isPaused = true;
+  }, { passive: true });
+
+  stage.addEventListener('touchend', () => {
+    isDragging = false;
+    isPaused = false;
+  });
+
+  stage.addEventListener('touchmove', (e) => {
+    if (!isDragging) return;
+    
+    const x = e.touches[0].pageX;
+    const dx = x - startX;
+    
+    // Only intercept if horizontal scroll is dominant
+    if (Math.abs(dx) > 10) { 
+        // We don't prevent default here to allow vertical scrolling if needed, 
+        // but for a 3D carousel, user usually intends to spin it.
+        // If we want to prevent page scroll while spinning:
+        if (e.cancelable) e.preventDefault();
+        
+        const sensitivity = 0.5;
+        currAngle = startAngle + (dx * sensitivity);
+        container.style.transform = `rotateY(${currAngle}deg)`;
+    }
+  }, { passive: false });
+
+})();
+</script>
