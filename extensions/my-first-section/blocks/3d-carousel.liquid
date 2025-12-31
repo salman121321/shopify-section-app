@@ -279,6 +279,23 @@
         {% assign show_placeholder = false %}
     {% endif %}
 
+    <!-- Debug Info (Hidden by default, visible if needed for troubleshooting) -->
+    <div style="display:none; color: red; text-align: center; padding: 10px; background: #fff; border: 1px solid red; margin-bottom: 20px;">
+       <strong>DEBUG INFO:</strong><br>
+       Collection Handle: {{ section.settings.collection }} <br>
+       Collection Object: {{ collection.title }} <br>
+       Product Count: {{ collection.products_count }} <br>
+       Show Placeholder: {{ show_placeholder }}
+    </div>
+
+    <!-- Explicit Message if Collection is Selected but Empty -->
+    {% if section.settings.collection != blank and collection.products_count == 0 %}
+      <div style="text-align: center; padding: 20px; color: #666;">
+        <p>Selected collection "{{ collection.title }}" has no products visible.</p>
+        <p>Please check if products are Active and available in the Online Store channel.</p>
+      </div>
+    {% endif %}
+
     <div class="shopi-carousel-stage shopi-mobile-mode-{{ section.settings.mobile_mode }}">
       <div class="shopi-carousel-spinner" id="spinner-{{ section.id }}">
         
