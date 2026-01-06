@@ -550,24 +550,46 @@
 </style>
 
 <script>
-(function() {
-  const container = document.getElementById('spinner-{{ section.id }}');
+document.addEventListener("DOMContentLoaded", function() {
+  initShopiCarousel("{{ section.id }}");
+});
+
+document.addEventListener("shopify:section:load", function(e) {
+  if (e.target.querySelector("#spinner-{{ section.id }}")) {
+    initShopiCarousel("{{ section.id }}");
+  }
+});
+
+function initShopiCarousel(sectionId) {
+  const container = document.getElementById('spinner-' + sectionId);
   if (!container) return;
 
   const stage = container.parentElement;
+  
+  // Clean up existing listeners/intervals if re-initializing
+  if (container.dataset.initialized === "true") {
+     // Optional: cleanup logic if needed
+  }
+  container.dataset.initialized = "true";
+
   const isMobileScroll = stage.classList.contains('shopi-mobile-mode-scroll') && window.innerWidth <= 768;
 
   // If in mobile scroll mode, we disable the 3D logic
-  if (isMobileScroll) return;
+  if (isMobileScroll) {
+      container.style.transform = "none";
+      return;
+  }
 
   const items = container.querySelectorAll('.shopi-carousel-item');
   const count = items.length;
+  
+  // Safety check: if no items, do nothing
+  if (count === 0) return;
+
   const cardWidth = {{ section.settings.card_width }};
   const gap = {{ section.settings.card_gap }};
   
   // Calculate radius
-  // Circumference = count * (cardWidth + gap)
-  // r = Circumference / (2 * PI)
   const radius = Math.round(((cardWidth + gap) * count) / (2 * Math.PI));
 
   // Arrange items in a circle
@@ -575,59 +597,35 @@
   
   items.forEach((item, index) => {
     item.style.transform = `rotateY(${index * angleStep}deg) translateZ(${radius}px)`;
+    item.style.opacity = "1"; // Ensure visible
   });
   
-  // Adjust transform origin to center of the circle
+  // Adjust transform origin
   container.style.transformOrigin = `50% 50% -${radius}px`;
+  container.style.transform = `translateZ(-${radius}px)`; // Push back to prevent clipping
 
   let currAngle = 0;
   let autoRotate = {{ section.settings.auto_rotate | json }};
+  let rotationSpeed = {{ section.settings.rotation_speed }};
   let interval;
   let isPaused = false;
-  let rotationSpeed = {{ section.settings.rotation_speed }} * 1000;
-  // Calculate speed per frame or use CSS transition?
-  // We use CSS transition for smooth movement, so we just update angle periodically or use requestAnimationFrame
-  // But here we use a simple interval to increment angle? 
-  // Actually, to make it smooth "continuous" rotation, we need to keep updating.
-  // The current implementation uses CSS transition (1s) and updates logic.
-  // Better implementation for continuous:
-  
-  // Reset transition for JS control if we want continuous smooth 
-  // But let's stick to the current logic: Step rotation?
-  // No, user wants smooth.
-  // Let's use requestAnimationFrame for auto rotation if we want it super smooth, 
-  // but CSS is easier on battery if we just rotate by small increments?
-  // Let's stick to the interval method but make it smaller steps?
-  // Or just set a long transition and keep rotating?
-  
-  // Simple approach: Auto rotate by angleStep every X seconds? No, that's a slideshow.
-  // User wants "Animation Slider".
-  // Let's do a continuous slow spin.
-  
+
   function startAutoRotate() {
     if (!autoRotate) return;
-    clearInterval(interval);
-    // Rotate 360 degrees over 'rotationSpeed' seconds
-    // We can use CSS animation instead of JS for smoother performance
-    // But JS allows drag interaction.
+    if (interval) clearInterval(interval);
     
-    // We'll stick to JS updating the angle slightly every frame
     let lastTime = Date.now();
-    
     interval = setInterval(() => {
       if (isPaused) return;
       const now = Date.now();
       const dt = now - lastTime;
       lastTime = now;
       
-      // degrees per ms = 360 / (rotationSpeed * 1000) (if speed is for full rotation)
-      // Actually speed setting is "Rotation Speed" in seconds.
-      const degPerMs = 360 / rotationSpeed;
+      const degPerMs = 360 / (rotationSpeed * 1000);
       currAngle -= degPerMs * dt;
       
-      // Disable transition for smooth continuous movement
       container.style.transition = 'none';
-      container.style.transform = `rotateY(${currAngle}deg)`;
+      container.style.transform = `translateZ(-${radius}px) rotateY(${currAngle}deg)`;
     }, 20);
   }
 
@@ -635,18 +633,13 @@
     startAutoRotate();
   }
   
-  // Pause on hover
-  container.addEventListener('mouseenter', () => isPaused = true);
-  container.addEventListener('mouseleave', () => {
+  // Events
+  stage.addEventListener('mouseenter', () => isPaused = true);
+  stage.addEventListener('mouseleave', () => {
     isPaused = false;
-    // Reset lastTime to prevent jump
-    if(autoRotate) {
-        clearInterval(interval);
-        startAutoRotate();
-    }
+    if(autoRotate) startAutoRotate();
   });
   
-  // Interaction
   let startX = 0;
   let isDragging = false;
   let startAngle = 0;
@@ -657,7 +650,7 @@
     startAngle = currAngle;
     stage.style.cursor = 'grabbing';
     isPaused = true;
-    container.style.transition = 'none'; // Instant follow
+    container.style.transition = 'none';
   });
   
   document.addEventListener('mouseup', () => {
@@ -667,9 +660,6 @@
        if(autoRotate) {
          isPaused = false;
          startAutoRotate();
-       } else {
-         // Add some momentum/snap? (Optional, skip for now)
-         container.style.transition = 'transform 0.5s ease-out';
        }
     }
   });
@@ -679,10 +669,10 @@
     e.preventDefault();
     const dx = e.pageX - startX;
     currAngle = startAngle + (dx * 0.5);
-    container.style.transform = `rotateY(${currAngle}deg)`;
+    container.style.transform = `translateZ(-${radius}px) rotateY(${currAngle}deg)`;
   });
 
-  // Touch
+  // Touch support
   stage.addEventListener('touchstart', (e) => {
     startX = e.touches[0].pageX;
     isDragging = true;
@@ -698,17 +688,5 @@
          startAutoRotate();
     }
   });
-
-  stage.addEventListener('touchmove', (e) => {
-    if (!isDragging) return;
-    const x = e.touches[0].pageX;
-    const dx = x - startX;
-    if (Math.abs(dx) > 5) {
-        // e.preventDefault(); // Chrome treats passive: false if we want to prevent
-        currAngle = startAngle + (dx * 0.5);
-        container.style.transform = `rotateY(${currAngle}deg)`;
-    }
-  }, { passive: true });
-
-})();
+}
 </script>
